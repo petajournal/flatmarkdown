@@ -8,7 +8,6 @@ fn options() -> Options<'static> {
     // Render options
     options.render.hardbreaks = true;
     options.render.full_info_string = true;
-    options.render.github_pre_lang = true;
     options.render.gfm_quirks = true;
     options.render.r#unsafe = true;
     options.render.tasklist_classes = true;
@@ -228,12 +227,6 @@ mod tests {
     fn hardbreaks() {
         let result = markdown_to_html("line1\nline2");
         assert!(result.contains("<br"));
-    }
-
-    #[test]
-    fn code_block_default_info_string() {
-        let result = markdown_to_html("```\ncode\n```");
-        assert!(result.contains("lang=\"text\""));
     }
 
     #[test]
