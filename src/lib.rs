@@ -39,6 +39,7 @@ fn options() -> Options<'static> {
     options.extension.subtext = true;
     options.extension.highlight = true;
     options.extension.shortcodes = true;
+    options.extension.wikilinks_title_after_pipe = true;
 
     options
 }
@@ -267,5 +268,53 @@ mod tests {
         assert_eq!(cb["type"], "code_block");
         assert_eq!(cb["info"], "rust");
         assert_eq!(cb["literal"], "fn main() {}\n");
+    }
+
+    #[test]
+    fn wikilink_html_basic() {
+        let result = markdown_to_html("[[page]]");
+        assert_eq!(result, "<p><a href=\"page\" data-wikilink=\"true\">page</a></p>\n");
+    }
+
+    #[test]
+    fn wikilink_html_with_label() {
+        let result = markdown_to_html("[[url|link label]]");
+        assert_eq!(result, "<p><a href=\"url\" data-wikilink=\"true\">link label</a></p>\n");
+    }
+
+    #[test]
+    fn wikilink_html_inline() {
+        let result = markdown_to_html("See [[page]] for details.");
+        assert!(result.contains("<a href=\"page\" data-wikilink=\"true\">page</a>"));
+        assert!(result.contains("See "));
+        assert!(result.contains(" for details."));
+    }
+
+    #[test]
+    fn wikilink_ast_basic() {
+        let result = markdown_to_ast("[[page]]");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let wl = &v["children"][0]["children"][0];
+        assert_eq!(wl["type"], "wikilink");
+        assert_eq!(wl["url"], "page");
+        assert_eq!(wl["children"][0]["type"], "text");
+        assert_eq!(wl["children"][0]["value"], "page");
+    }
+
+    #[test]
+    fn wikilink_ast_with_label() {
+        let result = markdown_to_ast("[[url|link label]]");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let wl = &v["children"][0]["children"][0];
+        assert_eq!(wl["type"], "wikilink");
+        assert_eq!(wl["url"], "url");
+        assert_eq!(wl["children"][0]["value"], "link label");
+    }
+
+    #[test]
+    fn wikilink_multiple() {
+        let result = markdown_to_html("[[page1]] and [[page2]]");
+        assert!(result.contains("<a href=\"page1\" data-wikilink=\"true\">page1</a>"));
+        assert!(result.contains("<a href=\"page2\" data-wikilink=\"true\">page2</a>"));
     }
 }
