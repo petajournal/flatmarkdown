@@ -268,7 +268,7 @@ An escaped HTML tag (from tagfilter).
 
 A hashtag (e.g. `#tag`, `#diary`). Extracted from `text` nodes in AST post-processing.
 
-`#` must appear at the start of a string or immediately after whitespace (a `#` in the middle of a word is not recognized as a tag). The tag name consists of Unicode alphanumerics, `_`, `-`, and `/`; any other character (punctuation, whitespace, end of string, etc.) terminates the tag.
+`#` must appear at the start of a string or immediately after whitespace (a `#` in the middle of a word is not recognized as a tag). The tag name consists of Unicode alphanumerics, `_`, `-`, and `/`; any other character (punctuation, whitespace, end of string, etc.) terminates the tag. `/` is not allowed as the first or last character of the tag name.
 
 | Attribute | Type   | Description                                    |
 |-----------|--------|------------------------------------------------|

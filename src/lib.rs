@@ -65,6 +65,7 @@ fn is_hashtag_char(c: char) -> bool {
 /// Splits a text string into a sequence of `text` and `hashtag` nodes.
 /// A hashtag starts with `#` at the beginning of the string or after whitespace,
 /// and ends when a non-hashtag character is encountered.
+/// `/` is not allowed as the first or last character of the tag name.
 fn split_hashtags(text: &str) -> Vec<Value> {
     let mut result = Vec::new();
     let chars: Vec<char> = text.chars().collect();
@@ -80,15 +81,22 @@ fn split_hashtags(text: &str) -> Vec<Value> {
                 tag_end += 1;
             }
 
-            if tag_end > tag_start {
+            // Trim trailing '/'
+            let mut actual_end = tag_end;
+            while actual_end > tag_start && chars[actual_end - 1] == '/' {
+                actual_end -= 1;
+            }
+
+            // Reject if empty after trimming or starts with '/'
+            if actual_end > tag_start && chars[tag_start] != '/' {
                 // Flush preceding text
                 if i > buf_start {
                     let s: String = chars[buf_start..i].iter().collect();
                     result.push(json!({"type": "text", "value": s}));
                 }
-                let tag: String = chars[tag_start..tag_end].iter().collect();
+                let tag: String = chars[tag_start..actual_end].iter().collect();
                 result.push(json!({"type": "hashtag", "value": tag}));
-                i = tag_end;
+                i = actual_end;
                 buf_start = i;
                 continue;
             }
@@ -470,6 +478,38 @@ mod tests {
         assert_eq!(children[0]["value"], "タグ");
         assert_eq!(children[1]["type"], "text");
         assert_eq!(children[1]["value"], "。本文");
+    }
+
+    #[test]
+    fn ast_hashtag_leading_slash_not_hashtag() {
+        // "#/tag" must not be recognized as a hashtag (leading '/' is invalid)
+        let result = markdown_to_ast("#/tag");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "text");
+        assert_eq!(children[0]["value"], "#/tag");
+    }
+
+    #[test]
+    fn ast_hashtag_trailing_slash_trimmed() {
+        // "#tag/" must be recognized as hashtag "tag" (trailing '/' is trimmed)
+        let result = markdown_to_ast("#tag/");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "hashtag");
+        assert_eq!(children[0]["value"], "tag");
+        assert_eq!(children[1]["type"], "text");
+        assert_eq!(children[1]["value"], "/");
+    }
+
+    #[test]
+    fn ast_hashtag_leading_and_trailing_slash_not_hashtag() {
+        // "#/tag/" must not be recognized as a hashtag (leading '/' is invalid)
+        let result = markdown_to_ast("#/tag/");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "text");
+        assert_eq!(children[0]["value"], "#/tag/");
     }
 
     #[test]
