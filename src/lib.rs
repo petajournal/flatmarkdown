@@ -51,8 +51,88 @@ pub fn markdown_to_html(input: &str) -> String {
 pub fn markdown_to_ast(input: &str) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, input, &options());
-    let ast = node_to_ast(root);
+    let mut ast = node_to_ast(root);
+    process_hashtags(&mut ast);
     serde_json::to_string(&ast).unwrap()
+}
+
+/// Returns true if `c` is a valid hashtag character:
+/// Unicode alphanumeric, `_`, `-`, or `/`.
+fn is_hashtag_char(c: char) -> bool {
+    c.is_alphanumeric() || c == '_' || c == '-' || c == '/'
+}
+
+/// Splits a text string into a sequence of `text` and `hashtag` nodes.
+/// A hashtag starts with `#` at the beginning of the string or after whitespace,
+/// and ends when a non-hashtag character is encountered.
+fn split_hashtags(text: &str) -> Vec<Value> {
+    let mut result = Vec::new();
+    let chars: Vec<char> = text.chars().collect();
+    let mut i = 0;
+    let mut buf_start = 0;
+
+    while i < chars.len() {
+        if chars[i] == '#' && (i == 0 || chars[i - 1].is_whitespace()) {
+            // Collect hashtag name
+            let tag_start = i + 1;
+            let mut tag_end = tag_start;
+            while tag_end < chars.len() && is_hashtag_char(chars[tag_end]) {
+                tag_end += 1;
+            }
+
+            if tag_end > tag_start {
+                // Flush preceding text
+                if i > buf_start {
+                    let s: String = chars[buf_start..i].iter().collect();
+                    result.push(json!({"type": "text", "value": s}));
+                }
+                let tag: String = chars[tag_start..tag_end].iter().collect();
+                result.push(json!({"type": "hashtag", "value": tag}));
+                i = tag_end;
+                buf_start = i;
+                continue;
+            }
+        }
+        i += 1;
+    }
+
+    // Flush remaining text
+    if buf_start < chars.len() {
+        let s: String = chars[buf_start..].iter().collect();
+        result.push(json!({"type": "text", "value": s}));
+    }
+
+    result
+}
+
+/// Post-processes the AST to extract hashtags from text nodes.
+fn process_hashtags(node: &mut Value) {
+    if let Some(Value::Array(children)) = node.get_mut("children") {
+        // Recurse first
+        for child in children.iter_mut() {
+            process_hashtags(child);
+        }
+
+        // Split text nodes containing hashtags
+        let mut new_children: Vec<Value> = Vec::with_capacity(children.len());
+        for child in children.drain(..) {
+            if child.get("type").and_then(|t| t.as_str()) == Some("text") {
+                if let Some(text) = child.get("value").and_then(|v| v.as_str()) {
+                    let parts = split_hashtags(text);
+                    if parts.len() > 1 || parts.first()
+                        .and_then(|p| p.get("type"))
+                        .and_then(|t| t.as_str()) == Some("hashtag")
+                    {
+                        new_children.extend(parts);
+                        continue;
+                    }
+                }
+            }
+            new_children.push(child);
+        }
+
+        *children = new_children;
+    }
 }
 
 fn node_to_ast<'a>(node: &'a comrak::arena_tree::Node<'a, std::cell::RefCell<comrak::nodes::Ast>>) -> Value {
@@ -317,6 +397,87 @@ mod tests {
         let result = markdown_to_html("[[page1]] and [[page2]]");
         assert!(result.contains("<a href=\"page1\" data-wikilink=\"true\">page1</a>"));
         assert!(result.contains("<a href=\"page2\" data-wikilink=\"true\">page2</a>"));
+    }
+
+    #[test]
+    fn ast_hashtag_basic() {
+        let result = markdown_to_ast("#tag");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "hashtag");
+        assert_eq!(children[0]["value"], "tag");
+    }
+
+    #[test]
+    fn ast_hashtag_japanese() {
+        let result = markdown_to_ast("#日記");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "hashtag");
+        assert_eq!(children[0]["value"], "日記");
+    }
+
+    #[test]
+    fn ast_hashtag_with_special_chars() {
+        let result = markdown_to_ast("#my_tag-name/sub");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "hashtag");
+        assert_eq!(children[0]["value"], "my_tag-name/sub");
+    }
+
+    #[test]
+    fn ast_hashtag_in_text() {
+        let result = markdown_to_ast("hello #tag world");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "text");
+        assert_eq!(children[0]["value"], "hello ");
+        assert_eq!(children[1]["type"], "hashtag");
+        assert_eq!(children[1]["value"], "tag");
+        assert_eq!(children[2]["type"], "text");
+        assert_eq!(children[2]["value"], " world");
+    }
+
+    #[test]
+    fn ast_hashtag_multiple() {
+        let result = markdown_to_ast("#tag1 #tag2");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "hashtag");
+        assert_eq!(children[0]["value"], "tag1");
+        assert_eq!(children[1]["type"], "text");
+        assert_eq!(children[1]["value"], " ");
+        assert_eq!(children[2]["type"], "hashtag");
+        assert_eq!(children[2]["value"], "tag2");
+    }
+
+    #[test]
+    fn ast_hashtag_not_in_middle_of_word() {
+        let result = markdown_to_ast("foo#bar");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "text");
+        assert_eq!(children[0]["value"], "foo#bar");
+    }
+
+    #[test]
+    fn ast_hashtag_terminated_by_punctuation() {
+        let result = markdown_to_ast("#タグ。本文");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "hashtag");
+        assert_eq!(children[0]["value"], "タグ");
+        assert_eq!(children[1]["type"], "text");
+        assert_eq!(children[1]["value"], "。本文");
+    }
+
+    #[test]
+    fn ast_hash_only_not_hashtag() {
+        let result = markdown_to_ast("# ");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        // "# " is a heading, not a hashtag
+        assert_eq!(v["children"][0]["type"], "heading");
     }
 
     #[test]
