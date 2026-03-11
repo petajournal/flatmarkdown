@@ -155,11 +155,11 @@ GitHub スタイルのアラート（例: `> [!NOTE]`）。
 
 #### `softbreak`
 
-ソフト改行（ソース中の改行）。`hardbreaks: true` の設定により `<br>` としてレンダリングされる。
+Flatmarkdownでは、ASTにsoftbreakは出力されず、必ず`linebreak`となる。
 
 #### `linebreak`
 
-ハード改行（末尾の `\` または2つのスペース）。
+ハード改行（末尾の `\` または2つのスペース）。加えて、Flatmarkdownでは、改行コードも必ず`linebreak`となる。
 
 #### `emph`
 

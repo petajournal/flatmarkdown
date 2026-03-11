@@ -143,7 +143,8 @@ fn serialize_node_value(value: &NodeValue) -> (String, Value) {
         NodeValue::TaskItem(ti) => ("task_item".into(), json!({
             "symbol": ti.symbol.map(|c| c.to_string()),
         })),
-        NodeValue::SoftBreak => ("softbreak".into(), Value::Null),
+        // flatmarkdown always treats soft breaks as hard breaks (linebreak),
+        NodeValue::SoftBreak => ("linebreak".into(), Value::Null),
         NodeValue::LineBreak => ("linebreak".into(), Value::Null),
         NodeValue::Code(c) => ("code".into(), json!({
             "literal": c.literal,
@@ -316,5 +317,17 @@ mod tests {
         let result = markdown_to_html("[[page1]] and [[page2]]");
         assert!(result.contains("<a href=\"page1\" data-wikilink=\"true\">page1</a>"));
         assert!(result.contains("<a href=\"page2\" data-wikilink=\"true\">page2</a>"));
+    }
+
+    #[test]
+    fn ast_newline_produces_linebreak() {
+        let result = markdown_to_ast("line1\nline2");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "text");
+        assert_eq!(children[0]["value"], "line1");
+        assert_eq!(children[1]["type"], "linebreak");
+        assert_eq!(children[2]["type"], "text");
+        assert_eq!(children[2]["value"], "line2");
     }
 }

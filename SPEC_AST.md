@@ -145,11 +145,11 @@ Literal text content.
 
 #### `softbreak`
 
-A soft line break (newline in source). With `hardbreaks: true`, rendered as `<br>`.
+In Flatmarkdown, softbreak is not emitted in the AST; it is always treated as a linebreak.
 
 #### `linebreak`
 
-A hard line break (trailing `\` or two spaces).
+A hard line break (trailing \ or two spaces). In addition, in Flatmarkdown, newline characters are also always treated as a linebreak.
 
 #### `emph`
 
