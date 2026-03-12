@@ -9,5 +9,5 @@ keywords = ["markdown", "html", "ast", "comrak"]
 categories = ["text-processing", "parsing"]
 
 [dependencies]
-comrak = { version = "0.50", features = ["shortcodes"] }
+comrak = { version = "0.51", features = ["shortcodes"] }
 serde_json = "1"

@@ -306,6 +306,7 @@ fn serialize_node_value(value: &NodeValue) -> (String, Value) {
             "title": a.title,
         })),
         NodeValue::Subtext => ("subtext".into(), Value::Null),
+        NodeValue::Insert => ("insert".into(), Value::Null),
     }
 }
 
