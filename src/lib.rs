@@ -48,11 +48,20 @@ pub fn markdown_to_html(input: &str) -> String {
     comrak_markdown_to_html(input, &options())
 }
 
+/// Placeholder for escaped `\#` – Unicode Private Use Area character
+/// unlikely to appear in normal text.
+const ESCAPED_HASH_PLACEHOLDER: char = '\u{FDD0}';
+
 pub fn markdown_to_ast(input: &str) -> String {
+    // Replace `\#` with a placeholder before comrak parsing so that
+    // the escaped `#` is not recognised as a hashtag later.
+    let preprocessed = input.replace("\\#", &ESCAPED_HASH_PLACEHOLDER.to_string());
     let arena = Arena::new();
-    let root = parse_document(&arena, input, &options());
+    let root = parse_document(&arena, &preprocessed, &options());
     let mut ast = node_to_ast(root);
     process_hashtags(&mut ast);
+    // Restore the placeholder back to `#` in the final AST.
+    restore_escaped_hashes(&mut ast);
     serde_json::to_string(&ast).unwrap()
 }
 
@@ -111,6 +120,22 @@ fn split_hashtags(text: &str) -> Vec<Value> {
     }
 
     result
+}
+
+/// Restores the escaped-hash placeholder back to `#` in all text node values.
+fn restore_escaped_hashes(node: &mut Value) {
+    if let Some(val) = node.get_mut("value") {
+        if let Some(s) = val.as_str() {
+            if s.contains(ESCAPED_HASH_PLACEHOLDER) {
+                *val = Value::String(s.replace(ESCAPED_HASH_PLACEHOLDER, "#"));
+            }
+        }
+    }
+    if let Some(Value::Array(children)) = node.get_mut("children") {
+        for child in children.iter_mut() {
+            restore_escaped_hashes(child);
+        }
+    }
 }
 
 /// Post-processes the AST to extract hashtags from text nodes.
@@ -521,6 +546,44 @@ mod tests {
     }
 
     #[test]
+    fn ast_escaped_hashtag_basic() {
+        let result = markdown_to_ast(r"\#tag");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "text");
+        assert_eq!(children[0]["value"], "#tag");
+    }
+
+    #[test]
+    fn ast_escaped_hashtag_in_text() {
+        let result = markdown_to_ast(r"hello \#tag world");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "text");
+        assert_eq!(children[0]["value"], "hello #tag world");
+    }
+
+    #[test]
+    fn ast_escaped_hashtag_with_real_hashtag() {
+        let result = markdown_to_ast(r"\#notag #real");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "text");
+        assert_eq!(children[0]["value"], "#notag ");
+        assert_eq!(children[1]["type"], "hashtag");
+        assert_eq!(children[1]["value"], "real");
+    }
+
+    #[test]
+    fn ast_escaped_hashtag_multiple() {
+        let result = markdown_to_ast(r"\#a \#b");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["type"], "text");
+        assert_eq!(children[0]["value"], "#a #b");
+    }
+
+#[test]
     fn ast_newline_produces_linebreak() {
         let result = markdown_to_ast("line1\nline2");
         let v: Value = serde_json::from_str(&result).unwrap();
