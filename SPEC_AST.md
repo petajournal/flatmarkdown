@@ -1,6 +1,6 @@
-# flatmarkdown AST Specification
+# flatmarkdown body AST Specification
 
-`markdown_to_ast(input)` parses Markdown into a JSON AST string.
+`body_to_ast(input)` parses the body of a flatmarkdown item into a JSON AST string.
 
 ## Node Structure
 
@@ -139,7 +139,7 @@ Literal text content.
 
 #### `linebreak`
 
-A hard line break (trailing \ or two spaces). In addition, in Flatmarkdown, newline characters are also always treated as a linebreak.
+A hard line break. In Flatmarkdown, every newline character is always treated as a linebreak. GFM hard line break syntax (trailing two or more spaces, or a backslash) is ignored.
 
 #### `emph`
 
@@ -190,22 +190,32 @@ Inline code span.
 
 Children are the link text (inline nodes).
 
-#### `image`
+#### `embed`
+
+All Markdown image syntax (`![alt](url)`) is interpreted as a media embed (image, video, audio, PDF, etc.).
 
 | Attribute | Type   | Description  |
 |-----------|--------|--------------|
-| `url`     | string | Image source |
-| `title`   | string | Image title  |
+| `url`     | string | Media source URL (without the `#` fragment) |
+| `title`   | string | Title |
+| `props`   | object | Key-value properties parsed from the URL fragment (`#key=value&flag`). Boolean flags without `=` are represented as `true`. Omitted when no properties are present. |
 
 Children are the alt text (inline nodes).
 
 #### `wikilink`
 
-A wikilink (`[[page]]` or `[[url|label]]`). Children are the label (inline nodes); when no label is given, the children contain the URL as a `text` node.
+A wikilink. Children are the label (inline nodes); when no label is given, the children contain the URL as a `text` node.
+
+| Syntax | Description |
+|--------|-------------|
+| `[[page]]` | Link to a page |
+| `[[page\|label]]` | Link to a page with a display label |
+| `[[page#id]]` | Link to a block within a page (`url` contains the `#id` fragment) |
+| `[[page#id\|label]]` | Link to a block with a display label |
 
 | Attribute | Type   | Description     |
 |-----------|--------|-----------------|
-| `url`     | string | Link destination |
+| `url`     | string | Link destination. May contain a `#id` fragment for block links. |
 
 #### `footnote_reference`
 
@@ -264,7 +274,9 @@ An escaped HTML tag (from tagfilter).
 
 A hashtag (e.g. `#tag`, `#diary`). Extracted from `text` nodes in AST post-processing.
 
-`#` must appear at the start of a string or immediately after whitespace (a `#` in the middle of a word is not recognized as a tag). The tag name consists of Unicode alphanumerics, `_`, `-`, and `/`; any other character (punctuation, whitespace, end of string, etc.) terminates the tag. `/` is not allowed as the first or last character of the tag name.
+`#` must appear at the start of a string or immediately after a half-width space (U+0020). A `#` preceded by any other character is not recognized as a tag. The tag name consists of Unicode alphanumerics, `_`, `-`, and `/`; any other character (punctuation, whitespace, end of string, etc.) terminates the tag. `/` is not allowed as the first or last character of the tag name.
+
+`\#` is treated as a literal `#` and is never recognized as a hashtag.
 
 | Attribute | Type   | Description                                    |
 |-----------|--------|------------------------------------------------|

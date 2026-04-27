@@ -51,7 +51,7 @@ pub fn markdown_to_html(input: &str) -> String {
 /// unlikely to appear in normal text.
 const ESCAPED_HASH_PLACEHOLDER: char = '\u{FDD0}';
 
-pub fn markdown_to_ast(input: &str) -> String {
+pub fn body_to_ast(input: &str) -> String {
     // Replace `\#` with a placeholder before comrak parsing so that
     // the escaped `#` is not recognised as a hashtag later.
     let preprocessed = input.replace("\\#", &ESCAPED_HASH_PLACEHOLDER.to_string());
@@ -81,7 +81,7 @@ fn split_hashtags(text: &str) -> Vec<Value> {
     let mut buf_start = 0;
 
     while i < chars.len() {
-        if chars[i] == '#' && (i == 0 || chars[i - 1].is_whitespace()) {
+        if chars[i] == '#' && (i == 0 || chars[i - 1] == ' ') {
             // Collect hashtag name
             let tag_start = i + 1;
             let mut tag_end = tag_start;
@@ -189,6 +189,24 @@ fn node_to_ast<'a>(node: &'a comrak::arena_tree::Node<'a, std::cell::RefCell<com
     Value::Object(obj)
 }
 
+fn parse_embed_url(url: &str) -> (String, serde_json::Map<String, Value>) {
+    match url.find('#') {
+        Some(pos) => {
+            let base = url[..pos].to_string();
+            let props = url[pos + 1..]
+                .split('&')
+                .filter(|s| !s.is_empty())
+                .map(|kv| match kv.find('=') {
+                    Some(eq) => (kv[..eq].to_string(), Value::String(kv[eq + 1..].to_string())),
+                    None => (kv.to_string(), Value::Bool(true)),
+                })
+                .collect();
+            (base, props)
+        }
+        None => (url.to_string(), serde_json::Map::new()),
+    }
+}
+
 fn serialize_node_value(value: &NodeValue) -> (String, Value) {
     match value {
         NodeValue::Document => ("document".into(), Value::Null),
@@ -271,10 +289,14 @@ fn serialize_node_value(value: &NodeValue) -> (String, Value) {
             "url": link.url,
             "title": link.title,
         })),
-        NodeValue::Image(link) => ("image".into(), json!({
-            "url": link.url,
-            "title": link.title,
-        })),
+        NodeValue::Image(link) => {
+            let (url, props) = parse_embed_url(link.url.as_str());
+            let mut attrs = json!({ "url": url, "title": link.title });
+            if !props.is_empty() {
+                attrs.as_object_mut().unwrap().insert("props".into(), Value::Object(props));
+            }
+            ("embed".into(), attrs)
+        }
         NodeValue::FootnoteReference(fr) => ("footnote_reference".into(), json!({
             "name": fr.name,
             "ref_num": fr.ref_num,
@@ -342,7 +364,7 @@ mod tests {
 
     #[test]
     fn ast_basic() {
-        let result = markdown_to_ast("Hello");
+        let result = body_to_ast("Hello");
         let v: Value = serde_json::from_str(&result).unwrap();
         assert_eq!(v["type"], "document");
         assert_eq!(v["children"][0]["type"], "paragraph");
@@ -352,7 +374,7 @@ mod tests {
 
     #[test]
     fn ast_heading() {
-        let result = markdown_to_ast("## Sub");
+        let result = body_to_ast("## Sub");
         let v: Value = serde_json::from_str(&result).unwrap();
         let heading = &v["children"][0];
         assert_eq!(heading["type"], "heading");
@@ -362,7 +384,7 @@ mod tests {
 
     #[test]
     fn ast_link() {
-        let result = markdown_to_ast("[text](https://example.com)");
+        let result = body_to_ast("[text](https://example.com)");
         let v: Value = serde_json::from_str(&result).unwrap();
         let link = &v["children"][0]["children"][0];
         assert_eq!(link["type"], "link");
@@ -372,7 +394,7 @@ mod tests {
 
     #[test]
     fn ast_code_block() {
-        let result = markdown_to_ast("```rust\nfn main() {}\n```");
+        let result = body_to_ast("```rust\nfn main() {}\n```");
         let v: Value = serde_json::from_str(&result).unwrap();
         let cb = &v["children"][0];
         assert_eq!(cb["type"], "code_block");
@@ -402,7 +424,7 @@ mod tests {
 
     #[test]
     fn wikilink_ast_basic() {
-        let result = markdown_to_ast("[[page]]");
+        let result = body_to_ast("[[page]]");
         let v: Value = serde_json::from_str(&result).unwrap();
         let wl = &v["children"][0]["children"][0];
         assert_eq!(wl["type"], "wikilink");
@@ -413,7 +435,7 @@ mod tests {
 
     #[test]
     fn wikilink_ast_with_label() {
-        let result = markdown_to_ast("[[url|link label]]");
+        let result = body_to_ast("[[url|link label]]");
         let v: Value = serde_json::from_str(&result).unwrap();
         let wl = &v["children"][0]["children"][0];
         assert_eq!(wl["type"], "wikilink");
@@ -430,7 +452,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_basic() {
-        let result = markdown_to_ast("#tag");
+        let result = body_to_ast("#tag");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -439,7 +461,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_japanese() {
-        let result = markdown_to_ast("#日記");
+        let result = body_to_ast("#日記");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -448,7 +470,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_with_special_chars() {
-        let result = markdown_to_ast("#my_tag-name/sub");
+        let result = body_to_ast("#my_tag-name/sub");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -457,7 +479,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_in_text() {
-        let result = markdown_to_ast("hello #tag world");
+        let result = body_to_ast("hello #tag world");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -470,7 +492,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_multiple() {
-        let result = markdown_to_ast("#tag1 #tag2");
+        let result = body_to_ast("#tag1 #tag2");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -483,7 +505,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_not_in_middle_of_word() {
-        let result = markdown_to_ast("foo#bar");
+        let result = body_to_ast("foo#bar");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -492,7 +514,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_terminated_by_punctuation() {
-        let result = markdown_to_ast("#タグ。本文");
+        let result = body_to_ast("#タグ。本文");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -504,7 +526,7 @@ mod tests {
     #[test]
     fn ast_hashtag_leading_slash_not_hashtag() {
         // "#/tag" must not be recognized as a hashtag (leading '/' is invalid)
-        let result = markdown_to_ast("#/tag");
+        let result = body_to_ast("#/tag");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -514,7 +536,7 @@ mod tests {
     #[test]
     fn ast_hashtag_trailing_slash_trimmed() {
         // "#tag/" must be recognized as hashtag "tag" (trailing '/' is trimmed)
-        let result = markdown_to_ast("#tag/");
+        let result = body_to_ast("#tag/");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -526,7 +548,7 @@ mod tests {
     #[test]
     fn ast_hashtag_leading_and_trailing_slash_not_hashtag() {
         // "#/tag/" must not be recognized as a hashtag (leading '/' is invalid)
-        let result = markdown_to_ast("#/tag/");
+        let result = body_to_ast("#/tag/");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -535,7 +557,7 @@ mod tests {
 
     #[test]
     fn ast_hash_only_not_hashtag() {
-        let result = markdown_to_ast("# ");
+        let result = body_to_ast("# ");
         let v: Value = serde_json::from_str(&result).unwrap();
         // "# " is a heading, not a hashtag
         assert_eq!(v["children"][0]["type"], "heading");
@@ -543,7 +565,7 @@ mod tests {
 
     #[test]
     fn ast_escaped_hashtag_basic() {
-        let result = markdown_to_ast(r"\#tag");
+        let result = body_to_ast(r"\#tag");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -552,7 +574,7 @@ mod tests {
 
     #[test]
     fn ast_escaped_hashtag_in_text() {
-        let result = markdown_to_ast(r"hello \#tag world");
+        let result = body_to_ast(r"hello \#tag world");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -561,7 +583,7 @@ mod tests {
 
     #[test]
     fn ast_escaped_hashtag_with_real_hashtag() {
-        let result = markdown_to_ast(r"\#notag #real");
+        let result = body_to_ast(r"\#notag #real");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -572,16 +594,60 @@ mod tests {
 
     #[test]
     fn ast_escaped_hashtag_multiple() {
-        let result = markdown_to_ast(r"\#a \#b");
+        let result = body_to_ast(r"\#a \#b");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
         assert_eq!(children[0]["value"], "#a #b");
     }
 
+    #[test]
+    fn ast_embed_no_props() {
+        let result = body_to_ast("![alt text](img.png)");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let embed = &v["children"][0]["children"][0];
+        assert_eq!(embed["type"], "embed");
+        assert_eq!(embed["url"], "img.png");
+        assert_eq!(embed["props"], Value::Null);
+        assert_eq!(embed["children"][0]["value"], "alt text");
+    }
+
+    #[test]
+    fn ast_embed_with_kv_props() {
+        let result = body_to_ast("![alt](img.png#w=300&h=240)");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let embed = &v["children"][0]["children"][0];
+        assert_eq!(embed["type"], "embed");
+        assert_eq!(embed["url"], "img.png");
+        assert_eq!(embed["props"]["w"], "300");
+        assert_eq!(embed["props"]["h"], "240");
+    }
+
+    #[test]
+    fn ast_embed_with_boolean_flag() {
+        let result = body_to_ast("![alt](video.mp4#w=640&autoplay)");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let embed = &v["children"][0]["children"][0];
+        assert_eq!(embed["type"], "embed");
+        assert_eq!(embed["url"], "video.mp4");
+        assert_eq!(embed["props"]["w"], "640");
+        assert_eq!(embed["props"]["autoplay"], true);
+    }
+
+    #[test]
+    fn ast_embed_url_with_query_and_fragment() {
+        let result = body_to_ast("![alt](https://youtube.com/watch?v=xxx#w=640&start=30)");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let embed = &v["children"][0]["children"][0];
+        assert_eq!(embed["type"], "embed");
+        assert_eq!(embed["url"], "https://youtube.com/watch?v=xxx");
+        assert_eq!(embed["props"]["w"], "640");
+        assert_eq!(embed["props"]["start"], "30");
+    }
+
 #[test]
     fn ast_newline_produces_linebreak() {
-        let result = markdown_to_ast("line1\nline2");
+        let result = body_to_ast("line1\nline2");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
