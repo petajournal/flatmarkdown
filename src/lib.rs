@@ -28,7 +28,6 @@ fn options() -> Options<'static> {
     options.extension.superscript = true;
     options.extension.footnotes = true;
     options.extension.inline_footnotes = true;
-    options.extension.multiline_block_quotes = true;
     options.extension.math_code = true;
     options.extension.underline = true;
     options.extension.subscript = true;
@@ -220,7 +219,6 @@ fn serialize_node_value(value: &NodeValue) -> (String, Value) {
         NodeValue::DescriptionTerm => ("description_term".into(), Value::Null),
         NodeValue::DescriptionDetails => ("description_details".into(), Value::Null),
         NodeValue::CodeBlock(cb) => ("code_block".into(), json!({
-            "fenced": cb.fenced,
             "info": cb.info,
             "literal": cb.literal,
         })),
@@ -232,7 +230,6 @@ fn serialize_node_value(value: &NodeValue) -> (String, Value) {
         NodeValue::Paragraph => ("paragraph".into(), Value::Null),
         NodeValue::Heading(h) => ("heading".into(), json!({
             "level": h.level,
-            "setext": h.setext,
         })),
         NodeValue::ThematicBreak => ("thematic_break".into(), Value::Null),
         NodeValue::FootnoteDefinition(fd) => ("footnote_definition".into(), json!({
@@ -288,11 +285,8 @@ fn serialize_node_value(value: &NodeValue) -> (String, Value) {
             "emoji": sc.emoji,
         })),
         NodeValue::Math(m) => ("math".into(), json!({
-            "dollar_math": m.dollar_math,
-            "display_math": m.display_math,
             "literal": m.literal,
         })),
-        NodeValue::MultilineBlockQuote(_) => ("multiline_block_quote".into(), Value::Null),
         NodeValue::Escaped => ("escaped".into(), Value::Null),
         NodeValue::WikiLink(wl) => ("wikilink".into(), json!({
             "url": wl.url,
@@ -307,6 +301,7 @@ fn serialize_node_value(value: &NodeValue) -> (String, Value) {
         })),
         NodeValue::Subtext => ("subtext".into(), Value::Null),
         NodeValue::Insert => ("insert".into(), Value::Null),
+        NodeValue::MultilineBlockQuote(_) => unreachable!("multiline_block_quotes extension is disabled"),
     }
 }
 

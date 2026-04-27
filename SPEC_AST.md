@@ -31,30 +31,24 @@ A paragraph block. Children are inline nodes.
 
 #### `heading`
 
-| Attribute | Type    | Description                    |
-|-----------|---------|--------------------------------|
-| `level`   | integer | Heading level, 1–6             |
-| `setext`  | boolean | `true` if setext-style heading |
+| Attribute | Type    | Description        |
+|-----------|---------|--------------------|
+| `level`   | integer | Heading level, 1–6 |
 
 #### `code_block`
 
-A fenced or indented code block. Has no children; content is in `literal`.
+A fenced code block. Has no children; content is in `literal`. Flatmarkdown does not support indented code blocks.
 
-| Attribute | Type    | Description                                    |
-|-----------|---------|------------------------------------------------|
-| `fenced`  | boolean | `true` if fenced (`` ``` `` or `~~~`)          |
+| Attribute | Type    | Description                                     |
+|-----------|---------|-------------------------------------------------|
 | `info`    | string  | Info string after opening fence (e.g. `"rust"`) |
-| `literal` | string  | The code content                               |
+| `literal` | string  | The code content                                |
 
 Note: when no info string is specified, `info` defaults to `"text"` (configured via `default_info_string`).
 
 #### `block_quote`
 
 A `>` blockquote. Children are block nodes.
-
-#### `multiline_block_quote`
-
-A `>>>` multiline blockquote.
 
 #### `list`
 
@@ -143,10 +137,6 @@ Literal text content.
 |-----------|--------|-------------|
 | `value`   | string | Text content |
 
-#### `softbreak`
-
-In Flatmarkdown, softbreak is not emitted in the AST; it is always treated as a linebreak.
-
 #### `linebreak`
 
 A hard line break (trailing \ or two spaces). In addition, in Flatmarkdown, newline characters are also always treated as a linebreak.
@@ -209,6 +199,14 @@ Children are the link text (inline nodes).
 
 Children are the alt text (inline nodes).
 
+#### `wikilink`
+
+A wikilink (`[[page]]` or `[[url|label]]`). Children are the label (inline nodes); when no label is given, the children contain the URL as a `text` node.
+
+| Attribute | Type   | Description     |
+|-----------|--------|-----------------|
+| `url`     | string | Link destination |
+
 #### `footnote_reference`
 
 | Attribute | Type    | Description                           |
@@ -228,13 +226,11 @@ Emoji shortcode (e.g. `:rabbit:` → 🐰).
 
 #### `math`
 
-Code-style math (`` ```math ``). `math_dollars` is disabled, so `dollar_math` is always `false`.
+Code-style math (`` ```math ``). `math_dollars` is disabled.
 
-| Attribute      | Type    | Description                                     |
-|----------------|---------|--------------------------------------------------|
-| `dollar_math`  | boolean | Always `false` (`math_dollars` is disabled)      |
-| `display_math` | boolean | Always `false` for code-style math               |
-| `literal`      | string  | Math content                                     |
+| Attribute | Type   | Description  |
+|-----------|--------|--------------|
+| `literal` | string | Math content |
 
 #### `html_inline`
 
