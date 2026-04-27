@@ -1,5 +1,7 @@
 # flatmarkdown body AST 仕様書
 
+基本仕様は、flatmarkdown仕様書（https://github.com/petajournal/flatmarkdown-spec/）に基づく。
+
 `body_to_ast(input)` は Flat Markdown の項目の本文（body）を解析し、JSON 形式の AST 文字列を返す。
 
 ## ノード構造

@@ -1,5 +1,7 @@
 # flatmarkdown body AST Specification
 
+The basic specification is based on the flatmarkdown specification: https://github.com/petajournal/flatmarkdown-spec/
+
 `body_to_ast(input)` parses the body of a flatmarkdown item into a JSON AST string.
 
 ## Node Structure
