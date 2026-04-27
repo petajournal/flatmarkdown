@@ -4,6 +4,14 @@ The basic specification is based on the flatmarkdown specification: https://gith
 
 `body_to_ast(input)` parses the body of a flatmarkdown item into a JSON AST string.
 
+## Preprocessing
+
+Before parsing, `body_to_ast` applies the following transformation to the input:
+
+**Whitespace-only line normalization**: Any line outside a code fence that consists entirely of Unicode whitespace characters (including empty lines, space-only lines, full-width-space-only lines, etc.) is replaced with `<br />`. This converts all such lines into explicit hard-break markers before the Markdown parser sees them. (See the Flat Markdown spec, section "Blank Line Handling".)
+
+**Markdown link → wikilink conversion**: After parsing, `link` nodes whose URL matches the pattern `../page_path.md` (or `../page_path.md#id`) are converted to `wikilink` nodes. The URL is transformed by stripping the `../` prefix and the `.md` suffix; a `#id` fragment is preserved. This allows Markdown files serialised from wikilinks to round-trip correctly. Links that do not match the pattern (external URLs, non-`.md` relative paths, etc.) are kept as `link` nodes.
+
 ## Node Structure
 
 Every node is a JSON object with at least a `type` field. Nodes with child elements include a `children` array. Additional attributes are flattened into the same object.
@@ -238,7 +246,7 @@ Emoji shortcode (e.g. `:rabbit:` → 🐰).
 
 #### `math`
 
-Code-style math (`` ```math ``). `math_dollars` is disabled.
+Inline math using code-style syntax: `` $`formula`$ `` (inline) or `` $$`formula`$$ `` (display). Block math via `math_dollars` (`$$`) is disabled.
 
 | Attribute | Type   | Description  |
 |-----------|--------|--------------|
@@ -301,7 +309,6 @@ Output:
     {
       "type": "heading",
       "level": 2,
-      "setext": false,
       "children": [
         { "type": "text", "value": "Hello " },
         {

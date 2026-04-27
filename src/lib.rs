@@ -51,13 +51,98 @@ pub fn markdown_to_html(input: &str) -> String {
 /// unlikely to appear in normal text.
 const ESCAPED_HASH_PLACEHOLDER: char = '\u{FDD0}';
 
+/// Replaces whitespace-only lines outside code fences with `<br />`.
+/// Lines consisting entirely of Unicode White_Space characters (empty, space-only,
+/// full-width-space-only, etc.) are normalised to `<br />` before Markdown parsing.
+/// Blank lines inside code fences are passed through unchanged.
+fn preprocess_body(input: &str) -> String {
+    let mut lines_out: Vec<String> = Vec::new();
+    let mut in_fence = false;
+    let mut fence_char = '`';
+    let mut fence_len: usize = 0;
+
+    for line in input.lines() {
+        if in_fence {
+            let stripped = line.trim_start_matches(|c: char| c == ' ' || c == '\t');
+            let close_len = stripped.chars().take_while(|&c| c == fence_char).count();
+            let after_fence: String = stripped.chars().skip(close_len).collect();
+            if close_len >= fence_len && after_fence.chars().all(|c| c == ' ' || c == '\t') {
+                in_fence = false;
+            }
+            lines_out.push(line.to_string());
+        } else {
+            let stripped = line.trim_start_matches(|c: char| c == ' ' || c == '\t');
+            let chars: Vec<char> = stripped.chars().collect();
+
+            let backtick_count = chars.iter().take_while(|&&c| c == '`').count();
+            let tilde_count = chars.iter().take_while(|&&c| c == '~').count();
+
+            if backtick_count >= 3 && !chars[backtick_count..].contains(&'`') {
+                in_fence = true;
+                fence_char = '`';
+                fence_len = backtick_count;
+                lines_out.push(line.to_string());
+            } else if tilde_count >= 3 {
+                in_fence = true;
+                fence_char = '~';
+                fence_len = tilde_count;
+                lines_out.push(line.to_string());
+            } else if line.chars().all(|c| c.is_whitespace()) {
+                lines_out.push("<br />".to_string());
+            } else {
+                lines_out.push(line.to_string());
+            }
+        }
+    }
+
+    lines_out.join("\n")
+}
+
+/// Converts a Markdown relative link URL (`../page_path.md` or `../page_path.md#id`)
+/// to a Wikilink URL (`page_path` or `page_path#id`).
+/// Returns `None` if the URL does not match the Markdown-serialised wikilink pattern.
+fn markdown_link_to_wikilink_url(url: &str) -> Option<String> {
+    let without_prefix = url.strip_prefix("../")?;
+    let (path_part, fragment) = match without_prefix.find('#') {
+        Some(pos) => (&without_prefix[..pos], &without_prefix[pos..]),
+        None => (without_prefix, ""),
+    };
+    let page_path = path_part.strip_suffix(".md")?;
+    Some(format!("{}{}", page_path, fragment))
+}
+
+/// Walks the AST and converts `link` nodes whose URL matches the Markdown-serialised
+/// wikilink pattern (`../page.md`) into `wikilink` nodes.
+fn convert_markdown_links_to_wikilinks(node: &mut Value) {
+    if node.get("type").and_then(|t| t.as_str()) == Some("link") {
+        if let Some(url) = node.get("url").and_then(|u| u.as_str()) {
+            if let Some(wikilink_url) = markdown_link_to_wikilink_url(url) {
+                if let Some(obj) = node.as_object_mut() {
+                    obj.insert("type".into(), Value::String("wikilink".into()));
+                    obj.insert("url".into(), Value::String(wikilink_url));
+                    obj.remove("title");
+                }
+                return;
+            }
+        }
+    }
+    if let Some(Value::Array(children)) = node.get_mut("children") {
+        for child in children.iter_mut() {
+            convert_markdown_links_to_wikilinks(child);
+        }
+    }
+}
+
 pub fn body_to_ast(input: &str) -> String {
+    // Preprocess: replace whitespace-only lines outside code fences with <br />
+    let preprocessed = preprocess_body(input);
     // Replace `\#` with a placeholder before comrak parsing so that
     // the escaped `#` is not recognised as a hashtag later.
-    let preprocessed = input.replace("\\#", &ESCAPED_HASH_PLACEHOLDER.to_string());
+    let preprocessed = preprocessed.replace("\\#", &ESCAPED_HASH_PLACEHOLDER.to_string());
     let arena = Arena::new();
     let root = parse_document(&arena, &preprocessed, &options());
     let mut ast = node_to_ast(root);
+    convert_markdown_links_to_wikilinks(&mut ast);
     process_hashtags(&mut ast);
     // Restore the placeholder back to `#` in the final AST.
     restore_escaped_hashes(&mut ast);
@@ -71,7 +156,7 @@ fn is_hashtag_char(c: char) -> bool {
 }
 
 /// Splits a text string into a sequence of `text` and `hashtag` nodes.
-/// A hashtag starts with `#` at the beginning of the string or after whitespace,
+/// A hashtag starts with `#` at the beginning of the string or after a half-width space (U+0020),
 /// and ends when a non-hashtag character is encountered.
 /// `/` is not allowed as the first or last character of the tag name.
 fn split_hashtags(text: &str) -> Vec<Value> {
@@ -655,5 +740,279 @@ mod tests {
         assert_eq!(children[1]["type"], "linebreak");
         assert_eq!(children[2]["type"], "text");
         assert_eq!(children[2]["value"], "line2");
+    }
+
+    // SSoT: GFM hard line break syntax (trailing 2+ spaces) produces the same
+    // single linebreak as a regular newline — not an additional break.
+    #[test]
+    fn ast_gfm_trailing_spaces_same_as_newline() {
+        let result = body_to_ast("line1  \nline2");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["value"], "line1");
+        assert_eq!(children[1]["type"], "linebreak");
+        assert_eq!(children[2]["value"], "line2");
+    }
+
+    // SSoT: GFM hard line break syntax (trailing backslash) produces the same
+    // single linebreak as a regular newline — not an additional break.
+    #[test]
+    fn ast_gfm_trailing_backslash_same_as_newline() {
+        let result = body_to_ast("line1\\\nline2");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert_eq!(children[0]["value"], "line1");
+        assert_eq!(children[1]["type"], "linebreak");
+        assert_eq!(children[2]["value"], "line2");
+    }
+
+    // SSoT: Extended syntax - highlight (==text==)
+    #[test]
+    fn ast_highlight() {
+        let result = body_to_ast("==highlighted==");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "highlight");
+        assert_eq!(node["children"][0]["value"], "highlighted");
+    }
+
+    // SSoT: Extended syntax - superscript (^text^)
+    #[test]
+    fn ast_superscript() {
+        let result = body_to_ast("^super^");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "superscript");
+        assert_eq!(node["children"][0]["value"], "super");
+    }
+
+    // SSoT: Extended syntax - subscript (~text~)
+    #[test]
+    fn ast_subscript() {
+        let result = body_to_ast("~sub~");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "subscript");
+        assert_eq!(node["children"][0]["value"], "sub");
+    }
+
+    // SSoT: Extended syntax - spoilered_text (||text||)
+    #[test]
+    fn ast_spoilered_text() {
+        let result = body_to_ast("||spoiler||");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "spoilered_text");
+        assert_eq!(node["children"][0]["value"], "spoiler");
+    }
+
+    // SSoT: Extended syntax - underline (__text__ is underline, not strong)
+    #[test]
+    fn ast_underline() {
+        let result = body_to_ast("__underlined__");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "underline");
+        assert_eq!(node["children"][0]["value"], "underlined");
+    }
+
+    // SSoT: Extended syntax - shortcode (:name:)
+    #[test]
+    fn ast_shortcode() {
+        let result = body_to_ast(":rabbit:");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "shortcode");
+        assert_eq!(node["code"], "rabbit");
+        assert!(node["emoji"].is_string());
+    }
+
+    // SSoT: Extended syntax - math ($`formula`$ syntax)
+    #[test]
+    fn ast_math_inline() {
+        let result = body_to_ast("$`x^2`$");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "math");
+        assert_eq!(node["literal"], "x^2");
+    }
+
+    // SSoT: Extended syntax - alert (> [!NOTE])
+    #[test]
+    fn ast_alert_note() {
+        let result = body_to_ast("> [!NOTE]\n> Content");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0];
+        assert_eq!(node["type"], "alert");
+        assert_eq!(node["alert_type"], "note");
+    }
+
+    // SSoT: Extended syntax - footnote (reference + definition)
+    #[test]
+    fn ast_footnote() {
+        let result = body_to_ast("Text[^1].\n\n[^1]: Footnote.");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let para_children = v["children"][0]["children"].as_array().unwrap();
+        let fref = para_children.iter().find(|n| n["type"] == "footnote_reference");
+        assert!(fref.is_some(), "expected footnote_reference in paragraph");
+        assert_eq!(fref.unwrap()["name"], "1");
+        let blocks = v["children"].as_array().unwrap();
+        let fdef = blocks.iter().find(|n| n["type"] == "footnote_definition");
+        assert!(fdef.is_some(), "expected footnote_definition block");
+        assert_eq!(fdef.unwrap()["name"], "1");
+    }
+
+    // SSoT: Task list - checked item has symbol, unchecked has null
+    #[test]
+    fn ast_task_item_checked() {
+        let result = body_to_ast("- [x] done");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let item = &v["children"][0]["children"][0];
+        assert_eq!(item["type"], "task_item");
+        assert_eq!(item["symbol"], "x");
+    }
+
+    #[test]
+    fn ast_task_item_unchecked() {
+        let result = body_to_ast("- [ ] todo");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let item = &v["children"][0]["children"][0];
+        assert_eq!(item["type"], "task_item");
+        assert_eq!(item["symbol"], Value::Null);
+    }
+
+    // SSoT: Wikilink block link [[page#id]]
+    #[test]
+    fn ast_wikilink_block_link() {
+        let result = body_to_ast("[[page#block-id]]");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let wl = &v["children"][0]["children"][0];
+        assert_eq!(wl["type"], "wikilink");
+        assert_eq!(wl["url"], "page#block-id");
+    }
+
+    // SSoT: Wikilink block link with label [[page#id|label]]
+    #[test]
+    fn ast_wikilink_block_link_with_label() {
+        let result = body_to_ast("[[page#block-id|label]]");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let wl = &v["children"][0]["children"][0];
+        assert_eq!(wl["type"], "wikilink");
+        assert_eq!(wl["url"], "page#block-id");
+        assert_eq!(wl["children"][0]["value"], "label");
+    }
+
+    // SSoT: Markdown relative link → wikilink (no label: link text equals page name)
+    #[test]
+    fn ast_md_link_to_wikilink_no_label() {
+        let result = body_to_ast("[pagename](../pagename.md)");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "wikilink");
+        assert_eq!(node["url"], "pagename");
+        assert_eq!(node["children"][0]["value"], "pagename");
+    }
+
+    // SSoT: Markdown relative link → wikilink (with label)
+    #[test]
+    fn ast_md_link_to_wikilink_with_label() {
+        let result = body_to_ast("[display label](../pagename.md)");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "wikilink");
+        assert_eq!(node["url"], "pagename");
+        assert_eq!(node["children"][0]["value"], "display label");
+    }
+
+    // SSoT: Markdown relative link with path → wikilink URL preserves full path
+    #[test]
+    fn ast_md_link_to_wikilink_with_path() {
+        let result = body_to_ast("[label](../journal/2024-01-01.md)");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "wikilink");
+        assert_eq!(node["url"], "journal/2024-01-01");
+        assert_eq!(node["children"][0]["value"], "label");
+    }
+
+    // SSoT: Markdown relative link with fragment → wikilink URL includes #id
+    #[test]
+    fn ast_md_link_to_wikilink_with_fragment() {
+        let result = body_to_ast("[label](../page.md#block-id)");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "wikilink");
+        assert_eq!(node["url"], "page#block-id");
+        assert_eq!(node["children"][0]["value"], "label");
+    }
+
+    // External links must not be converted to wikilinks
+    #[test]
+    fn ast_external_link_not_converted_to_wikilink() {
+        let result = body_to_ast("[text](https://example.com)");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "link");
+    }
+
+    // Relative links not ending in .md must not be converted to wikilinks
+    #[test]
+    fn ast_non_md_relative_link_not_converted() {
+        let result = body_to_ast("[text](../page.html)");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "link");
+    }
+
+    // SSoT: Whitespace-only line preprocessing — blank line becomes <br />
+    #[test]
+    fn ast_blank_line_becomes_br() {
+        // A blank line within a body is converted to <br />, merging into one paragraph
+        let result = body_to_ast("line1\n\nline2");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        // After preprocessing: "line1\n<br />\nline2" — single paragraph
+        assert_eq!(v["children"].as_array().unwrap().len(), 1);
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert!(
+            children.iter().any(|c| c["type"] == "html_inline" && c["value"] == "<br />"),
+            "expected html_inline <br /> node"
+        );
+    }
+
+    // SSoT: Whitespace-only line preprocessing — spaces-only line becomes <br />
+    #[test]
+    fn ast_spaces_only_line_becomes_br() {
+        let result = body_to_ast("line1\n   \nline2");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        assert_eq!(v["children"].as_array().unwrap().len(), 1);
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert!(
+            children.iter().any(|c| c["type"] == "html_inline" && c["value"] == "<br />"),
+            "expected html_inline <br /> node"
+        );
+    }
+
+    // SSoT: Whitespace-only line preprocessing — full-width space line becomes <br />
+    #[test]
+    fn ast_fullwidth_space_line_becomes_br() {
+        let result = body_to_ast("line1\n\u{3000}\nline2");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        assert_eq!(v["children"].as_array().unwrap().len(), 1);
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert!(
+            children.iter().any(|c| c["type"] == "html_inline" && c["value"] == "<br />"),
+            "expected html_inline <br /> node"
+        );
+    }
+
+    // SSoT: Whitespace-only line preprocessing — blank lines inside code fences are preserved
+    #[test]
+    fn ast_blank_line_in_code_fence_preserved() {
+        let result = body_to_ast("```\ncode\n\nmore code\n```");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let cb = &v["children"][0];
+        assert_eq!(cb["type"], "code_block");
+        let literal = cb["literal"].as_str().unwrap();
+        assert!(literal.contains("\n\n"), "blank line inside fence must be preserved");
     }
 }
