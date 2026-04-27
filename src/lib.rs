@@ -1,5 +1,5 @@
 use comrak::nodes::NodeValue;
-use comrak::{markdown_to_html as comrak_markdown_to_html, parse_document, Arena, Options};
+use comrak::{parse_document, Arena, Options};
 use serde_json::{json, Value};
 
 fn options() -> Options<'static> {
@@ -43,8 +43,328 @@ fn options() -> Options<'static> {
     options
 }
 
-pub fn markdown_to_html(input: &str) -> String {
-    comrak_markdown_to_html(input, &options())
+fn escape_html(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+}
+
+fn render_children(node: &Value) -> String {
+    node.get("children")
+        .and_then(|c| c.as_array())
+        .map(|arr| arr.iter().map(|child| ast_to_html(child)).collect::<String>())
+        .unwrap_or_default()
+}
+
+/// Renders an item's children in tight or non-tight mode.
+/// In tight mode, top-level paragraph children are rendered without `<p>` wrappers.
+fn render_item_content(item: &Value, tight: bool) -> String {
+    item.get("children")
+        .and_then(|c| c.as_array())
+        .map(|children| {
+            children
+                .iter()
+                .map(|child| {
+                    if tight
+                        && child.get("type").and_then(|t| t.as_str()) == Some("paragraph")
+                    {
+                        render_children(child)
+                    } else {
+                        ast_to_html(child)
+                    }
+                })
+                .collect::<String>()
+        })
+        .unwrap_or_default()
+}
+
+fn ast_to_html(node: &Value) -> String {
+    let node_type = node.get("type").and_then(|t| t.as_str()).unwrap_or("");
+
+    match node_type {
+        "document" => render_children(node),
+
+        "paragraph" => format!("<p>{}</p>\n", render_children(node)),
+
+        "heading" => {
+            let level = node.get("level").and_then(|l| l.as_u64()).unwrap_or(1);
+            format!("<h{level}>{}</h{level}>\n", render_children(node))
+        }
+
+        "code_block" => {
+            let info = node.get("info").and_then(|i| i.as_str()).unwrap_or("text");
+            let literal = node.get("literal").and_then(|l| l.as_str()).unwrap_or("");
+            let class = if info.is_empty() || info == "text" {
+                String::new()
+            } else {
+                format!(" class=\"language-{info}\"")
+            };
+            format!("<pre><code{class}>{}</code></pre>\n", escape_html(literal))
+        }
+
+        "block_quote" => format!("<blockquote>\n{}</blockquote>\n", render_children(node)),
+
+        "list" => {
+            let list_type = node
+                .get("list_type")
+                .and_then(|t| t.as_str())
+                .unwrap_or("bullet");
+            let start = node.get("start").and_then(|s| s.as_u64()).unwrap_or(1);
+            let tight = node
+                .get("tight")
+                .and_then(|t| t.as_bool())
+                .unwrap_or(false);
+            let items_html = node
+                .get("children")
+                .and_then(|c| c.as_array())
+                .map(|items| {
+                    items
+                        .iter()
+                        .map(|item| {
+                            let item_type =
+                                item.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                            let content = render_item_content(item, tight);
+                            match item_type {
+                                "task_item" => {
+                                    let checked = item
+                                        .get("symbol")
+                                        .and_then(|s| s.as_str())
+                                        .is_some();
+                                    let checkbox = if checked {
+                                        "<input type=\"checkbox\" checked disabled>"
+                                    } else {
+                                        "<input type=\"checkbox\" disabled>"
+                                    };
+                                    format!("<li>{checkbox}{content}</li>\n")
+                                }
+                                _ => format!("<li>{content}</li>\n"),
+                            }
+                        })
+                        .collect::<String>()
+                })
+                .unwrap_or_default();
+            if list_type == "ordered" {
+                if start == 1 {
+                    format!("<ol>\n{items_html}</ol>\n")
+                } else {
+                    format!("<ol start=\"{start}\">\n{items_html}</ol>\n")
+                }
+            } else {
+                format!("<ul>\n{items_html}</ul>\n")
+            }
+        }
+
+        // Fallback — normally rendered inside the list handler
+        "item" => format!("<li>{}</li>\n", render_children(node)),
+        "task_item" => {
+            let checked = node.get("symbol").and_then(|s| s.as_str()).is_some();
+            let checkbox = if checked {
+                "<input type=\"checkbox\" checked disabled>"
+            } else {
+                "<input type=\"checkbox\" disabled>"
+            };
+            format!("<li>{checkbox}{}</li>\n", render_children(node))
+        }
+
+        "table" => {
+            let mut thead = String::new();
+            let mut tbody = String::new();
+            if let Some(rows) = node.get("children").and_then(|c| c.as_array()) {
+                for row in rows {
+                    let is_header =
+                        row.get("header").and_then(|h| h.as_bool()).unwrap_or(false);
+                    let tag = if is_header { "th" } else { "td" };
+                    let row_html = row
+                        .get("children")
+                        .and_then(|c| c.as_array())
+                        .map(|cells| {
+                            let cells_html: String = cells
+                                .iter()
+                                .map(|cell| {
+                                    format!("<{tag}>{}</{tag}>", render_children(cell))
+                                })
+                                .collect();
+                            format!("<tr>{cells_html}</tr>\n")
+                        })
+                        .unwrap_or_default();
+                    if is_header {
+                        thead.push_str(&row_html);
+                    } else {
+                        tbody.push_str(&row_html);
+                    }
+                }
+            }
+            let mut result = "<table>\n".to_string();
+            if !thead.is_empty() {
+                result.push_str(&format!("<thead>\n{thead}</thead>\n"));
+            }
+            if !tbody.is_empty() {
+                result.push_str(&format!("<tbody>\n{tbody}</tbody>\n"));
+            }
+            result.push_str("</table>\n");
+            result
+        }
+
+        "table_row" | "table_cell" => render_children(node),
+
+        "thematic_break" => "<hr />\n".to_string(),
+
+        "html_block" => node
+            .get("literal")
+            .and_then(|l| l.as_str())
+            .unwrap_or("")
+            .to_string(),
+
+        "footnote_definition" => {
+            let name = node.get("name").and_then(|n| n.as_str()).unwrap_or("");
+            format!(
+                "<div id=\"fn-{name}\" class=\"footnote\">\n{}</div>\n",
+                render_children(node)
+            )
+        }
+
+        "alert" => {
+            let alert_type = node
+                .get("alert_type")
+                .and_then(|t| t.as_str())
+                .unwrap_or("note");
+            let title = node
+                .get("title")
+                .filter(|t| !t.is_null())
+                .and_then(|t| t.as_str())
+                .unwrap_or(match alert_type {
+                    "tip" => "Tip",
+                    "important" => "Important",
+                    "warning" => "Warning",
+                    "caution" => "Caution",
+                    _ => "Note",
+                });
+            format!(
+                "<blockquote class=\"alert alert-{alert_type}\">\n<p class=\"alert-title\">{title}</p>\n{}</blockquote>\n",
+                render_children(node)
+            )
+        }
+
+        "subtext" => format!("<sub>{}</sub>", render_children(node)),
+
+        "text" => {
+            escape_html(node.get("value").and_then(|v| v.as_str()).unwrap_or(""))
+        }
+
+        "linebreak" => "<br />\n".to_string(),
+
+        "emph" => format!("<em>{}</em>", render_children(node)),
+        "strong" => format!("<strong>{}</strong>", render_children(node)),
+        "strikethrough" => format!("<del>{}</del>", render_children(node)),
+        "underline" => format!("<u>{}</u>", render_children(node)),
+        "highlight" => format!("<mark>{}</mark>", render_children(node)),
+        "superscript" => format!("<sup>{}</sup>", render_children(node)),
+        "subscript" => format!("<sub>{}</sub>", render_children(node)),
+        "spoilered_text" => format!("<span class=\"spoiler\">{}</span>", render_children(node)),
+
+        "code" => {
+            let literal = node
+                .get("literal")
+                .and_then(|l| l.as_str())
+                .unwrap_or("");
+            format!("<code>{}</code>", escape_html(literal))
+        }
+
+        "link" => {
+            let url = node.get("url").and_then(|u| u.as_str()).unwrap_or("");
+            let title = node.get("title").and_then(|t| t.as_str()).unwrap_or("");
+            if title.is_empty() {
+                format!(
+                    "<a href=\"{}\">{}</a>",
+                    escape_html(url),
+                    render_children(node)
+                )
+            } else {
+                format!(
+                    "<a href=\"{}\" title=\"{}\">{}</a>",
+                    escape_html(url),
+                    escape_html(title),
+                    render_children(node)
+                )
+            }
+        }
+
+        "embed" => {
+            let url = node.get("url").and_then(|u| u.as_str()).unwrap_or("");
+            let alt = render_children(node);
+            format!("<img src=\"{}\" alt=\"{}\" />", escape_html(url), alt)
+        }
+
+        "wikilink" => {
+            let url = node.get("url").and_then(|u| u.as_str()).unwrap_or("");
+            format!(
+                "<a href=\"{}\" data-wikilink=\"true\">{}</a>",
+                escape_html(url),
+                render_children(node)
+            )
+        }
+
+        "hashtag" => {
+            let value = node.get("value").and_then(|v| v.as_str()).unwrap_or("");
+            format!(
+                "<a href=\"{}\" class=\"hashtag\">#{value}</a>",
+                escape_html(value)
+            )
+        }
+
+        "footnote_reference" => {
+            let name = node.get("name").and_then(|n| n.as_str()).unwrap_or("");
+            let ix = node.get("ix").and_then(|i| i.as_u64()).unwrap_or(0);
+            format!("<sup><a id=\"fnref-{name}\" href=\"#fn-{name}\">{ix}</a></sup>")
+        }
+
+        "shortcode" => node
+            .get("emoji")
+            .and_then(|e| e.as_str())
+            .unwrap_or("")
+            .to_string(),
+
+        "math" => {
+            let literal = node
+                .get("literal")
+                .and_then(|l| l.as_str())
+                .unwrap_or("");
+            format!("<span class=\"math\">{}</span>", escape_html(literal))
+        }
+
+        "html_inline" => node
+            .get("value")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
+
+        "raw" => node
+            .get("value")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
+
+        "escaped" => String::new(),
+
+        "escaped_tag" => {
+            let value = node.get("value").and_then(|v| v.as_str()).unwrap_or("");
+            format!("&lt;{value}&gt;")
+        }
+
+        _ => render_children(node),
+    }
+}
+
+/// Renders a flatmarkdown item body as an HTML string using the given options.
+pub fn body_to_html_with(input: &str, opts: &BodyOptions) -> String {
+    let ast_str = body_to_ast_with(input, opts);
+    let ast: Value = serde_json::from_str(&ast_str).unwrap();
+    ast_to_html(&ast)
+}
+
+pub fn body_to_html(input: &str) -> String {
+    body_to_html_with(input, &BodyOptions::default())
 }
 
 /// Placeholder for escaped `\#` – Unicode Private Use Area character
@@ -111,16 +431,41 @@ fn markdown_link_to_wikilink_url(url: &str) -> Option<String> {
     Some(format!("{}{}", page_path, fragment))
 }
 
+/// Returns `true` if the `link` node represents a serialised tag:
+/// its only child is a text node whose value is `#` + `wikilink_url`.
+fn is_tag_link(link_node: &Value, wikilink_url: &str) -> bool {
+    let expected = format!("#{}", wikilink_url);
+    link_node
+        .get("children")
+        .and_then(|c| c.as_array())
+        .filter(|c| c.len() == 1)
+        .and_then(|c| c.first())
+        .filter(|n| n.get("type").and_then(|t| t.as_str()) == Some("text"))
+        .and_then(|n| n.get("value").and_then(|v| v.as_str()))
+        .map_or(false, |s| s == expected)
+}
+
 /// Walks the AST and converts `link` nodes whose URL matches the Markdown-serialised
-/// wikilink pattern (`../page.md`) into `wikilink` nodes.
+/// wikilink pattern (`../page.md`) into `wikilink` or `hashtag` nodes.
+/// A link of the form `[#tagname](../tagname.md)` becomes a `hashtag` node;
+/// all other matching links become `wikilink` nodes.
 fn convert_markdown_links_to_wikilinks(node: &mut Value) {
     if node.get("type").and_then(|t| t.as_str()) == Some("link") {
         if let Some(url) = node.get("url").and_then(|u| u.as_str()) {
             if let Some(wikilink_url) = markdown_link_to_wikilink_url(url) {
+                let is_tag = is_tag_link(node, &wikilink_url);
                 if let Some(obj) = node.as_object_mut() {
-                    obj.insert("type".into(), Value::String("wikilink".into()));
-                    obj.insert("url".into(), Value::String(wikilink_url));
-                    obj.remove("title");
+                    if is_tag {
+                        obj.insert("type".into(), Value::String("hashtag".into()));
+                        obj.insert("value".into(), Value::String(wikilink_url));
+                        obj.remove("url");
+                        obj.remove("title");
+                        obj.remove("children");
+                    } else {
+                        obj.insert("type".into(), Value::String("wikilink".into()));
+                        obj.insert("url".into(), Value::String(wikilink_url));
+                        obj.remove("title");
+                    }
                 }
                 return;
             }
@@ -133,20 +478,33 @@ fn convert_markdown_links_to_wikilinks(node: &mut Value) {
     }
 }
 
-pub fn body_to_ast(input: &str) -> String {
-    // Preprocess: replace whitespace-only lines outside code fences with <br />
+/// Options for parsing a flatmarkdown item body.
+#[derive(Default)]
+pub struct BodyOptions {
+    /// When `true`, `../page.md` links are converted to `wikilink` nodes,
+    /// `[#tag](../tag.md)` links to `hashtag` nodes, and `#tag` text patterns
+    /// are extracted as `hashtag` nodes.
+    /// When `false` (the default), none of these conversions are applied.
+    pub resolve_links: bool,
+}
+
+/// Parses a flatmarkdown item body into a JSON AST string using the given options.
+pub fn body_to_ast_with(input: &str, opts: &BodyOptions) -> String {
     let preprocessed = preprocess_body(input);
-    // Replace `\#` with a placeholder before comrak parsing so that
-    // the escaped `#` is not recognised as a hashtag later.
     let preprocessed = preprocessed.replace("\\#", &ESCAPED_HASH_PLACEHOLDER.to_string());
     let arena = Arena::new();
     let root = parse_document(&arena, &preprocessed, &options());
     let mut ast = node_to_ast(root);
-    convert_markdown_links_to_wikilinks(&mut ast);
-    process_hashtags(&mut ast);
-    // Restore the placeholder back to `#` in the final AST.
+    if opts.resolve_links {
+        convert_markdown_links_to_wikilinks(&mut ast);
+        process_hashtags(&mut ast);
+    }
     restore_escaped_hashes(&mut ast);
     serde_json::to_string(&ast).unwrap()
+}
+
+pub fn body_to_ast(input: &str) -> String {
+    body_to_ast_with(input, &BodyOptions::default())
 }
 
 /// Returns true if `c` is a valid hashtag character:
@@ -418,32 +776,32 @@ mod tests {
 
     #[test]
     fn basic_paragraph() {
-        let result = markdown_to_html("Hello, world!");
+        let result = body_to_html("Hello, world!");
         assert_eq!(result, "<p>Hello, world!</p>\n");
     }
 
     #[test]
     fn heading() {
-        let result = markdown_to_html("# Title");
+        let result = body_to_html("# Title");
         assert_eq!(result, "<h1>Title</h1>\n");
     }
 
     #[test]
     fn strikethrough() {
-        let result = markdown_to_html("~~deleted~~");
+        let result = body_to_html("~~deleted~~");
         assert_eq!(result, "<p><del>deleted</del></p>\n");
     }
 
     #[test]
     fn tasklist() {
-        let result = markdown_to_html("- [x] done\n- [ ] todo");
+        let result = body_to_html("- [x] done\n- [ ] todo");
         assert!(result.contains("checked"));
         assert!(result.contains("type=\"checkbox\""));
     }
 
     #[test]
     fn hardbreaks() {
-        let result = markdown_to_html("line1\nline2");
+        let result = body_to_html("line1\nline2");
         assert!(result.contains("<br"));
     }
 
@@ -489,19 +847,19 @@ mod tests {
 
     #[test]
     fn wikilink_html_basic() {
-        let result = markdown_to_html("[[page]]");
+        let result = body_to_html("[[page]]");
         assert_eq!(result, "<p><a href=\"page\" data-wikilink=\"true\">page</a></p>\n");
     }
 
     #[test]
     fn wikilink_html_with_label() {
-        let result = markdown_to_html("[[url|link label]]");
+        let result = body_to_html("[[url|link label]]");
         assert_eq!(result, "<p><a href=\"url\" data-wikilink=\"true\">link label</a></p>\n");
     }
 
     #[test]
     fn wikilink_html_inline() {
-        let result = markdown_to_html("See [[page]] for details.");
+        let result = body_to_html("See [[page]] for details.");
         assert!(result.contains("<a href=\"page\" data-wikilink=\"true\">page</a>"));
         assert!(result.contains("See "));
         assert!(result.contains(" for details."));
@@ -530,14 +888,14 @@ mod tests {
 
     #[test]
     fn wikilink_multiple() {
-        let result = markdown_to_html("[[page1]] and [[page2]]");
+        let result = body_to_html("[[page1]] and [[page2]]");
         assert!(result.contains("<a href=\"page1\" data-wikilink=\"true\">page1</a>"));
         assert!(result.contains("<a href=\"page2\" data-wikilink=\"true\">page2</a>"));
     }
 
     #[test]
     fn ast_hashtag_basic() {
-        let result = body_to_ast("#tag");
+        let result = body_to_ast_with("#tag", &BodyOptions { resolve_links: true });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -546,7 +904,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_japanese() {
-        let result = body_to_ast("#日記");
+        let result = body_to_ast_with("#日記", &BodyOptions { resolve_links: true });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -555,7 +913,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_with_special_chars() {
-        let result = body_to_ast("#my_tag-name/sub");
+        let result = body_to_ast_with("#my_tag-name/sub", &BodyOptions { resolve_links: true });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -564,7 +922,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_in_text() {
-        let result = body_to_ast("hello #tag world");
+        let result = body_to_ast_with("hello #tag world", &BodyOptions { resolve_links: true });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -577,7 +935,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_multiple() {
-        let result = body_to_ast("#tag1 #tag2");
+        let result = body_to_ast_with("#tag1 #tag2", &BodyOptions { resolve_links: true });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -599,7 +957,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_terminated_by_punctuation() {
-        let result = body_to_ast("#タグ。本文");
+        let result = body_to_ast_with("#タグ。本文", &BodyOptions { resolve_links: true });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -621,7 +979,7 @@ mod tests {
     #[test]
     fn ast_hashtag_trailing_slash_trimmed() {
         // "#tag/" must be recognized as hashtag "tag" (trailing '/' is trimmed)
-        let result = body_to_ast("#tag/");
+        let result = body_to_ast_with("#tag/", &BodyOptions { resolve_links: true });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -668,7 +1026,7 @@ mod tests {
 
     #[test]
     fn ast_escaped_hashtag_with_real_hashtag() {
-        let result = body_to_ast(r"\#notag #real");
+        let result = body_to_ast_with(r"\#notag #real", &BodyOptions { resolve_links: true });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -905,7 +1263,7 @@ mod tests {
     // SSoT: Markdown relative link → wikilink (no label: link text equals page name)
     #[test]
     fn ast_md_link_to_wikilink_no_label() {
-        let result = body_to_ast("[pagename](../pagename.md)");
+        let result = body_to_ast_with("[pagename](../pagename.md)", &BodyOptions { resolve_links: true });
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -916,7 +1274,7 @@ mod tests {
     // SSoT: Markdown relative link → wikilink (with label)
     #[test]
     fn ast_md_link_to_wikilink_with_label() {
-        let result = body_to_ast("[display label](../pagename.md)");
+        let result = body_to_ast_with("[display label](../pagename.md)", &BodyOptions { resolve_links: true });
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -927,7 +1285,7 @@ mod tests {
     // SSoT: Markdown relative link with path → wikilink URL preserves full path
     #[test]
     fn ast_md_link_to_wikilink_with_path() {
-        let result = body_to_ast("[label](../journal/2024-01-01.md)");
+        let result = body_to_ast_with("[label](../journal/2024-01-01.md)", &BodyOptions { resolve_links: true });
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -938,12 +1296,60 @@ mod tests {
     // SSoT: Markdown relative link with fragment → wikilink URL includes #id
     #[test]
     fn ast_md_link_to_wikilink_with_fragment() {
-        let result = body_to_ast("[label](../page.md#block-id)");
+        let result = body_to_ast_with("[label](../page.md#block-id)", &BodyOptions { resolve_links: true });
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
         assert_eq!(node["url"], "page#block-id");
         assert_eq!(node["children"][0]["value"], "label");
+    }
+
+    // SSoT: Tag Markdown link → hashtag node (resolve_links=true)
+    #[test]
+    fn ast_md_tag_link_to_hashtag() {
+        let result = body_to_ast_with("[#日記](../日記.md)", &BodyOptions { resolve_links: true });
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "hashtag");
+        assert_eq!(node["value"], "日記");
+        assert!(node.get("url").is_none());
+        assert!(node.get("children").is_none());
+    }
+
+    #[test]
+    fn ast_md_tag_link_ascii() {
+        let result = body_to_ast_with("[#mytag](../mytag.md)", &BodyOptions { resolve_links: true });
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "hashtag");
+        assert_eq!(node["value"], "mytag");
+    }
+
+    // resolve_links=false: #tag in text stays as text node
+    #[test]
+    fn ast_no_resolve_hashtag_stays_text() {
+        let result = body_to_ast("#tag");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let children = v["children"][0]["children"].as_array().unwrap();
+        assert!(children.iter().all(|c| c["type"] != "hashtag"));
+    }
+
+    // resolve_links=false: [#tag](../tag.md) stays as link node
+    #[test]
+    fn ast_no_resolve_tag_link_stays_link() {
+        let result = body_to_ast("[#tag](../tag.md)");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "link");
+    }
+
+    // resolve_links=false: [text](../page.md) stays as link node
+    #[test]
+    fn ast_no_resolve_md_link_stays_link() {
+        let result = body_to_ast("[text](../page.md)");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "link");
     }
 
     // External links must not be converted to wikilinks

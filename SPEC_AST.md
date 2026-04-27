@@ -10,7 +10,14 @@ Before parsing, `body_to_ast` applies the following transformation to the input:
 
 **Whitespace-only line normalization**: Any line outside a code fence that consists entirely of Unicode whitespace characters (including empty lines, space-only lines, full-width-space-only lines, etc.) is replaced with `<br />`. This converts all such lines into explicit hard-break markers before the Markdown parser sees them. (See the Flat Markdown spec, section "Blank Line Handling".)
 
-**Markdown link → wikilink conversion**: After parsing, `link` nodes whose URL matches the pattern `../page_path.md` (or `../page_path.md#id`) are converted to `wikilink` nodes. The URL is transformed by stripping the `../` prefix and the `.md` suffix; a `#id` fragment is preserved. This allows Markdown files serialised from wikilinks to round-trip correctly. Links that do not match the pattern (external URLs, non-`.md` relative paths, etc.) are kept as `link` nodes.
+**Markdown link → wikilink / hashtag conversion** *(resolve_links = ON only)*: After parsing, `link` nodes whose URL matches the pattern `../page_path.md` (or `../page_path.md#id`) are converted as follows:
+
+- If the link text is a single text node whose value equals `#page_path` (i.e. `[#tagname](../tagname.md)`), the node becomes a `hashtag` node with `value = tagname`. The `url`, `title`, and `children` fields are removed.
+- Otherwise, the node becomes a `wikilink` node. The `url` is the page path without the `../` prefix and `.md` suffix; a `#id` fragment is preserved. The `title` field is removed; `children` (link text) are kept as the label.
+
+Links that do not match the pattern (external URLs, non-`.md` relative paths, etc.) are kept as `link` nodes.
+
+When *resolve_links = OFF*, this conversion is skipped entirely, as is the `#tag` text-node extraction described below. Use `body_to_ast_opts(input, false)` to disable link resolution.
 
 ## Node Structure
 
