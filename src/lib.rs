@@ -418,11 +418,10 @@ fn preprocess_body(input: &str) -> String {
     lines_out.join("\n")
 }
 
-/// Converts a Markdown relative link URL (`../page_path.md`, `./page_path.md`, or with `#id`)
-/// to a Wikilink URL (`page_path` or `page_path#id`).
-/// Returns `None` if the URL does not match the Markdown-serialised wikilink pattern.
-fn markdown_link_to_wikilink_url(url: &str) -> Option<String> {
-    let without_prefix = url.strip_prefix("../").or_else(|| url.strip_prefix("./"))?;
+/// Strips a matching prefix from `url` and removes the `.md` suffix, returning the wikilink URL.
+/// Returns `None` if no prefix matches or the URL does not end with `.md`.
+fn markdown_link_to_wikilink_url(url: &str, prefixes: &[String]) -> Option<String> {
+    let without_prefix = prefixes.iter().find_map(|p| url.strip_prefix(p.as_str()))?;
     let (path_part, fragment) = match without_prefix.find('#') {
         Some(pos) => (&without_prefix[..pos], &without_prefix[pos..]),
         None => (without_prefix, ""),
@@ -445,14 +444,14 @@ fn is_tag_link(link_node: &Value, wikilink_url: &str) -> bool {
         .map_or(false, |s| s == expected)
 }
 
-/// Walks the AST and converts `link` nodes whose URL matches the Markdown-serialised
-/// wikilink pattern (`../page.md` or `./page.md`) into `wikilink` or `hashtag` nodes.
-/// A link of the form `[#tagname](../tagname.md)` or `[#tagname](./tagname.md)` becomes a `hashtag` node;
+/// Walks the AST and converts `link` nodes whose URL starts with one of `prefixes`
+/// into `wikilink` or `hashtag` nodes. The matching prefix and `.md` suffix are stripped.
+/// A link of the form `[#tagname](<prefix>tagname.md)` becomes a `hashtag` node;
 /// all other matching links become `wikilink` nodes.
-fn convert_markdown_links_to_wikilinks(node: &mut Value) {
+fn convert_markdown_links_to_wikilinks(node: &mut Value, prefixes: &[String]) {
     if node.get("type").and_then(|t| t.as_str()) == Some("link") {
         if let Some(url) = node.get("url").and_then(|u| u.as_str()) {
-            if let Some(wikilink_url) = markdown_link_to_wikilink_url(url) {
+            if let Some(wikilink_url) = markdown_link_to_wikilink_url(url, prefixes) {
                 let is_tag = is_tag_link(node, &wikilink_url);
                 if let Some(obj) = node.as_object_mut() {
                     if is_tag {
@@ -473,19 +472,27 @@ fn convert_markdown_links_to_wikilinks(node: &mut Value) {
     }
     if let Some(Value::Array(children)) = node.get_mut("children") {
         for child in children.iter_mut() {
-            convert_markdown_links_to_wikilinks(child);
+            convert_markdown_links_to_wikilinks(child, prefixes);
         }
     }
+}
+
+/// Controls whether and how relative Markdown links are resolved.
+#[derive(Default)]
+pub enum LinkResolution {
+    /// No conversion — links remain as `link` nodes, `#tag` text remains plain.
+    #[default]
+    Off,
+    /// Convert markdown links to `wikilink` / `hashtag` nodes when the URL starts with
+    /// one of the given prefixes. The matching prefix and `.md` suffix are stripped
+    /// to form the wikilink URL.
+    On { prefixes: Vec<String> },
 }
 
 /// Options for parsing a flatmarkdown item body.
 #[derive(Default)]
 pub struct BodyOptions {
-    /// When `true`, `../page.md` links are converted to `wikilink` nodes,
-    /// `[#tag](../tag.md)` links to `hashtag` nodes, and `#tag` text patterns
-    /// are extracted as `hashtag` nodes.
-    /// When `false` (the default), none of these conversions are applied.
-    pub resolve_links: bool,
+    pub link_resolution: LinkResolution,
 }
 
 /// Parses a flatmarkdown item body into a JSON AST string using the given options.
@@ -495,8 +502,8 @@ pub fn body_to_ast_with(input: &str, opts: &BodyOptions) -> String {
     let arena = Arena::new();
     let root = parse_document(&arena, &preprocessed, &options());
     let mut ast = node_to_ast(root);
-    if opts.resolve_links {
-        convert_markdown_links_to_wikilinks(&mut ast);
+    if let LinkResolution::On { prefixes } = &opts.link_resolution {
+        convert_markdown_links_to_wikilinks(&mut ast, prefixes);
         process_hashtags(&mut ast);
     }
     restore_escaped_hashes(&mut ast);
@@ -895,7 +902,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_basic() {
-        let result = body_to_ast_with("#tag", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("#tag", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -904,7 +911,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_japanese() {
-        let result = body_to_ast_with("#日記", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("#日記", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -913,7 +920,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_with_special_chars() {
-        let result = body_to_ast_with("#my_tag-name/sub", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("#my_tag-name/sub", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -922,7 +929,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_in_text() {
-        let result = body_to_ast_with("hello #tag world", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("hello #tag world", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -935,7 +942,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_multiple() {
-        let result = body_to_ast_with("#tag1 #tag2", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("#tag1 #tag2", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -957,7 +964,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_terminated_by_punctuation() {
-        let result = body_to_ast_with("#タグ。本文", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("#タグ。本文", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -979,7 +986,7 @@ mod tests {
     #[test]
     fn ast_hashtag_trailing_slash_trimmed() {
         // "#tag/" must be recognized as hashtag "tag" (trailing '/' is trimmed)
-        let result = body_to_ast_with("#tag/", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("#tag/", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -1026,7 +1033,7 @@ mod tests {
 
     #[test]
     fn ast_escaped_hashtag_with_real_hashtag() {
-        let result = body_to_ast_with(r"\#notag #real", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with(r"\#notag #real", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -1263,7 +1270,7 @@ mod tests {
     // SSoT: Markdown relative link → wikilink (no label: link text equals page name)
     #[test]
     fn ast_md_link_to_wikilink_no_label() {
-        let result = body_to_ast_with("[pagename](../pagename.md)", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("[pagename](../pagename.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -1274,7 +1281,7 @@ mod tests {
     // SSoT: Markdown relative link → wikilink (with label)
     #[test]
     fn ast_md_link_to_wikilink_with_label() {
-        let result = body_to_ast_with("[display label](../pagename.md)", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("[display label](../pagename.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -1285,7 +1292,7 @@ mod tests {
     // SSoT: Markdown relative link with path → wikilink URL preserves full path
     #[test]
     fn ast_md_link_to_wikilink_with_path() {
-        let result = body_to_ast_with("[label](../journal/2024-01-01.md)", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("[label](../journal/2024-01-01.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -1296,7 +1303,7 @@ mod tests {
     // SSoT: Markdown relative link with fragment → wikilink URL includes #id
     #[test]
     fn ast_md_link_to_wikilink_with_fragment() {
-        let result = body_to_ast_with("[label](../page.md#block-id)", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("[label](../page.md#block-id)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -1307,7 +1314,7 @@ mod tests {
     // SSoT: Markdown relative link with ./ prefix → wikilink
     #[test]
     fn ast_md_link_dotslash_to_wikilink() {
-        let result = body_to_ast_with("[pagename](./pagename.md)", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("[pagename](./pagename.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -1318,7 +1325,7 @@ mod tests {
     // SSoT: Markdown relative link with ./ prefix and path → wikilink URL preserves path
     #[test]
     fn ast_md_link_dotslash_with_path() {
-        let result = body_to_ast_with("[label](./journal/2024-01-01.md)", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("[label](./journal/2024-01-01.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -1329,7 +1336,7 @@ mod tests {
     // SSoT: Markdown relative link with ./ prefix and fragment → wikilink includes #id
     #[test]
     fn ast_md_link_dotslash_with_fragment() {
-        let result = body_to_ast_with("[label](./page.md#block-id)", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("[label](./page.md#block-id)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -1340,7 +1347,7 @@ mod tests {
     // SSoT: Tag Markdown link with ./ prefix → hashtag node
     #[test]
     fn ast_md_tag_link_dotslash_to_hashtag() {
-        let result = body_to_ast_with("[#mytag](./mytag.md)", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("[#mytag](./mytag.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "hashtag");
@@ -1349,10 +1356,10 @@ mod tests {
         assert!(node.get("children").is_none());
     }
 
-    // SSoT: Tag Markdown link → hashtag node (resolve_links=true)
+    // SSoT: Tag Markdown link → hashtag node
     #[test]
     fn ast_md_tag_link_to_hashtag() {
-        let result = body_to_ast_with("[#日記](../日記.md)", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("[#日記](../日記.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "hashtag");
@@ -1363,14 +1370,14 @@ mod tests {
 
     #[test]
     fn ast_md_tag_link_ascii() {
-        let result = body_to_ast_with("[#mytag](../mytag.md)", &BodyOptions { resolve_links: true });
+        let result = body_to_ast_with("[#mytag](../mytag.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "hashtag");
         assert_eq!(node["value"], "mytag");
     }
 
-    // resolve_links=false: #tag in text stays as text node
+    // LinkResolution::Off: #tag in text stays as text node
     #[test]
     fn ast_no_resolve_hashtag_stays_text() {
         let result = body_to_ast("#tag");
@@ -1379,7 +1386,7 @@ mod tests {
         assert!(children.iter().all(|c| c["type"] != "hashtag"));
     }
 
-    // resolve_links=false: [#tag](../tag.md) stays as link node
+    // LinkResolution::Off: [#tag](../tag.md) stays as link node
     #[test]
     fn ast_no_resolve_tag_link_stays_link() {
         let result = body_to_ast("[#tag](../tag.md)");
@@ -1388,10 +1395,22 @@ mod tests {
         assert_eq!(node["type"], "link");
     }
 
-    // resolve_links=false: [text](../page.md) stays as link node
+    // LinkResolution::Off: [text](../page.md) stays as link node
     #[test]
     fn ast_no_resolve_md_link_stays_link() {
         let result = body_to_ast("[text](../page.md)");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "link");
+    }
+
+    // LinkResolution::On with empty prefixes: no links are converted
+    #[test]
+    fn ast_on_empty_prefixes_md_link_stays_link() {
+        let result = body_to_ast_with(
+            "[text](../page.md)",
+            &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec![] } },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "link");
