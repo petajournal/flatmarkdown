@@ -13,8 +13,15 @@ pub struct BodyOptions {
 }
 ```
 
-`resolve_links` (default: `false`) — when `true`, converts `../page.md` links to `wikilink` nodes,
-`[#tag](../tag.md)` links to `hashtag` nodes, and extracts `#tag` text patterns as `hashtag` nodes.
+`resolve_links` (default: `false`) — when `true`, enables link and hashtag resolution:
+
+| Input | AST node | HTML output |
+|---|---|---|
+| `[label](../page.md)`, `[label](./page.md)`, or with `#id` | `wikilink` | `<a href="page" data-wikilink="true">label</a>` |
+| `[#tag](../tag.md)` or `[#tag](./tag.md)` | `hashtag` | `<a href="tag" class="hashtag">#tag</a>` |
+| `#tag` in text | `hashtag` | `<a href="tag" class="hashtag">#tag</a>` |
+
+Relative links are matched when the URL starts with `../` or `./` and ends with `.md`. When `false` (the default), these links remain as `link` nodes and `#tag` text remains as plain text.
 
 ### Functions
 

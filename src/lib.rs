@@ -418,11 +418,11 @@ fn preprocess_body(input: &str) -> String {
     lines_out.join("\n")
 }
 
-/// Converts a Markdown relative link URL (`../page_path.md` or `../page_path.md#id`)
+/// Converts a Markdown relative link URL (`../page_path.md`, `./page_path.md`, or with `#id`)
 /// to a Wikilink URL (`page_path` or `page_path#id`).
 /// Returns `None` if the URL does not match the Markdown-serialised wikilink pattern.
 fn markdown_link_to_wikilink_url(url: &str) -> Option<String> {
-    let without_prefix = url.strip_prefix("../")?;
+    let without_prefix = url.strip_prefix("../").or_else(|| url.strip_prefix("./"))?;
     let (path_part, fragment) = match without_prefix.find('#') {
         Some(pos) => (&without_prefix[..pos], &without_prefix[pos..]),
         None => (without_prefix, ""),
@@ -446,8 +446,8 @@ fn is_tag_link(link_node: &Value, wikilink_url: &str) -> bool {
 }
 
 /// Walks the AST and converts `link` nodes whose URL matches the Markdown-serialised
-/// wikilink pattern (`../page.md`) into `wikilink` or `hashtag` nodes.
-/// A link of the form `[#tagname](../tagname.md)` becomes a `hashtag` node;
+/// wikilink pattern (`../page.md` or `./page.md`) into `wikilink` or `hashtag` nodes.
+/// A link of the form `[#tagname](../tagname.md)` or `[#tagname](./tagname.md)` becomes a `hashtag` node;
 /// all other matching links become `wikilink` nodes.
 fn convert_markdown_links_to_wikilinks(node: &mut Value) {
     if node.get("type").and_then(|t| t.as_str()) == Some("link") {
@@ -1302,6 +1302,51 @@ mod tests {
         assert_eq!(node["type"], "wikilink");
         assert_eq!(node["url"], "page#block-id");
         assert_eq!(node["children"][0]["value"], "label");
+    }
+
+    // SSoT: Markdown relative link with ./ prefix → wikilink
+    #[test]
+    fn ast_md_link_dotslash_to_wikilink() {
+        let result = body_to_ast_with("[pagename](./pagename.md)", &BodyOptions { resolve_links: true });
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "wikilink");
+        assert_eq!(node["url"], "pagename");
+        assert_eq!(node["children"][0]["value"], "pagename");
+    }
+
+    // SSoT: Markdown relative link with ./ prefix and path → wikilink URL preserves path
+    #[test]
+    fn ast_md_link_dotslash_with_path() {
+        let result = body_to_ast_with("[label](./journal/2024-01-01.md)", &BodyOptions { resolve_links: true });
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "wikilink");
+        assert_eq!(node["url"], "journal/2024-01-01");
+        assert_eq!(node["children"][0]["value"], "label");
+    }
+
+    // SSoT: Markdown relative link with ./ prefix and fragment → wikilink includes #id
+    #[test]
+    fn ast_md_link_dotslash_with_fragment() {
+        let result = body_to_ast_with("[label](./page.md#block-id)", &BodyOptions { resolve_links: true });
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "wikilink");
+        assert_eq!(node["url"], "page#block-id");
+        assert_eq!(node["children"][0]["value"], "label");
+    }
+
+    // SSoT: Tag Markdown link with ./ prefix → hashtag node
+    #[test]
+    fn ast_md_tag_link_dotslash_to_hashtag() {
+        let result = body_to_ast_with("[#mytag](./mytag.md)", &BodyOptions { resolve_links: true });
+        let v: Value = serde_json::from_str(&result).unwrap();
+        let node = &v["children"][0]["children"][0];
+        assert_eq!(node["type"], "hashtag");
+        assert_eq!(node["value"], "mytag");
+        assert!(node.get("url").is_none());
+        assert!(node.get("children").is_none());
     }
 
     // SSoT: Tag Markdown link → hashtag node (resolve_links=true)
