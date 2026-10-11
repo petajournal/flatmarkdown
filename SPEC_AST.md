@@ -1,14 +1,51 @@
-# flatmarkdown body AST Specification
+# flatmarkdown AST Specification
 
-The basic specification is based on the flatmarkdown specification: https://github.com/petajournal/flatmarkdown-spec/
+The basic specification is based on the Flat Markdown specification v0.2: https://github.com/petajournal/flatmarkdown-spec/
 
-`body_to_ast(input)` parses the body of a flatmarkdown item into a JSON AST string.
+`page_to_ast(input)` parses a whole Flat Markdown page into a JSON string. `body_to_ast(input)` parses the body of one item into a JSON AST string.
 
-## Preprocessing
+## Page Structure
 
-Before parsing, `body_to_ast` applies the following transformation to the input:
+`page_to_ast(input)` returns the following object:
 
-**Whitespace-only line normalization**: Any line outside a code fence that consists entirely of Unicode whitespace characters (including empty lines, space-only lines, full-width-space-only lines, etc.) is replaced with `<br />`. This converts all such lines into explicit hard-break markers before the Markdown parser sees them. (See the Flat Markdown spec, section "Blank Line Handling".)
+```json
+{
+  "type": "page",
+  "front_matter": "---\nkey: value\n---\n\n",
+  "items": [
+    {
+      "level": 1,
+      "id": "2026-09-26-18-14-47-32W15WT",
+      "properties": { "plan": "2026-09-28" },
+      "body": "- [ ] Task1",
+      "ast": { "type": "document", "children": [ ... ] }
+    }
+  ]
+}
+```
+
+| Field          | Type           | Description |
+|----------------|----------------|-------------|
+| `front_matter` | string \| null | The raw YAML front matter at the top of the page, including the `---` delimiters. `null` when absent. |
+| `items`        | array          | The outline items in source order. |
+
+Each item has:
+
+| Field        | Type           | Description |
+|--------------|----------------|-------------|
+| `level`      | integer        | Indent level. `1` is the shallowest level. The number of `@` characters in the metadata line. `1` when the metadata line is omitted. |
+| `id`         | string \| null | The HMTID from the metadata line. `null` when absent. |
+| `properties` | object         | `key: value` pairs from the metadata line. Values are always strings. Empty when absent. |
+| `body`       | string         | The item's Markdown source. Leading and trailing blank lines are removed. |
+| `ast`        | object         | The result of parsing `body` with `body_to_ast`. |
+
+**Item delimiters**: every block at the shallowest level of the Markdown document is one item. Nested blocks belong to the body of the outer block. Block boundaries are decided by the Markdown parser, not by blank lines.
+
+**Metadata line**: a single-line HTML comment of the form `<!-- @@ ID key1="value1" key2="value2" -->` at the shallowest level is the metadata of the next block. It starts at column 1 with `<!-- @` and ends with `-->`. Blank lines between the metadata line and its block are ignored. A metadata line that is followed only by blank lines (until the next metadata line or the end of the page) is an item with an empty `body`. Comments that do not follow this syntax exactly are ordinary body text.
+
+**Lines without a node**: lines that the Markdown parser consumes without producing a block (link reference definitions, unreferenced footnote definitions) are kept. They are appended to the body of the previous item, because such definitions are normally written after the paragraph that uses them. Lines between a metadata line and its block are prepended to that item's body. Lines at the start of the page are prepended to the first block, or form their own item when a metadata line follows them.
+
+## Body Preprocessing
 
 **Markdown link → wikilink / hashtag conversion** *(LinkResolution::On only)*: After parsing, `link` nodes whose URL starts with one of the configured prefixes and ends with `.md` are converted as follows. The matching prefix and `.md` suffix are stripped to form the page path.
 
@@ -66,6 +103,18 @@ Note: when no info string is specified, `info` defaults to `"text"` (configured 
 #### `block_quote`
 
 A `>` blockquote. Children are block nodes.
+
+#### `multiline_block_quote`
+
+A blockquote fenced by `>>>` lines. Children are block nodes.
+
+#### `front_matter`
+
+YAML front matter. Only produced when parsing a whole page with `page_to_ast`. A body that starts with `---` is a thematic break, not front matter.
+
+| Attribute | Type   | Description |
+|-----------|--------|-------------|
+| `value`   | string | The raw front matter including the `---` delimiters |
 
 #### `list`
 
@@ -154,9 +203,13 @@ Literal text content.
 |-----------|--------|-------------|
 | `value`   | string | Text content |
 
+#### `softbreak`
+
+A soft line break: a plain newline inside a paragraph. Line breaks follow standard GFM.
+
 #### `linebreak`
 
-A hard line break. In Flatmarkdown, every newline character is always treated as a linebreak. GFM hard line break syntax (trailing two or more spaces, or a backslash) is ignored.
+A hard line break: GFM hard line break syntax (trailing two or more spaces, or a backslash before the newline).
 
 #### `emph`
 
