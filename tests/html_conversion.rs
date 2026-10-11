@@ -1,4 +1,4 @@
-use flatmarkdown::{body_to_html, body_to_html_with, BodyOptions, LinkResolution};
+use flatmarkdown::{body_to_html, body_to_html_with, page_to_ast, BodyOptions, LinkResolution};
 
 #[test]
 fn paragraph_with_bold_italic_code() {
@@ -16,7 +16,7 @@ fn handle_empty_lines() {
     let html = body_to_html(input);
     assert_eq!(
         html,
-        "<pre><code class=\"language-rust\">let x = 1;\n\nlet y = 2;\n</code></pre>\n<br />\nAfter the block."
+        "<pre><code class=\"language-rust\">let x = 1;\n\nlet y = 2;\n</code></pre>\n<p>After the block.</p>\n"
     );
 }
 
@@ -29,4 +29,18 @@ fn resolve_links_with_prefix() {
         html,
         "<p>See <a href=\"page\" data-wikilink=\"true\">page</a> and <a href=\"2024-01-01\" data-wikilink=\"true\">journal</a> and <a href=\"../other/page.md\">other</a>.</p>\n"
     );
+}
+
+#[test]
+fn page_items_with_metadata() {
+    let input = "<!-- @@ 2026-09-27-15-00-16-W3N8ASY plan=\"2026-09-28\" -->\n- [ ] Task1\n\nPlain paragraph\n";
+    let v: serde_json::Value = serde_json::from_str(&page_to_ast(input)).unwrap();
+    let items = v["items"].as_array().unwrap();
+    assert_eq!(items.len(), 2);
+    assert_eq!(items[0]["level"], 2);
+    assert_eq!(items[0]["id"], "2026-09-27-15-00-16-W3N8ASY");
+    assert_eq!(items[0]["properties"]["plan"], "2026-09-28");
+    assert_eq!(items[0]["body"], "- [ ] Task1");
+    assert_eq!(items[1]["level"], 1);
+    assert_eq!(items[1]["body"], "Plain paragraph");
 }

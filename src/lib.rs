@@ -2,11 +2,13 @@ use comrak::nodes::NodeValue;
 use comrak::{parse_document, Arena, Options};
 use serde_json::{json, Value};
 
-fn options() -> Options<'static> {
+/// Builds the comrak options shared by body and page parsing.
+/// Front matter is only recognised when parsing a whole page, because a body
+/// that happens to start with `---` must stay a thematic break.
+fn options(front_matter: bool) -> Options<'static> {
     let mut options = Options::default();
 
     // Render options
-    options.render.hardbreaks = true;
     options.render.full_info_string = true;
     options.render.gfm_quirks = true;
     options.render.r#unsafe = true;
@@ -32,13 +34,16 @@ fn options() -> Options<'static> {
     options.extension.underline = true;
     options.extension.subscript = true;
     options.extension.spoiler = true;
-    options.extension.greentext = true;
     options.extension.alerts = true;
     options.extension.cjk_friendly_emphasis = true;
     options.extension.subtext = true;
     options.extension.highlight = true;
     options.extension.shortcodes = true;
     options.extension.wikilinks_title_after_pipe = true;
+    options.extension.multiline_block_quotes = true;
+    if front_matter {
+        options.extension.front_matter_delimiter = Some("---".into());
+    }
 
     options
 }
@@ -103,7 +108,12 @@ fn ast_to_html(node: &Value) -> String {
             format!("<pre><code{class}>{}</code></pre>\n", escape_html(literal))
         }
 
-        "block_quote" => format!("<blockquote>\n{}</blockquote>\n", render_children(node)),
+        "block_quote" | "multiline_block_quote" => {
+            format!("<blockquote>\n{}</blockquote>\n", render_children(node))
+        }
+
+        // Page metadata is not part of the rendered content.
+        "front_matter" => String::new(),
 
         "list" => {
             let list_type = node
@@ -252,6 +262,7 @@ fn ast_to_html(node: &Value) -> String {
             escape_html(node.get("value").and_then(|v| v.as_str()).unwrap_or(""))
         }
 
+        "softbreak" => "\n".to_string(),
         "linebreak" => "<br />\n".to_string(),
 
         "emph" => format!("<em>{}</em>", render_children(node)),
@@ -371,53 +382,6 @@ pub fn body_to_html(input: &str) -> String {
 /// unlikely to appear in normal text.
 const ESCAPED_HASH_PLACEHOLDER: char = '\u{FDD0}';
 
-/// Replaces whitespace-only lines outside code fences with `<br />`.
-/// Lines consisting entirely of Unicode White_Space characters (empty, space-only,
-/// full-width-space-only, etc.) are normalised to `<br />` before Markdown parsing.
-/// Blank lines inside code fences are passed through unchanged.
-fn preprocess_body(input: &str) -> String {
-    let mut lines_out: Vec<String> = Vec::new();
-    let mut in_fence = false;
-    let mut fence_char = '`';
-    let mut fence_len: usize = 0;
-
-    for line in input.lines() {
-        if in_fence {
-            let stripped = line.trim_start_matches(|c: char| c == ' ' || c == '\t');
-            let close_len = stripped.chars().take_while(|&c| c == fence_char).count();
-            let after_fence: String = stripped.chars().skip(close_len).collect();
-            if close_len >= fence_len && after_fence.chars().all(|c| c == ' ' || c == '\t') {
-                in_fence = false;
-            }
-            lines_out.push(line.to_string());
-        } else {
-            let stripped = line.trim_start_matches(|c: char| c == ' ' || c == '\t');
-            let chars: Vec<char> = stripped.chars().collect();
-
-            let backtick_count = chars.iter().take_while(|&&c| c == '`').count();
-            let tilde_count = chars.iter().take_while(|&&c| c == '~').count();
-
-            if backtick_count >= 3 && !chars[backtick_count..].contains(&'`') {
-                in_fence = true;
-                fence_char = '`';
-                fence_len = backtick_count;
-                lines_out.push(line.to_string());
-            } else if tilde_count >= 3 {
-                in_fence = true;
-                fence_char = '~';
-                fence_len = tilde_count;
-                lines_out.push(line.to_string());
-            } else if line.chars().all(|c| c.is_whitespace()) {
-                lines_out.push("<br />".to_string());
-            } else {
-                lines_out.push(line.to_string());
-            }
-        }
-    }
-
-    lines_out.join("\n")
-}
-
 /// Strips a matching prefix from `url` and removes the `.md` suffix, returning the wikilink URL.
 /// Returns `None` if no prefix matches or the URL does not end with `.md`.
 fn markdown_link_to_wikilink_url(url: &str, prefixes: &[String]) -> Option<String> {
@@ -495,23 +459,256 @@ pub struct BodyOptions {
     pub link_resolution: LinkResolution,
 }
 
-/// Parses a flatmarkdown item body into a JSON AST string using the given options.
-pub fn body_to_ast_with(input: &str, opts: &BodyOptions) -> String {
-    let preprocessed = preprocess_body(input);
-    let preprocessed = preprocessed.replace("\\#", &ESCAPED_HASH_PLACEHOLDER.to_string());
+/// Parses a flatmarkdown item body into a JSON AST value using the given options.
+fn body_to_ast_value(input: &str, opts: &BodyOptions) -> Value {
+    // `\#` is replaced before comrak sees it so that the hashtag pass cannot
+    // mistake the escaped `#` for a tag start.
+    let preprocessed = input.replace("\\#", &ESCAPED_HASH_PLACEHOLDER.to_string());
     let arena = Arena::new();
-    let root = parse_document(&arena, &preprocessed, &options());
+    let root = parse_document(&arena, &preprocessed, &options(false));
     let mut ast = node_to_ast(root);
     if let LinkResolution::On { prefixes } = &opts.link_resolution {
         convert_markdown_links_to_wikilinks(&mut ast, prefixes);
         process_hashtags(&mut ast);
     }
     restore_escaped_hashes(&mut ast);
-    serde_json::to_string(&ast).unwrap()
+    ast
+}
+
+/// Parses a flatmarkdown item body into a JSON AST string using the given options.
+pub fn body_to_ast_with(input: &str, opts: &BodyOptions) -> String {
+    serde_json::to_string(&body_to_ast_value(input, opts)).unwrap()
 }
 
 pub fn body_to_ast(input: &str) -> String {
     body_to_ast_with(input, &BodyOptions::default())
+}
+
+/// Item metadata parsed from a `<!-- @@ ID key="value" -->` line.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ItemMetadata {
+    level: usize,
+    id: Option<String>,
+    properties: Vec<(String, String)>,
+}
+
+/// Returns `true` if `s` has the HMTID shape: `YYYY-MM-DD-hh-mm-ss-XXXXXXX`
+/// (27 characters, ASCII digits in the date part and ASCII alphanumerics in the tail).
+fn is_hmtid(s: &str) -> bool {
+    let b = s.as_bytes();
+    if b.len() != 27 {
+        return false;
+    }
+    b.iter().enumerate().all(|(i, &c)| match i {
+        4 | 7 | 10 | 13 | 16 | 19 => c == b'-',
+        0..=18 => c.is_ascii_digit(),
+        _ => c.is_ascii_alphanumeric(),
+    })
+}
+
+/// Parses `key="value"` starting at `chars[pos]`.
+/// Returns the pair and the index just after the closing quote, or `None` if malformed.
+fn parse_property(chars: &[char], pos: usize) -> Option<((String, String), usize)> {
+    let mut i = pos;
+    let mut key = String::new();
+    while i < chars.len() && chars[i] != '=' {
+        if chars[i].is_whitespace() || chars[i] == '"' {
+            return None;
+        }
+        key.push(chars[i]);
+        i += 1;
+    }
+    if key.is_empty() || i + 1 >= chars.len() || chars[i + 1] != '"' {
+        return None;
+    }
+    i += 2;
+    let mut value = String::new();
+    loop {
+        let c = *chars.get(i)?;
+        match c {
+            '"' => break,
+            '\\' => {
+                i += 1;
+                match *chars.get(i)? {
+                    '"' => value.push('"'),
+                    '\\' => value.push('\\'),
+                    _ => return None,
+                }
+            }
+            _ => value.push(c),
+        }
+        i += 1;
+    }
+    if value.contains("-->") {
+        return None;
+    }
+    Some(((key, value), i + 1))
+}
+
+/// Parses a single-line metadata comment `<!-- @@ ID key="value" -->`.
+/// Returns `None` for anything that does not follow the metadata syntax exactly,
+/// because such comments must stay in the body.
+fn parse_metadata_line(line: &str) -> Option<ItemMetadata> {
+    // Trailing whitespace is invisible in an editor, so it does not invalidate the line.
+    let inner = line.trim_end().strip_prefix("<!-- @")?.strip_suffix(" -->")?;
+    let chars: Vec<char> = inner.chars().collect();
+    let extra_ats = chars.iter().take_while(|&&c| c == '@').count();
+    let level = 1 + extra_ats;
+    let mut i = extra_ats;
+    let mut id = None;
+    let mut properties = Vec::new();
+    let mut first = true;
+    while i < chars.len() {
+        if chars[i] != ' ' {
+            return None;
+        }
+        while i < chars.len() && chars[i] == ' ' {
+            i += 1;
+        }
+        if i >= chars.len() {
+            return None;
+        }
+        let token_end = chars[i..]
+            .iter()
+            .position(|&c| c == ' ')
+            .map_or(chars.len(), |p| i + p);
+        let token: String = chars[i..token_end].iter().collect();
+        if first && !token.contains('=') {
+            if !is_hmtid(&token) {
+                return None;
+            }
+            id = Some(token);
+            i = token_end;
+        } else {
+            let (prop, next) = parse_property(&chars, i)?;
+            properties.push(prop);
+            i = next;
+        }
+        first = false;
+    }
+    Some(ItemMetadata { level, id, properties })
+}
+
+/// Returns `true` if the line is empty or contains only whitespace.
+fn is_blank(line: &str) -> bool {
+    line.chars().all(char::is_whitespace)
+}
+
+/// Joins `lines[start..=end]` after trimming blank lines from both ends.
+fn body_text(lines: &[&str], start: usize, end: usize) -> String {
+    let mut s = start;
+    let mut e = end.min(lines.len().saturating_sub(1));
+    while s <= e && is_blank(lines[s]) {
+        s += 1;
+    }
+    while e > s && is_blank(lines[e]) {
+        e -= 1;
+    }
+    if s > e {
+        return String::new();
+    }
+    lines[s..=e].join("\n")
+}
+
+fn item_json(meta: Option<ItemMetadata>, body: String, opts: &BodyOptions) -> Value {
+    let meta = meta.unwrap_or(ItemMetadata { level: 1, id: None, properties: Vec::new() });
+    let properties: serde_json::Map<String, Value> = meta
+        .properties
+        .into_iter()
+        .map(|(k, v)| (k, Value::String(v)))
+        .collect();
+    let ast = body_to_ast_value(&body, opts);
+    json!({
+        "level": meta.level,
+        "id": meta.id,
+        "properties": properties,
+        "body": body,
+        "ast": ast,
+    })
+}
+
+/// An item whose body has not been closed yet while scanning a page.
+struct OpenItem {
+    meta: Option<ItemMetadata>,
+    /// First source line (0-based) of the body.
+    start: usize,
+    /// Whether the item already owns a block. A second block starts a new item.
+    has_block: bool,
+}
+
+/// Parses a whole Flat Markdown page into a JSON string:
+/// `{"type":"page","front_matter":string|null,"items":[{level,id,properties,body,ast}]}`.
+///
+/// Each block at the shallowest level becomes one item. A single-line
+/// `<!-- @@ ID key="value" -->` comment directly above a block is that block's metadata.
+///
+/// An item's body spans from its start (the line after its metadata line, or the
+/// block itself) up to the line before the next item starts. Lines that comrak
+/// consumes without creating a node (link reference definitions, unreferenced
+/// footnote definitions) therefore stay with the item they follow, which is where
+/// the paragraph that uses them normally is.
+pub fn page_to_ast_with(input: &str, opts: &BodyOptions) -> String {
+    let lines: Vec<&str> = input.lines().collect();
+    let arena = Arena::new();
+    let root = parse_document(&arena, input, &options(true));
+
+    let mut front_matter: Option<String> = None;
+    let mut items: Vec<Value> = Vec::new();
+    // The implicit leading item collects lines that precede the first block, so that
+    // nothing before the first block or metadata line is lost.
+    let mut open = OpenItem { meta: None, start: 0, has_block: false };
+
+    let close = |open: OpenItem, end_exclusive: usize, items: &mut Vec<Value>| {
+        let body = if end_exclusive > open.start {
+            body_text(&lines, open.start, end_exclusive - 1)
+        } else {
+            String::new()
+        };
+        // A metadata line alone is an item with an empty body. Anything else
+        // without text is just blank space between items.
+        if open.meta.is_some() || !body.is_empty() {
+            items.push(item_json(open.meta, body, opts));
+        }
+    };
+
+    for node in root.children() {
+        let data = node.data.borrow();
+        let start = data.sourcepos.start.line.saturating_sub(1);
+        let end = data.sourcepos.end.line.saturating_sub(1);
+
+        if let NodeValue::FrontMatter(s) = &data.value {
+            front_matter = Some(s.clone());
+            open.start = end + 1;
+            continue;
+        }
+
+        let meta = match &data.value {
+            NodeValue::HtmlBlock(_) if start == end => parse_metadata_line(lines[start]),
+            _ => None,
+        };
+
+        if let Some(meta) = meta {
+            close(open, start, &mut items);
+            open = OpenItem { meta: Some(meta), start: end + 1, has_block: false };
+        } else if open.has_block {
+            close(open, start, &mut items);
+            open = OpenItem { meta: None, start, has_block: true };
+        } else {
+            open.has_block = true;
+        }
+    }
+    close(open, lines.len(), &mut items);
+
+    let page = json!({
+        "type": "page",
+        "front_matter": front_matter,
+        "items": items,
+    });
+    serde_json::to_string(&page).unwrap()
+}
+
+pub fn page_to_ast(input: &str) -> String {
+    page_to_ast_with(input, &BodyOptions::default())
 }
 
 /// Returns true if `c` is a valid hashtag character:
@@ -721,8 +918,7 @@ fn serialize_node_value(value: &NodeValue) -> (String, Value) {
         NodeValue::TaskItem(ti) => ("task_item".into(), json!({
             "symbol": ti.symbol.map(|c| c.to_string()),
         })),
-        // flatmarkdown always treats soft breaks as hard breaks (linebreak),
-        NodeValue::SoftBreak => ("linebreak".into(), Value::Null),
+        NodeValue::SoftBreak => ("softbreak".into(), Value::Null),
         NodeValue::LineBreak => ("linebreak".into(), Value::Null),
         NodeValue::Code(c) => ("code".into(), json!({
             "literal": c.literal,
@@ -773,7 +969,7 @@ fn serialize_node_value(value: &NodeValue) -> (String, Value) {
         })),
         NodeValue::Subtext => ("subtext".into(), Value::Null),
         NodeValue::Insert => ("insert".into(), Value::Null),
-        NodeValue::MultilineBlockQuote(_) => unreachable!("multiline_block_quotes extension is disabled"),
+        NodeValue::MultilineBlockQuote(_) => ("multiline_block_quote".into(), Value::Null),
     }
 }
 
@@ -806,10 +1002,33 @@ mod tests {
         assert!(result.contains("type=\"checkbox\""));
     }
 
+    // SSoT: a plain newline is a GFM soft break, not a hard break.
     #[test]
-    fn hardbreaks() {
+    fn softbreak_html() {
         let result = body_to_html("line1\nline2");
-        assert!(result.contains("<br"));
+        assert_eq!(result, "<p>line1\nline2</p>\n");
+    }
+
+    // SSoT: GFM hard line break (trailing backslash) renders as <br />.
+    #[test]
+    fn hardbreak_html() {
+        let result = body_to_html("line1\\\nline2");
+        assert_eq!(result, "<p>line1<br />\nline2</p>\n");
+    }
+
+    // SSoT: multiline block quote (>>>) is available.
+    #[test]
+    fn multiline_block_quote_html() {
+        let result = body_to_html(">>>\nq1\n\nq2\n>>>");
+        assert_eq!(result, "<blockquote>\n<p>q1</p>\n<p>q2</p>\n</blockquote>\n");
+    }
+
+    #[test]
+    fn ast_multiline_block_quote() {
+        let result = body_to_ast(">>>\nq1\n\nq2\n>>>");
+        let v: Value = serde_json::from_str(&result).unwrap();
+        assert_eq!(v["children"][0]["type"], "multiline_block_quote");
+        assert_eq!(v["children"][0]["children"].as_array().unwrap().len(), 2);
     }
 
     #[test]
@@ -1095,22 +1314,22 @@ mod tests {
         assert_eq!(embed["props"]["start"], "30");
     }
 
-#[test]
-    fn ast_newline_produces_linebreak() {
+    // SSoT: a plain newline produces a softbreak node (standard GFM).
+    #[test]
+    fn ast_newline_produces_softbreak() {
         let result = body_to_ast("line1\nline2");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
         assert_eq!(children[0]["value"], "line1");
-        assert_eq!(children[1]["type"], "linebreak");
+        assert_eq!(children[1]["type"], "softbreak");
         assert_eq!(children[2]["type"], "text");
         assert_eq!(children[2]["value"], "line2");
     }
 
-    // SSoT: GFM hard line break syntax (trailing 2+ spaces) produces the same
-    // single linebreak as a regular newline — not an additional break.
+    // SSoT: GFM hard line break syntax (trailing 2+ spaces) produces a linebreak.
     #[test]
-    fn ast_gfm_trailing_spaces_same_as_newline() {
+    fn ast_gfm_trailing_spaces_produce_linebreak() {
         let result = body_to_ast("line1  \nline2");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
@@ -1119,10 +1338,9 @@ mod tests {
         assert_eq!(children[2]["value"], "line2");
     }
 
-    // SSoT: GFM hard line break syntax (trailing backslash) produces the same
-    // single linebreak as a regular newline — not an additional break.
+    // SSoT: GFM hard line break syntax (trailing backslash) produces a linebreak.
     #[test]
-    fn ast_gfm_trailing_backslash_same_as_newline() {
+    fn ast_gfm_trailing_backslash_produces_linebreak() {
         let result = body_to_ast("line1\\\nline2");
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
@@ -1434,48 +1652,17 @@ mod tests {
         assert_eq!(node["type"], "link");
     }
 
-    // SSoT: Whitespace-only line preprocessing — blank line becomes <br />
+    // SSoT: blank lines are no longer rewritten; a loose list stays one block.
     #[test]
-    fn ast_blank_line_becomes_br() {
-        // A blank line within a body is converted to <br />, merging into one paragraph
-        let result = body_to_ast("line1\n\nline2");
+    fn ast_blank_line_between_list_items_keeps_one_list() {
+        let result = body_to_ast("- a\n\n- b");
         let v: Value = serde_json::from_str(&result).unwrap();
-        // After preprocessing: "line1\n<br />\nline2" — single paragraph
-        assert_eq!(v["children"].as_array().unwrap().len(), 1);
-        let children = v["children"][0]["children"].as_array().unwrap();
-        assert!(
-            children.iter().any(|c| c["type"] == "html_inline" && c["value"] == "<br />"),
-            "expected html_inline <br /> node"
-        );
+        let blocks = v["children"].as_array().unwrap();
+        assert_eq!(blocks.len(), 1);
+        assert_eq!(blocks[0]["type"], "list");
+        assert_eq!(blocks[0]["tight"], false);
     }
 
-    // SSoT: Whitespace-only line preprocessing — spaces-only line becomes <br />
-    #[test]
-    fn ast_spaces_only_line_becomes_br() {
-        let result = body_to_ast("line1\n   \nline2");
-        let v: Value = serde_json::from_str(&result).unwrap();
-        assert_eq!(v["children"].as_array().unwrap().len(), 1);
-        let children = v["children"][0]["children"].as_array().unwrap();
-        assert!(
-            children.iter().any(|c| c["type"] == "html_inline" && c["value"] == "<br />"),
-            "expected html_inline <br /> node"
-        );
-    }
-
-    // SSoT: Whitespace-only line preprocessing — full-width space line becomes <br />
-    #[test]
-    fn ast_fullwidth_space_line_becomes_br() {
-        let result = body_to_ast("line1\n\u{3000}\nline2");
-        let v: Value = serde_json::from_str(&result).unwrap();
-        assert_eq!(v["children"].as_array().unwrap().len(), 1);
-        let children = v["children"][0]["children"].as_array().unwrap();
-        assert!(
-            children.iter().any(|c| c["type"] == "html_inline" && c["value"] == "<br />"),
-            "expected html_inline <br /> node"
-        );
-    }
-
-    // SSoT: Whitespace-only line preprocessing — blank lines inside code fences are preserved
     #[test]
     fn ast_blank_line_in_code_fence_preserved() {
         let result = body_to_ast("```\ncode\n\nmore code\n```");
@@ -1484,5 +1671,265 @@ mod tests {
         assert_eq!(cb["type"], "code_block");
         let literal = cb["literal"].as_str().unwrap();
         assert!(literal.contains("\n\n"), "blank line inside fence must be preserved");
+    }
+
+    // ---- Metadata line syntax ----
+
+    const ID1: &str = "2026-09-26-18-14-47-32W15WT";
+    const ID2: &str = "2026-09-26-18-15-30-6VZSYB4";
+    const ID3: &str = "2026-09-27-15-00-16-W3N8ASY";
+
+    #[test]
+    fn metadata_level_only() {
+        let m = parse_metadata_line("<!-- @ -->").unwrap();
+        assert_eq!(m, ItemMetadata { level: 1, id: None, properties: vec![] });
+        let m = parse_metadata_line("<!-- @@@ -->").unwrap();
+        assert_eq!(m.level, 3);
+    }
+
+    #[test]
+    fn metadata_with_id() {
+        let m = parse_metadata_line(&format!("<!-- @@ {ID1} -->")).unwrap();
+        assert_eq!(m.level, 2);
+        assert_eq!(m.id.as_deref(), Some(ID1));
+        assert!(m.properties.is_empty());
+    }
+
+    #[test]
+    fn metadata_with_id_and_properties() {
+        let m = parse_metadata_line(&format!(
+            "<!-- @ {ID1} plan=\"2026-09-28\" title=\"a b\" -->"
+        ))
+        .unwrap();
+        assert_eq!(m.id.as_deref(), Some(ID1));
+        assert_eq!(
+            m.properties,
+            vec![
+                ("plan".to_string(), "2026-09-28".to_string()),
+                ("title".to_string(), "a b".to_string()),
+            ]
+        );
+    }
+
+    #[test]
+    fn metadata_properties_without_id() {
+        let m = parse_metadata_line("<!-- @@ collapsed=\"true\" -->").unwrap();
+        assert_eq!(m.level, 2);
+        assert_eq!(m.id, None);
+        assert_eq!(m.properties, vec![("collapsed".to_string(), "true".to_string())]);
+    }
+
+    #[test]
+    fn metadata_value_escapes() {
+        let m = parse_metadata_line(r#"<!-- @ k="say \"hi\" \\ done" -->"#).unwrap();
+        assert_eq!(m.properties[0].1, r#"say "hi" \ done"#);
+    }
+
+    #[test]
+    fn metadata_invalid_lines() {
+        // Not starting with `<!-- @`
+        assert!(parse_metadata_line("<!-- comment -->").is_none());
+        assert!(parse_metadata_line("<!--@ -->").is_none());
+        // Leading whitespace
+        assert!(parse_metadata_line(" <!-- @ -->").is_none());
+        // Invalid ID
+        assert!(parse_metadata_line("<!-- @ not-an-id -->").is_none());
+        // Unquoted value
+        assert!(parse_metadata_line("<!-- @ key=value -->").is_none());
+        // Key containing `"`
+        assert!(parse_metadata_line("<!-- @ k\"ey=\"v\" -->").is_none());
+        // Unterminated value
+        assert!(parse_metadata_line("<!-- @ key=\"v -->").is_none());
+        // ID after a property
+        assert!(parse_metadata_line(&format!("<!-- @ k=\"v\" {ID1} -->")).is_none());
+        // Missing space before `-->`
+        assert!(parse_metadata_line("<!-- @-->").is_none());
+    }
+
+    // ---- Page parsing ----
+
+    fn page(input: &str) -> Value {
+        serde_json::from_str(&page_to_ast(input)).unwrap()
+    }
+
+    #[test]
+    fn page_spec_example() {
+        let input = format!(
+            "<!-- @ {ID1} -->\n\n# Heading 1\n\nParagraph 1\n\n<!-- @@ {ID2} -->\n\n\n<!-- @@ {ID3} plan=\"2026-09-28\" -->\n- [ ] Task1\n"
+        );
+        let v = page(&input);
+        assert_eq!(v["type"], "page");
+        assert_eq!(v["front_matter"], Value::Null);
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 4);
+
+        assert_eq!(items[0]["level"], 1);
+        assert_eq!(items[0]["id"], ID1);
+        assert_eq!(items[0]["body"], "# Heading 1");
+        assert_eq!(items[0]["ast"]["children"][0]["type"], "heading");
+
+        assert_eq!(items[1]["level"], 1);
+        assert_eq!(items[1]["id"], Value::Null);
+        assert_eq!(items[1]["properties"], json!({}));
+        assert_eq!(items[1]["body"], "Paragraph 1");
+
+        assert_eq!(items[2]["level"], 2);
+        assert_eq!(items[2]["id"], ID2);
+        assert_eq!(items[2]["body"], "");
+        assert_eq!(items[2]["ast"]["type"], "document");
+
+        assert_eq!(items[3]["level"], 2);
+        assert_eq!(items[3]["id"], ID3);
+        assert_eq!(items[3]["properties"]["plan"], "2026-09-28");
+        assert_eq!(items[3]["body"], "- [ ] Task1");
+        assert_eq!(items[3]["ast"]["children"][0]["children"][0]["type"], "task_item");
+    }
+
+    #[test]
+    fn page_front_matter_is_not_an_item() {
+        let v = page("---\ntitle: x\n---\n\nHello\n");
+        assert_eq!(v["front_matter"], "---\ntitle: x\n---\n\n");
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0]["body"], "Hello");
+    }
+
+    #[test]
+    fn page_heading_and_paragraph_without_blank_line_are_two_items() {
+        let v = page("# H\nP");
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0]["body"], "# H");
+        assert_eq!(items[1]["body"], "P");
+    }
+
+    #[test]
+    fn page_loose_list_is_one_item() {
+        let v = page("- a\n\n- b\n  - nested\n");
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0]["body"], "- a\n\n- b\n  - nested");
+    }
+
+    #[test]
+    fn page_block_quote_with_paragraphs_is_one_item() {
+        let v = page("> p1\n>\n> p2\n");
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0]["body"], "> p1\n>\n> p2");
+    }
+
+    #[test]
+    fn page_invalid_metadata_stays_in_body() {
+        let v = page("<!-- note -->\n\n<!-- @ bad id -->\n\n<!-- @\nx -->\n");
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 3);
+        assert_eq!(items[0]["body"], "<!-- note -->");
+        assert_eq!(items[1]["body"], "<!-- @ bad id -->");
+        assert_eq!(items[2]["body"], "<!-- @\nx -->");
+        assert!(items.iter().all(|i| i["id"].is_null() && i["level"] == 1));
+    }
+
+    #[test]
+    fn page_metadata_inside_block_is_body() {
+        let v = page("- a\n  <!-- @ -->\n");
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0]["body"], "- a\n  <!-- @ -->");
+    }
+
+    #[test]
+    fn page_trailing_metadata_is_empty_item() {
+        let v = page(&format!("P\n\n<!-- @@ {ID1} -->\n\n"));
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[1]["id"], ID1);
+        assert_eq!(items[1]["body"], "");
+    }
+
+    #[test]
+    fn page_metadata_without_blank_line_before_body() {
+        let v = page(&format!("<!-- @ {ID1} -->\nP1\nP2\n"));
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0]["id"], ID1);
+        assert_eq!(items[0]["body"], "P1\nP2");
+    }
+
+    // Lines that produce no comrak node (reference definitions, unreferenced
+    // footnote definitions) must not be lost. They stay with the item they follow.
+    #[test]
+    fn page_nodeless_lines_follow_previous_block() {
+        let v = page("P\n\n[ref]: /url\n\nQ\n\n[^1]: unreferenced\n");
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0]["body"], "P\n\n[ref]: /url");
+        assert_eq!(items[1]["body"], "Q\n\n[^1]: unreferenced");
+    }
+
+    // A reference definition kept in the same item resolves when the body is parsed alone.
+    #[test]
+    fn page_reference_definition_resolves_within_item() {
+        let v = page("See [site][s].\n\n[s]: https://example.com\n\nNext\n");
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 2);
+        let link = &items[0]["ast"]["children"][0]["children"][1];
+        assert_eq!(link["type"], "link");
+        assert_eq!(link["url"], "https://example.com");
+    }
+
+    #[test]
+    fn page_nodeless_lines_before_metadata_stay_with_previous_item() {
+        let v = page(&format!("P\n\n[ref]: /url\n\n<!-- @ {ID1} -->\nQ\n"));
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0]["body"], "P\n\n[ref]: /url");
+        assert_eq!(items[1]["id"], ID1);
+        assert_eq!(items[1]["body"], "Q");
+    }
+
+    #[test]
+    fn page_nodeless_lines_between_metadata_and_block_belong_to_that_item() {
+        let v = page(&format!("<!-- @ {ID1} -->\n\n[ref]: /url\n\nQ\n"));
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0]["id"], ID1);
+        assert_eq!(items[0]["body"], "[ref]: /url\n\nQ");
+    }
+
+    #[test]
+    fn page_leading_nodeless_lines_join_first_block() {
+        let v = page("[ref]: /url\n\nP\n");
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0]["body"], "[ref]: /url\n\nP");
+    }
+
+    #[test]
+    fn page_leading_nodeless_lines_before_metadata_form_own_item() {
+        let v = page(&format!("[ref]: /url\n\n<!-- @ {ID1} -->\nP\n"));
+        let items = v["items"].as_array().unwrap();
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0]["id"], Value::Null);
+        assert_eq!(items[0]["body"], "[ref]: /url");
+        assert_eq!(items[1]["body"], "P");
+    }
+
+    #[test]
+    fn page_empty_input() {
+        let v = page("");
+        assert_eq!(v["items"].as_array().unwrap().len(), 0);
+        assert_eq!(v["front_matter"], Value::Null);
+    }
+
+    #[test]
+    fn page_applies_link_resolution() {
+        let opts = BodyOptions {
+            link_resolution: LinkResolution::On { prefixes: vec!["../".into()] },
+        };
+        let v: Value = serde_json::from_str(&page_to_ast_with("#tag [p](../p.md)", &opts)).unwrap();
+        let inline = v["items"][0]["ast"]["children"][0]["children"].as_array().unwrap();
+        assert_eq!(inline[0]["type"], "hashtag");
+        assert_eq!(inline[2]["type"], "wikilink");
     }
 }
