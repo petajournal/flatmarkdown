@@ -43,7 +43,7 @@ Each item has:
 
 **Metadata line**: a single-line HTML comment of the form `<!-- @@ ID key1="value1" key2="value2" -->` at the shallowest level is the metadata of the next block. It starts at column 1 with `<!-- @` and ends with `-->`. Blank lines between the metadata line and its block are ignored. A metadata line that is followed only by blank lines (until the next metadata line or the end of the page) is an item with an empty `body`. Comments that do not follow this syntax exactly are ordinary body text.
 
-**Lines without a node**: lines that the Markdown parser consumes without producing a block (link reference definitions, unreferenced footnote definitions) are kept. They are appended to the body of the previous item, because such definitions are normally written after the paragraph that uses them. Lines between a metadata line and its block are prepended to that item's body. Lines at the start of the page are prepended to the first block, or form their own item when a metadata line follows them.
+**Lines without a node**: lines that the Markdown parser consumes without producing a block (link reference definitions) and footnote definitions are kept. They are appended to the body of the previous item, because such definitions are normally written after the paragraph that uses them. A referenced footnote definition is a block for the Markdown parser, but it is treated like these lines so that every footnote definition is handled the same way. Lines between a metadata line and its block are prepended to that item's body. Lines at the start of the page are prepended to the first block, or form their own item when a metadata line follows them.
 
 ## Body Preprocessing
 
@@ -55,6 +55,8 @@ Each item has:
 Links that do not match any prefix (external URLs, non-`.md` paths, or paths with non-matching prefixes) are kept as `link` nodes.
 
 When *LinkResolution::Off* (the default), this conversion is skipped entirely, as is the `#tag` text-node extraction described below.
+
+**Footnote completion**: the Markdown parser keeps a footnote only when its reference and its definition are in the same document. A body is parsed alone, so a body that holds only `[^label]` references or only `[^label]:` definitions would lose them. Such a body is parsed again with a placeholder for the missing side, and the placeholder nodes are removed afterwards. A `footnote_reference` therefore always appears for `[^label]` outside code, and a `footnote_definition` always appears for a definition line, even when the other side is in another item. Both sides keep `name`, so a renderer can link them by label across items.
 
 ## Node Structure
 
@@ -293,7 +295,7 @@ A wikilink. Children are the label (inline nodes); when no label is given, the c
 |-----------|---------|---------------------------------------|
 | `name`    | string  | Footnote label                        |
 | `ref_num` | integer | Index of this reference to the same footnote |
-| `ix`      | integer | Index of the footnote in the document |
+| `ix`      | integer | Index of the footnote in the body. It restarts in every body, so renderers should show `name` instead. |
 
 #### `shortcode`
 
