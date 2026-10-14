@@ -229,10 +229,19 @@ fn ast_to_html(node: &Value) -> String {
 
         "footnote_definition" => {
             let name = escape_html(node.get("name").and_then(|n| n.as_str()).unwrap_or(""));
-            format!(
-                "<div id=\"fn-{name}\" class=\"footnote\">\n<a href=\"#fnref-{name}\" class=\"footnote-label\">[{name}]:</a>\n{}</div>\n",
-                render_children(node)
-            )
+            let label = format!("<a href=\"#fnref-{name}\" class=\"footnote-label\">[{name}]:</a>");
+            let children = node.get("children").and_then(|c| c.as_array());
+            // The label goes inside the first paragraph so that the body continues on
+            // the same line without any CSS. A definition that starts with another
+            // block keeps the label in front of it.
+            let body = match children.and_then(|c| c.split_first()) {
+                Some((first, rest)) if first.get("type").and_then(|t| t.as_str()) == Some("paragraph") => {
+                    let rest: String = rest.iter().map(ast_to_html).collect();
+                    format!("<p>{label} {}</p>\n{rest}", render_children(first))
+                }
+                _ => format!("{label}\n{}", render_children(node)),
+            };
+            format!("<div id=\"fn-{name}\" class=\"footnote\">\n{body}</div>\n")
         }
 
         "alert" => {

@@ -53,6 +53,14 @@ fn footnote_reference_and_definition_in_separate_bodies() {
     );
     assert_eq!(
         body_to_html("[^n]: Note."),
-        "<div id=\"fn-n\" class=\"footnote\">\n<a href=\"#fnref-n\" class=\"footnote-label\">[n]:</a>\n<p>Note.</p>\n</div>\n"
+        "<div id=\"fn-n\" class=\"footnote\">\n<p><a href=\"#fnref-n\" class=\"footnote-label\">[n]:</a> Note.</p>\n</div>\n"
+    );
+}
+
+#[test]
+fn footnote_definition_starting_with_a_list_keeps_the_label_in_front() {
+    assert_eq!(
+        body_to_html("[^n]:\n    - item"),
+        "<div id=\"fn-n\" class=\"footnote\">\n<a href=\"#fnref-n\" class=\"footnote-label\">[n]:</a>\n<ul>\n<li>item</li>\n</ul>\n</div>\n"
     );
 }
