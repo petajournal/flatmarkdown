@@ -1,6 +1,6 @@
 [package]
 name = "flatmarkdown"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2024"
 description = "Flat Markdown parser — outline format with block-delimited items"
 license = "MIT"
