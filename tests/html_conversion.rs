@@ -53,6 +53,6 @@ fn footnote_reference_and_definition_in_separate_bodies() {
     );
     assert_eq!(
         body_to_html("[^n]: Note."),
-        "<div id=\"fn-n\" class=\"footnote\">\n<span class=\"footnote-label\">[n]:</span>\n<p>Note.</p>\n<a href=\"#fnref-n\" class=\"footnote-backref\">\u{21A9}</a>\n</div>\n"
+        "<div id=\"fn-n\" class=\"footnote\">\n<a href=\"#fnref-n\" class=\"footnote-label\">[n]:</a>\n<p>Note.</p>\n</div>\n"
     );
 }

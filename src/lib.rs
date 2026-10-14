@@ -230,7 +230,7 @@ fn ast_to_html(node: &Value) -> String {
         "footnote_definition" => {
             let name = escape_html(node.get("name").and_then(|n| n.as_str()).unwrap_or(""));
             format!(
-                "<div id=\"fn-{name}\" class=\"footnote\">\n<span class=\"footnote-label\">[{name}]:</span>\n{}<a href=\"#fnref-{name}\" class=\"footnote-backref\">\u{21A9}</a>\n</div>\n",
+                "<div id=\"fn-{name}\" class=\"footnote\">\n<a href=\"#fnref-{name}\" class=\"footnote-label\">[{name}]:</a>\n{}</div>\n",
                 render_children(node)
             )
         }
