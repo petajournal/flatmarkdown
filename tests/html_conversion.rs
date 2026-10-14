@@ -44,3 +44,15 @@ fn page_items_with_metadata() {
     assert_eq!(items[1]["level"], 1);
     assert_eq!(items[1]["body"], "Plain paragraph");
 }
+
+#[test]
+fn footnote_reference_and_definition_in_separate_bodies() {
+    assert_eq!(
+        body_to_html("Text[^n]."),
+        "<p>Text<sup id=\"fnref-n\" class=\"footnote-ref\"><a href=\"#fn-n\">[n]</a></sup>.</p>\n"
+    );
+    assert_eq!(
+        body_to_html("[^n]: Note."),
+        "<div id=\"fn-n\" class=\"footnote\">\n<span class=\"footnote-label\">[n]:</span>\n<p>Note.</p>\n<a href=\"#fnref-n\" class=\"footnote-backref\">\u{21A9}</a>\n</div>\n"
+    );
+}
