@@ -71,6 +71,7 @@ mod tests {
         }
     }
 
+    // >>>で囲んだ複数行の引用は、multiline_block_quoteになる。中の段落は子になる。
     #[test]
     fn ast_multiline_block_quote() {
         let result = body_to_ast(">>>\nq1\n\nq2\n>>>");
@@ -79,6 +80,7 @@ mod tests {
         assert_eq!(v["children"][0]["children"].as_array().unwrap().len(), 2);
     }
 
+    // [[page]]はwikilinkになる。urlと表示する文字は、どちらもページ名である。
     #[test]
     fn wikilink_ast_basic() {
         let result = body_to_ast("[[page]]");
@@ -90,6 +92,7 @@ mod tests {
         assert_eq!(wl["children"][0]["value"], "page");
     }
 
+    // [[url|ラベル]]は、|の前がurlに、後ろが表示する文字になる。
     #[test]
     fn wikilink_ast_with_label() {
         let result = body_to_ast("[[url|link label]]");
@@ -100,6 +103,7 @@ mod tests {
         assert_eq!(wl["children"][0]["value"], "link label");
     }
 
+    // リンク解決がOnのとき、#tagはhashtagになる。valueに#は含まない。
     #[test]
     fn ast_hashtag_basic() {
         let result = body_to_ast_with(
@@ -116,6 +120,7 @@ mod tests {
         assert_eq!(children[0]["value"], "tag");
     }
 
+    // 日本語のハッシュタグもhashtagになる。
     #[test]
     fn ast_hashtag_japanese() {
         let result = body_to_ast_with(
@@ -132,6 +137,7 @@ mod tests {
         assert_eq!(children[0]["value"], "日記");
     }
 
+    // ハッシュタグの名前には、_と-と/を使える。
     #[test]
     fn ast_hashtag_with_special_chars() {
         let result = body_to_ast_with(
@@ -148,6 +154,7 @@ mod tests {
         assert_eq!(children[0]["value"], "my_tag-name/sub");
     }
 
+    // 文の途中のハッシュタグは、前後の文字と分かれてhashtagになる。
     #[test]
     fn ast_hashtag_in_text() {
         let result = body_to_ast_with(
@@ -168,6 +175,7 @@ mod tests {
         assert_eq!(children[2]["value"], " world");
     }
 
+    // 1つの段落に、複数のハッシュタグを書ける。
     #[test]
     fn ast_hashtag_multiple() {
         let result = body_to_ast_with(
@@ -188,6 +196,7 @@ mod tests {
         assert_eq!(children[2]["value"], "tag2");
     }
 
+    // 単語の途中の#は、ハッシュタグにならない。
     #[test]
     fn ast_hashtag_not_in_middle_of_word() {
         let result = body_to_ast_with("foo#bar", &with_link_resolution());
@@ -197,6 +206,7 @@ mod tests {
         assert_eq!(children[0]["value"], "foo#bar");
     }
 
+    // ハッシュタグは、句読点の前で終わる。
     #[test]
     fn ast_hashtag_terminated_by_punctuation() {
         let result = body_to_ast_with(
@@ -215,6 +225,7 @@ mod tests {
         assert_eq!(children[1]["value"], "。本文");
     }
 
+    // /で始まる名前は、ハッシュタグにならない。
     #[test]
     fn ast_hashtag_leading_slash_not_hashtag() {
         // "#/tag" must not be recognized as a hashtag (leading '/' is invalid)
@@ -225,6 +236,7 @@ mod tests {
         assert_eq!(children[0]["value"], "#/tag");
     }
 
+    // 末尾の/は、ハッシュタグの名前に含めない。/は文字として残る。
     #[test]
     fn ast_hashtag_trailing_slash_trimmed() {
         // "#tag/" must be recognized as hashtag "tag" (trailing '/' is trimmed)
@@ -244,6 +256,7 @@ mod tests {
         assert_eq!(children[1]["value"], "/");
     }
 
+    // /で始まる名前は、/で終わっていてもハッシュタグにならない。
     #[test]
     fn ast_hashtag_leading_and_trailing_slash_not_hashtag() {
         // "#/tag/" must not be recognized as a hashtag (leading '/' is invalid)
@@ -254,6 +267,7 @@ mod tests {
         assert_eq!(children[0]["value"], "#/tag/");
     }
 
+    // #と空白だけの行は見出しである。ハッシュタグではない。
     #[test]
     fn ast_hash_only_not_hashtag() {
         let result = body_to_ast("# ");
@@ -262,6 +276,7 @@ mod tests {
         assert_eq!(v["children"][0]["type"], "heading");
     }
 
+    // \#tagはハッシュタグにならない。\は取り除かれ、#tagという文字になる。
     #[test]
     fn ast_escaped_hashtag_basic() {
         let result = body_to_ast_with(r"\#tag", &with_link_resolution());
@@ -271,6 +286,7 @@ mod tests {
         assert_eq!(children[0]["value"], "#tag");
     }
 
+    // \をつけた#と、つけない#を、同じ段落に書ける。つけない方だけがhashtagになる。
     #[test]
     fn ast_escaped_hashtag_with_real_hashtag() {
         let result = body_to_ast_with(
@@ -289,6 +305,7 @@ mod tests {
         assert_eq!(children[1]["value"], "real");
     }
 
+    // \をつけた#が複数あっても、どれもハッシュタグにならない。
     #[test]
     fn ast_escaped_hashtag_multiple() {
         let result = body_to_ast_with(r"\#a \#b", &with_link_resolution());
@@ -298,6 +315,7 @@ mod tests {
         assert_eq!(children[0]["value"], "#a #b");
     }
 
+    // 画像の記法はembedになる。URLに#がなければ、propsはnullである。
     #[test]
     fn ast_embed_no_props() {
         let result = body_to_ast("![alt text](img.png)");
@@ -309,6 +327,7 @@ mod tests {
         assert_eq!(embed["children"][0]["value"], "alt text");
     }
 
+    // URLの#のあとのkey=valueは、propsに入る。urlには含まない。
     #[test]
     fn ast_embed_with_kv_props() {
         let result = body_to_ast("![alt](img.png#w=300&h=240)");
@@ -320,6 +339,7 @@ mod tests {
         assert_eq!(embed["props"]["h"], "240");
     }
 
+    // 値のないキーは、propsでtrueになる。
     #[test]
     fn ast_embed_with_boolean_flag() {
         let result = body_to_ast("![alt](video.mp4#w=640&autoplay)");
@@ -331,6 +351,7 @@ mod tests {
         assert_eq!(embed["props"]["autoplay"], true);
     }
 
+    // URLの?のクエリはurlに残る。#のあとだけがpropsになる。
     #[test]
     fn ast_embed_url_with_query_and_fragment() {
         let result = body_to_ast("![alt](https://youtube.com/watch?v=xxx#w=640&start=30)");
@@ -342,7 +363,7 @@ mod tests {
         assert_eq!(embed["props"]["start"], "30");
     }
 
-    // SSoT: Extended syntax - highlight (==text==)
+    // ==text==はhighlightになる。
     #[test]
     fn ast_highlight() {
         let result = body_to_ast("==highlighted==");
@@ -352,7 +373,7 @@ mod tests {
         assert_eq!(node["children"][0]["value"], "highlighted");
     }
 
-    // SSoT: Extended syntax - superscript (^text^)
+    // ^text^はsuperscriptになる。
     #[test]
     fn ast_superscript() {
         let result = body_to_ast("^super^");
@@ -362,7 +383,7 @@ mod tests {
         assert_eq!(node["children"][0]["value"], "super");
     }
 
-    // SSoT: Extended syntax - subscript (~text~)
+    // ~text~はsubscriptになる。
     #[test]
     fn ast_subscript() {
         let result = body_to_ast("~sub~");
@@ -372,7 +393,7 @@ mod tests {
         assert_eq!(node["children"][0]["value"], "sub");
     }
 
-    // SSoT: Extended syntax - spoilered_text (||text||)
+    // ||text||はspoilered_textになる。
     #[test]
     fn ast_spoilered_text() {
         let result = body_to_ast("||spoiler||");
@@ -382,7 +403,7 @@ mod tests {
         assert_eq!(node["children"][0]["value"], "spoiler");
     }
 
-    // SSoT: Extended syntax - underline (__text__ is underline, not strong)
+    // __text__はunderlineになる。strongではない。
     #[test]
     fn ast_underline() {
         let result = body_to_ast("__underlined__");
@@ -392,7 +413,7 @@ mod tests {
         assert_eq!(node["children"][0]["value"], "underlined");
     }
 
-    // SSoT: Extended syntax - shortcode (:name:)
+    // :name:はshortcodeになる。codeに名前が、emojiに絵文字が入る。
     #[test]
     fn ast_shortcode() {
         let result = body_to_ast(":rabbit:");
@@ -403,7 +424,7 @@ mod tests {
         assert!(node["emoji"].is_string());
     }
 
-    // SSoT: Extended syntax - math ($`formula`$ syntax)
+    // $`式`$はmathになる。literalに式が入る。
     #[test]
     fn ast_math_inline() {
         let result = body_to_ast("$`x^2`$");
@@ -413,7 +434,7 @@ mod tests {
         assert_eq!(node["literal"], "x^2");
     }
 
-    // SSoT: Extended syntax - alert (> [!NOTE])
+    // > [!NOTE]で始まる引用はalertになる。alert_typeは小文字である。
     #[test]
     fn ast_alert_note() {
         let result = body_to_ast("> [!NOTE]\n> Content");
@@ -423,7 +444,7 @@ mod tests {
         assert_eq!(node["alert_type"], "note");
     }
 
-    // SSoT: Wikilink block link [[page#id]]
+    // [[page#id]]のurlは、#idを含む。
     #[test]
     fn ast_wikilink_block_link() {
         let result = body_to_ast("[[page#block-id]]");
@@ -433,7 +454,7 @@ mod tests {
         assert_eq!(wl["url"], "page#block-id");
     }
 
-    // SSoT: Wikilink block link with label [[page#id|label]]
+    // [[page#id|ラベル]]のurlは#idを含み、表示する文字はラベルになる。
     #[test]
     fn ast_wikilink_block_link_with_label() {
         let result = body_to_ast("[[page#block-id|label]]");
@@ -444,7 +465,7 @@ mod tests {
         assert_eq!(wl["children"][0]["value"], "label");
     }
 
-    // SSoT: Markdown relative link → wikilink (no label: link text equals page name)
+    // リンク解決がOnのとき、../で始まる.mdへのリンクはwikilinkになる。urlは.mdを除いたページ名である。
     #[test]
     fn ast_md_link_to_wikilink_no_label() {
         let result = body_to_ast_with(
@@ -462,7 +483,7 @@ mod tests {
         assert_eq!(node["children"][0]["value"], "pagename");
     }
 
-    // SSoT: Markdown relative link → wikilink (with label)
+    // wikilinkになったリンクの表示する文字は、元のリンクの文字である。
     #[test]
     fn ast_md_link_to_wikilink_with_label() {
         let result = body_to_ast_with(
@@ -480,7 +501,7 @@ mod tests {
         assert_eq!(node["children"][0]["value"], "display label");
     }
 
-    // SSoT: Markdown relative link with path → wikilink URL preserves full path
+    // フォルダを含むパスは、接頭辞と.mdだけを除いてurlになる。
     #[test]
     fn ast_md_link_to_wikilink_with_path() {
         let result = body_to_ast_with(
@@ -498,7 +519,7 @@ mod tests {
         assert_eq!(node["children"][0]["value"], "label");
     }
 
-    // SSoT: Markdown relative link with fragment → wikilink URL includes #id
+    // .mdのあとの#idは、wikilinkのurlに残る。
     #[test]
     fn ast_md_link_to_wikilink_with_fragment() {
         let result = body_to_ast_with(
@@ -516,7 +537,7 @@ mod tests {
         assert_eq!(node["children"][0]["value"], "label");
     }
 
-    // SSoT: Markdown relative link with ./ prefix → wikilink
+    // ./で始まる.mdへのリンクもwikilinkになる。
     #[test]
     fn ast_md_link_dotslash_to_wikilink() {
         let result = body_to_ast_with(
@@ -534,7 +555,7 @@ mod tests {
         assert_eq!(node["children"][0]["value"], "pagename");
     }
 
-    // SSoT: Markdown relative link with ./ prefix and path → wikilink URL preserves path
+    // ./で始まるリンクでも、フォルダを含むパスはurlに残る。
     #[test]
     fn ast_md_link_dotslash_with_path() {
         let result = body_to_ast_with(
@@ -552,7 +573,7 @@ mod tests {
         assert_eq!(node["children"][0]["value"], "label");
     }
 
-    // SSoT: Markdown relative link with ./ prefix and fragment → wikilink includes #id
+    // ./で始まるリンクでも、#idはurlに残る。
     #[test]
     fn ast_md_link_dotslash_with_fragment() {
         let result = body_to_ast_with(
@@ -570,7 +591,7 @@ mod tests {
         assert_eq!(node["children"][0]["value"], "label");
     }
 
-    // SSoT: Tag Markdown link with ./ prefix → hashtag node
+    // 文字が#で始まる./のリンクは、hashtagになる。urlと子は持たない。
     #[test]
     fn ast_md_tag_link_dotslash_to_hashtag() {
         let result = body_to_ast_with(
@@ -589,7 +610,7 @@ mod tests {
         assert!(node.get("children").is_none());
     }
 
-    // SSoT: Tag Markdown link → hashtag node
+    // 文字が#で始まる../のリンクは、hashtagになる。日本語の名前でも同じである。
     #[test]
     fn ast_md_tag_link_to_hashtag() {
         let result = body_to_ast_with(
@@ -608,7 +629,7 @@ mod tests {
         assert!(node.get("children").is_none());
     }
 
-    // LinkResolution::Off: #tag in text stays as text node
+    // リンク解決がOffのとき、#tagは文字のままである。
     #[test]
     fn ast_no_resolve_hashtag_stays_text() {
         let result = body_to_ast("#tag");
@@ -617,7 +638,7 @@ mod tests {
         assert!(children.iter().all(|c| c["type"] != "hashtag"));
     }
 
-    // LinkResolution::Off: [#tag](../tag.md) stays as link node
+    // リンク解決がOffのとき、文字が#で始まるリンクはlinkのままである。
     #[test]
     fn ast_no_resolve_tag_link_stays_link() {
         let result = body_to_ast("[#tag](../tag.md)");
@@ -626,7 +647,7 @@ mod tests {
         assert_eq!(node["type"], "link");
     }
 
-    // LinkResolution::Off: [text](../page.md) stays as link node
+    // リンク解決がOffのとき、.mdへのリンクはlinkのままである。
     #[test]
     fn ast_no_resolve_md_link_stays_link() {
         let result = body_to_ast("[text](../page.md)");
@@ -635,7 +656,7 @@ mod tests {
         assert_eq!(node["type"], "link");
     }
 
-    // LinkResolution::On with empty prefixes: no links are converted
+    // リンク解決がOnでも、接頭辞が1つもなければ、リンクはwikilinkにならない。
     #[test]
     fn ast_on_empty_prefixes_md_link_stays_link() {
         let result = body_to_ast_with(
@@ -649,7 +670,7 @@ mod tests {
         assert_eq!(node["type"], "link");
     }
 
-    // External links must not be converted to wikilinks
+    // リンク解決がOnでも、外部のURLへのリンクはlinkのままである。
     #[test]
     fn ast_external_link_not_converted_to_wikilink() {
         let result = body_to_ast_with("[text](https://example.com)", &with_link_resolution());
@@ -658,7 +679,7 @@ mod tests {
         assert_eq!(node["type"], "link");
     }
 
-    // Relative links not ending in .md must not be converted to wikilinks
+    // リンク解決がOnでも、.mdで終わらない相対リンクはlinkのままである。
     #[test]
     fn ast_non_md_relative_link_not_converted() {
         let result = body_to_ast_with("[text](../page.html)", &with_link_resolution());
@@ -667,7 +688,7 @@ mod tests {
         assert_eq!(node["type"], "link");
     }
 
-    // SSoT: blank lines are no longer rewritten; a loose list stays one block.
+    // 項目の間に空行のあるリストは、1つのlistのままである。tightはfalseになる。
     #[test]
     fn ast_blank_line_between_list_items_keeps_one_list() {
         let result = body_to_ast("- a\n\n- b");
@@ -678,6 +699,7 @@ mod tests {
         assert_eq!(blocks[0]["tight"], false);
     }
 
+    // コードフェンスの中の空行は、literalに残る。
     #[test]
     fn ast_blank_line_in_code_fence_preserved() {
         let result = body_to_ast("```\ncode\n\nmore code\n```");

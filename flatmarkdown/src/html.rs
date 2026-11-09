@@ -280,24 +280,28 @@ mod tests {
     use super::*;
     use crate::body::{BodyOptions, LinkResolution};
 
+    // 段落は<p>になる。
     #[test]
     fn basic_paragraph() {
         let result = body_to_html("Hello, world!");
         assert_eq!(result, "<p>Hello, world!</p>\n");
     }
 
+    // レベル1の見出しは<h1>になる。
     #[test]
     fn heading() {
         let result = body_to_html("# Title");
         assert_eq!(result, "<h1>Title</h1>\n");
     }
 
+    // ~~text~~は<del>になる。
     #[test]
     fn strikethrough() {
         let result = body_to_html("~~deleted~~");
         assert_eq!(result, "<p><del>deleted</del></p>\n");
     }
 
+    // タスクの項目は、無効にしたチェックボックスで始まる。済んだタスクにはcheckedがつく。
     #[test]
     fn tasklist() {
         let result = body_to_html("- [x] done\n- [ ] todo");
@@ -308,21 +312,21 @@ mod tests {
         );
     }
 
-    // SSoT: a plain newline is a GFM soft break, not a hard break.
+    // 段落の中のただの改行は、HTMLでも改行のままである。<br />にはならない。
     #[test]
     fn softbreak_html() {
         let result = body_to_html("line1\nline2");
         assert_eq!(result, "<p>line1\nline2</p>\n");
     }
 
-    // SSoT: GFM hard line break (trailing backslash) renders as <br />.
+    // 行末の\は<br />になる。
     #[test]
     fn hardbreak_html() {
         let result = body_to_html("line1\\\nline2");
         assert_eq!(result, "<p>line1<br />\nline2</p>\n");
     }
 
-    // SSoT: multiline block quote (>>>) is available.
+    // >>>で囲んだ複数行の引用は<blockquote>になる。
     #[test]
     fn multiline_block_quote_html() {
         let result = body_to_html(">>>\nq1\n\nq2\n>>>");
@@ -332,6 +336,7 @@ mod tests {
         );
     }
 
+    // wikilinkは、data-wikilink="true"のついた<a>になる。
     #[test]
     fn wikilink_html_basic() {
         let result = body_to_html("[[page]]");
@@ -341,6 +346,7 @@ mod tests {
         );
     }
 
+    // ラベルのあるwikilinkは、hrefがurlで、文字がラベルの<a>になる。
     #[test]
     fn wikilink_html_with_label() {
         let result = body_to_html("[[url|link label]]");

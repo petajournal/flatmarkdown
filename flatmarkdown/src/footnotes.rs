@@ -176,6 +176,7 @@ mod tests {
         v.to_string().contains(FOOTNOTE_PLACEHOLDER)
     }
 
+    // 定義のない脚注の参照は、footnote_referenceとして残る。
     #[test]
     fn ast_footnote_reference_without_definition_is_kept() {
         let v: Value = serde_json::from_str(&body_to_ast("Text[^note].")).unwrap();
@@ -185,6 +186,7 @@ mod tests {
         assert!(!contains_placeholder(&v));
     }
 
+    // 参照のない脚注の定義は、footnote_definitionとして残る。
     #[test]
     fn ast_footnote_definition_without_reference_is_kept() {
         let v: Value = serde_json::from_str(&body_to_ast("[^note]: The note.")).unwrap();
@@ -199,6 +201,7 @@ mod tests {
         assert!(!contains_placeholder(&v));
     }
 
+    // 参照と定義が同じ本文にあるときは、どちらもそのまま残る。
     #[test]
     fn ast_footnote_paired_in_one_body_is_unchanged() {
         let v: Value = serde_json::from_str(&body_to_ast("Text[^1].\n\n[^1]: Footnote.")).unwrap();
@@ -208,6 +211,7 @@ mod tests {
         assert!(!contains_placeholder(&v));
     }
 
+    // 脚注の定義の中で、別の脚注を参照できる。
     #[test]
     fn ast_footnote_definition_may_reference_another_footnote() {
         let v: Value = serde_json::from_str(&body_to_ast("[^a]: See [^b].")).unwrap();
@@ -216,6 +220,7 @@ mod tests {
         assert!(!contains_placeholder(&v));
     }
 
+    // コードの中の脚注の記法は、脚注にならない。
     #[test]
     fn ast_footnote_syntax_in_code_stays_text() {
         let v: Value = serde_json::from_str(&body_to_ast("`[^1]`\n\n```\n[^2]: x\n```")).unwrap();
@@ -225,6 +230,7 @@ mod tests {
         assert!(!contains_placeholder(&v));
     }
 
+    // 閉じていないコードフェンスの前に脚注の参照があっても、コードの中身は変わらない。
     #[test]
     fn ast_footnote_reference_before_unclosed_fence() {
         let v: Value = serde_json::from_str(&body_to_ast("Text[^1].\n\n```\ncode")).unwrap();
@@ -234,6 +240,7 @@ mod tests {
         assert!(!contains_placeholder(&v));
     }
 
+    // インデントのコードブロックと脚注の定義が同じ本文にあっても、コードの中身は変わらない。
     #[test]
     fn ast_footnote_definition_before_indented_code() {
         let v: Value = serde_json::from_str(&body_to_ast("    code\n\n[^1]: note")).unwrap();
@@ -243,6 +250,7 @@ mod tests {
         assert!(!contains_placeholder(&v));
     }
 
+    // 別のブロックのあとにある脚注の定義は、そのブロックの項目に1回だけ入る。参照のある項目には入らない。
     #[test]
     fn page_footnote_definition_after_another_block_is_not_duplicated() {
         let v = page("Text[^1].\n\nMiddle.\n\n[^1]: Footnote.\n\nLast.\n");

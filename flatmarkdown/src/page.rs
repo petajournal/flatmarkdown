@@ -272,6 +272,7 @@ mod tests {
     const ID2: &str = "2026-09-26-18-15-30-6VZSYB4";
     const ID3: &str = "2026-09-27-15-00-16-W3N8ASY";
 
+    // @の数がレベルになる。IDとプロパティは、なくてもよい。
     #[test]
     fn metadata_level_only() {
         let m = parse_metadata_line("<!-- @ -->").unwrap();
@@ -287,6 +288,7 @@ mod tests {
         assert_eq!(m.level, 3);
     }
 
+    // @のあとにIDを書ける。
     #[test]
     fn metadata_with_id() {
         let m = parse_metadata_line(&format!("<!-- @@ {ID1} -->")).unwrap();
@@ -295,6 +297,7 @@ mod tests {
         assert!(m.properties.is_empty());
     }
 
+    // IDのあとに、key="value"の形のプロパティを書ける。書いた順に並ぶ。値は空白を含んでよい。
     #[test]
     fn metadata_with_id_and_properties() {
         let m = parse_metadata_line(&format!(
@@ -311,6 +314,7 @@ mod tests {
         );
     }
 
+    // IDがなくても、プロパティを書ける。
     #[test]
     fn metadata_properties_without_id() {
         let m = parse_metadata_line("<!-- @@ collapsed=\"true\" -->").unwrap();
@@ -322,12 +326,14 @@ mod tests {
         );
     }
 
+    // 値の中の\"は"に、\\は\になる。
     #[test]
     fn metadata_value_escapes() {
         let m = parse_metadata_line(r#"<!-- @ k="say \"hi\" \\ done" -->"#).unwrap();
         assert_eq!(m.properties[0].1, r#"say "hi" \ done"#);
     }
 
+    // 形の合わない行は、メタデータ行ではない。
     #[test]
     fn metadata_invalid_lines() {
         // Not starting with `<!-- @`
@@ -386,6 +392,7 @@ mod tests {
 
     // ---- Page parsing ----
 
+    // 仕様書の例のページは4つの項目になる。メタデータ行のないブロックはレベル1の項目に、本文のないメタデータ行は空の項目になる。
     #[test]
     fn page_spec_example() {
         let input = format!(
@@ -422,6 +429,7 @@ mod tests {
         );
     }
 
+    // front matterは項目にならない。ページのfront_matterに、そのままの文字列で入る。
     #[test]
     fn page_front_matter_is_not_an_item() {
         let v = page("---\ntitle: x\n---\n\nHello\n");
@@ -431,6 +439,7 @@ mod tests {
         assert_eq!(items[0]["body"], "Hello");
     }
 
+    // 見出しと段落は、間に空行がなくても2つの項目になる。
     #[test]
     fn page_heading_and_paragraph_without_blank_line_are_two_items() {
         let v = page("# H\nP");
@@ -440,6 +449,7 @@ mod tests {
         assert_eq!(items[1]["body"], "P");
     }
 
+    // 項目の間に空行のあるリストは、入れ子を含めて1つの項目になる。
     #[test]
     fn page_loose_list_is_one_item() {
         let v = page("- a\n\n- b\n  - nested\n");
@@ -448,6 +458,7 @@ mod tests {
         assert_eq!(items[0]["body"], "- a\n\n- b\n  - nested");
     }
 
+    // 複数の段落を持つ引用は、1つの項目になる。
     #[test]
     fn page_block_quote_with_paragraphs_is_one_item() {
         let v = page("> p1\n>\n> p2\n");
@@ -456,6 +467,7 @@ mod tests {
         assert_eq!(items[0]["body"], "> p1\n>\n> p2");
     }
 
+    // メタデータ行の形でないHTMLコメントは、本文として残る。
     #[test]
     fn page_invalid_metadata_stays_in_body() {
         let v = page("<!-- note -->\n\n<!-- @ bad id -->\n\n<!-- @\nx -->\n");
@@ -467,6 +479,7 @@ mod tests {
         assert!(items.iter().all(|i| i["id"].is_null() && i["level"] == 1));
     }
 
+    // ブロックの中にあるメタデータ行の形の行は、本文である。
     #[test]
     fn page_metadata_inside_block_is_body() {
         let v = page("- a\n  <!-- @ -->\n");
@@ -475,6 +488,7 @@ mod tests {
         assert_eq!(items[0]["body"], "- a\n  <!-- @ -->");
     }
 
+    // ページの末尾のメタデータ行は、本文が空の項目になる。
     #[test]
     fn page_trailing_metadata_is_empty_item() {
         let v = page(&format!("P\n\n<!-- @@ {ID1} -->\n\n"));
@@ -484,6 +498,7 @@ mod tests {
         assert_eq!(items[1]["body"], "");
     }
 
+    // メタデータ行と本文の間に、空行はなくてもよい。
     #[test]
     fn page_metadata_without_blank_line_before_body() {
         let v = page(&format!("<!-- @ {ID1} -->\nP1\nP2\n"));
@@ -493,6 +508,7 @@ mod tests {
         assert_eq!(items[0]["body"], "P1\nP2");
     }
 
+    // ノードにならない行（参照の定義、参照されない脚注の定義）は、前のブロックの項目に入る。
     // Lines that produce no comrak node (reference definitions, unreferenced
     // footnote definitions) must not be lost. They stay with the item they follow.
     #[test]
@@ -504,7 +520,7 @@ mod tests {
         assert_eq!(items[1]["body"], "Q\n\n[^1]: unreferenced");
     }
 
-    // A reference definition kept in the same item resolves when the body is parsed alone.
+    // 同じ項目に入った参照の定義は、その項目の本文だけを解析しても解決される。
     #[test]
     fn page_reference_definition_resolves_within_item() {
         let v = page("See [site][s].\n\n[s]: https://example.com\n\nNext\n");
@@ -515,6 +531,7 @@ mod tests {
         assert_eq!(link["url"], "https://example.com");
     }
 
+    // メタデータ行の前にあるノードにならない行は、前の項目に入る。
     #[test]
     fn page_nodeless_lines_before_metadata_stay_with_previous_item() {
         let v = page(&format!("P\n\n[ref]: /url\n\n<!-- @ {ID1} -->\nQ\n"));
@@ -525,6 +542,7 @@ mod tests {
         assert_eq!(items[1]["body"], "Q");
     }
 
+    // メタデータ行とブロックの間にあるノードにならない行は、そのメタデータ行の項目に入る。
     #[test]
     fn page_nodeless_lines_between_metadata_and_block_belong_to_that_item() {
         let v = page(&format!("<!-- @ {ID1} -->\n\n[ref]: /url\n\nQ\n"));
@@ -534,6 +552,7 @@ mod tests {
         assert_eq!(items[0]["body"], "[ref]: /url\n\nQ");
     }
 
+    // ページの先頭のノードにならない行は、最初のブロックの項目に入る。
     #[test]
     fn page_leading_nodeless_lines_join_first_block() {
         let v = page("[ref]: /url\n\nP\n");
@@ -542,6 +561,7 @@ mod tests {
         assert_eq!(items[0]["body"], "[ref]: /url\n\nP");
     }
 
+    // ページの先頭のノードにならない行は、すぐあとがメタデータ行なら、それだけで1つの項目になる。
     #[test]
     fn page_leading_nodeless_lines_before_metadata_form_own_item() {
         let v = page(&format!("[ref]: /url\n\n<!-- @ {ID1} -->\nP\n"));
@@ -552,6 +572,7 @@ mod tests {
         assert_eq!(items[1]["body"], "P");
     }
 
+    // 空のページは、項目がなく、front_matterはnullである。
     #[test]
     fn page_empty_input() {
         let v = page("");
@@ -559,6 +580,7 @@ mod tests {
         assert_eq!(v["front_matter"], Value::Null);
     }
 
+    // ページの解析でも、リンク解決のオプションが項目の本文に使われる。
     #[test]
     fn page_applies_link_resolution() {
         let opts = BodyOptions {
