@@ -56,6 +56,27 @@ fn escape_html(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
+/// A string field of a node, or an empty string when the node has none.
+fn str_field<'a>(node: &'a Value, key: &str) -> &'a str {
+    node.get(key).and_then(|v| v.as_str()).unwrap_or("")
+}
+
+/// The text of a node and its descendants, without any markup: what the `alt` of an image holds.
+/// Raw inline HTML counts as text, as in the CommonMark reference renderer.
+fn plain_text(node: &Value) -> String {
+    match node.get("type").and_then(|t| t.as_str()) {
+        Some("text" | "html_inline") => str_field(node, "value").to_string(),
+        Some("code") => str_field(node, "literal").to_string(),
+        Some("hashtag") => format!("#{}", str_field(node, "value")),
+        Some("softbreak" | "linebreak") => " ".to_string(),
+        _ => node
+            .get("children")
+            .and_then(|c| c.as_array())
+            .map(|children| children.iter().map(plain_text).collect())
+            .unwrap_or_default(),
+    }
+}
+
 fn render_children(node: &Value) -> String {
     node.get("children")
         .and_then(|c| c.as_array())
@@ -102,7 +123,7 @@ fn ast_to_html(node: &Value) -> String {
             let class = if info.is_empty() || info == "text" {
                 String::new()
             } else {
-                format!(" class=\"language-{info}\"")
+                format!(" class=\"language-{}\"", escape_html(info))
             };
             format!("<pre><code{class}>{}</code></pre>\n", escape_html(literal))
         }
@@ -252,7 +273,8 @@ fn ast_to_html(node: &Value) -> String {
                     _ => "Note",
                 });
             format!(
-                "<blockquote class=\"alert alert-{alert_type}\">\n<p class=\"alert-title\">{title}</p>\n{}</blockquote>\n",
+                "<blockquote class=\"alert alert-{alert_type}\">\n<p class=\"alert-title\">{}</p>\n{}</blockquote>\n",
+                escape_html(title),
                 render_children(node)
             )
         }
@@ -299,8 +321,11 @@ fn ast_to_html(node: &Value) -> String {
 
         "embed" => {
             let url = node.get("url").and_then(|u| u.as_str()).unwrap_or("");
-            let alt = render_children(node);
-            format!("<img src=\"{}\" alt=\"{}\" />", escape_html(url), alt)
+            format!(
+                "<img src=\"{}\" alt=\"{}\" />",
+                escape_html(url),
+                escape_html(&plain_text(node))
+            )
         }
 
         "wikilink" => {
@@ -2430,6 +2455,70 @@ mod tests {
         assert_eq!(
             footnote_nodes(&items[1]["ast"], "footnote_definition"),
             vec!["1"]
+        );
+    }
+
+    // コードフェンスの言語名は、class属性の中でエスケープされる。
+    #[test]
+    fn html_code_fence_info_is_escaped_in_the_class_attribute() {
+        let result = body_to_html("```a\"><b>\ncode\n```");
+        assert_eq!(
+            result,
+            "<pre><code class=\"language-a&quot;&gt;&lt;b&gt;\">code\n</code></pre>\n"
+        );
+    }
+
+    // アラートの題名は、文字としてエスケープされる。
+    #[test]
+    fn html_alert_title_is_escaped_as_text() {
+        let result = body_to_html("> [!NOTE] a < b & c\n> body");
+        assert_eq!(
+            result,
+            "<blockquote class=\"alert alert-note\">\n<p class=\"alert-title\">a &lt; b &amp; c</p>\n<p>body</p>\n</blockquote>\n"
+        );
+    }
+
+    // 画像のaltには、子の文字だけが入る。子のタグは入らない。
+    #[test]
+    fn html_image_alt_holds_only_the_text_of_its_children() {
+        let result = body_to_html("![a **b** [c](d) <e>](u.png)");
+        assert_eq!(
+            result,
+            "<p><img src=\"u.png\" alt=\"a b c &lt;e&gt;\" /></p>\n"
+        );
+    }
+
+    // 画像のaltには、コードの文字とハッシュタグも入る。改行は空白になる。
+    #[test]
+    fn html_image_alt_holds_code_and_hashtags_and_turns_a_line_break_into_a_space() {
+        let opts = BodyOptions {
+            link_resolution: LinkResolution::On {
+                prefixes: vec!["./".into()],
+            },
+        };
+        let result = body_to_html_with("![a `b`\nc #t](u.png)", &opts);
+        assert_eq!(result, "<p><img src=\"u.png\" alt=\"a b c #t\" /></p>\n");
+    }
+
+    // 本文の生のHTMLは、そのまま出る。自分のノートを描くためのものなので、取り除かない。
+    #[test]
+    fn html_raw_html_in_the_body_is_written_as_it_is() {
+        assert_eq!(
+            body_to_html("<script>alert(1)</script>"),
+            "<script>alert(1)</script>"
+        );
+        assert_eq!(
+            body_to_html("a <img src=x onerror=alert(1)> b"),
+            "<p>a <img src=x onerror=alert(1)> b</p>\n"
+        );
+    }
+
+    // リンクのURLは調べない。javascript:のリンクも、リンクのまま出る。
+    #[test]
+    fn html_link_url_is_not_checked() {
+        assert_eq!(
+            body_to_html("[a](javascript:alert(1))"),
+            "<p><a href=\"javascript:alert(1)\">a</a></p>\n"
         );
     }
 }
