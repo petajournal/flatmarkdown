@@ -1,6 +1,6 @@
 //! Turns relative Markdown links into wikilink and hashtag nodes.
 
-use crate::hashtags::is_tag_name;
+use crate::hashtags::{has_escaped_hash, is_tag_name};
 use flatmarkdown_ast::Node;
 
 /// Strips the longest matching prefix from `url` and removes the `.md` suffix, returning the
@@ -10,6 +10,8 @@ use flatmarkdown_ast::Node;
 /// Also returns `None` if the file has no name: `.md` alone or after only whitespace, at the
 /// top or in a folder. The name of a `.md` file can come from outside, so such a link must
 /// not make a wikilink or a hashtag with an empty name.
+///
+/// Also returns `None` if the page path holds an escaped `\#`.
 fn markdown_link_to_wikilink_url(url: &str, prefixes: &[String]) -> Option<String> {
     // The longest prefix that matches is used, so the order of the list does not matter.
     // What is left is then the shortest.
@@ -22,6 +24,11 @@ fn markdown_link_to_wikilink_url(url: &str, prefixes: &[String]) -> Option<Strin
         None => (without_prefix, ""),
     };
     let page_path = path_part.strip_suffix(".md")?;
+    // An escaped `\#` would become a plain `#` in the URL of the wikilink. `a#b` would then be
+    // read as the item `b` of the page `a`, which the author did not write.
+    if has_escaped_hash(page_path) {
+        return None;
+    }
     // The file name is what stands after the last `/`. Whitespace alone is no name.
     let file_name = page_path.rsplit('/').next().unwrap_or(page_path);
     if file_name.trim().is_empty() {

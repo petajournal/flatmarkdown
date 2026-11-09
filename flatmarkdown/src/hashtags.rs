@@ -115,6 +115,18 @@ fn split_hashtags(text: &str) -> Vec<Node> {
     result
 }
 
+/// True if `text` holds the mark of an escaped `\#`. A `MARK` that was written twice is a
+/// character of the body, so the character after it is not looked at.
+pub(crate) fn has_escaped_hash(text: &str) -> bool {
+    let mut chars = text.chars();
+    while let Some(c) = chars.next() {
+        if c == MARK && chars.next() == Some(ESCAPED_HASH) {
+            return true;
+        }
+    }
+    false
+}
+
 /// `text` with a `#` where an escaped `\#` stood. For a check that must see the text as the
 /// reader will see it, before the marks are taken out of the whole tree.
 pub(crate) fn restored_as_hash(text: &str) -> String {
