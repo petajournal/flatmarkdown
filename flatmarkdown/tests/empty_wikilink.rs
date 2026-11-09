@@ -1,7 +1,7 @@
 //! A wikilink without a page name is not a wikilink. `[[]]` stays text, so that a `wikilink`
 //! node never has an empty `url`.
 
-use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast, body_to_ast_with};
+use flatmarkdown::body_to_ast;
 use flatmarkdown_ast::{Node, parse};
 
 fn ast(md: &str) -> Node {

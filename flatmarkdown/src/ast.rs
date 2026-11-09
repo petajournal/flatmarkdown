@@ -57,26 +57,31 @@ pub(crate) fn node_to_ast<'a>(
 
 /// Builds the children of a comrak node.
 ///
-/// comrak wraps text in `EscapedTag` when delimiters look like markup but are not. With the
-/// options of this crate that is a single `|` on each side: `|text|` is not a spoiler, which
-/// needs `||`. Such a node means plain text, so it does not stay in the AST. Its delimiter
-/// comes back as text on both sides, and its children take its place.
+/// Two kinds of comrak node mean plain text, so they do not stay in the AST. Their delimiters
+/// come back as text on both sides, and their children take their place.
+///
+/// - comrak wraps text in `EscapedTag` when delimiters look like markup but are not. With the
+///   options of this crate that is a single `|` on each side: `|text|` is not a spoiler, which
+///   needs `||`.
+/// - A wikilink without a page name: `[[]]` or `[[|label]]`. A `wikilink` node never has an
+///   empty `url`, because nothing can be opened with it.
 fn children_to_ast<'a>(
     node: &'a comrak::arena_tree::Node<'a, std::cell::RefCell<comrak::nodes::Ast>>,
 ) -> Vec<Node> {
     let mut children = Vec::new();
     let mut unwrapped = false;
     for child in node.children() {
-        let delimiter = match &child.data.borrow().value {
-            NodeValue::EscapedTag(delimiter) => Some(*delimiter),
+        let delimiters = match &child.data.borrow().value {
+            NodeValue::EscapedTag(delimiter) => Some((*delimiter, *delimiter)),
+            NodeValue::WikiLink(link) if link.url.is_empty() => Some(("[[", "]]")),
             _ => None,
         };
-        match delimiter {
-            Some(delimiter) => {
+        match delimiters {
+            Some((open, close)) => {
                 unwrapped = true;
-                children.push(text(delimiter));
+                children.push(text(open));
                 children.extend(children_to_ast(child));
-                children.push(text(delimiter));
+                children.push(text(close));
             }
             None => children.push(node_to_ast(child)),
         }
