@@ -411,6 +411,18 @@ mod tests {
         );
     }
 
+    // ハッシュタグの名前は、hrefでも表示する文字でもエスケープされる。
+    #[test]
+    fn html_hashtag_name_is_escaped_in_the_href_and_in_the_text() {
+        let node = Node::Hashtag {
+            value: "a<b>&\"c".to_string(),
+        };
+        assert_eq!(
+            node_to_html(&node),
+            "<a href=\"a&lt;b&gt;&amp;&quot;c\" class=\"hashtag\">#a&lt;b&gt;&amp;&quot;c</a>"
+        );
+    }
+
     // リンクのURLは調べない。javascript:のリンクも、リンクのまま出る。
     #[test]
     fn html_link_url_is_not_checked() {
