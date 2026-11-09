@@ -115,6 +115,14 @@ fn split_hashtags(text: &str) -> Vec<Node> {
     result
 }
 
+/// `text` with a `#` where an escaped `\#` stood. For a check that must see the text as the
+/// reader will see it, before the marks are taken out of the whole tree.
+pub(crate) fn restored_as_hash(text: &str) -> String {
+    let mut restored = text.to_string();
+    restore_as_hash(&mut restored);
+    restored
+}
+
 /// Puts a `#` where the mark is. For text in which Markdown reads backslash escapes:
 /// there `\#` means a plain `#`.
 fn restore_as_hash(text: &mut String) {

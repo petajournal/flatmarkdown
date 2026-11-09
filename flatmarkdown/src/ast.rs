@@ -1,5 +1,6 @@
 //! Turns the tree that comrak parses into the typed AST.
 
+use crate::hashtags::restored_as_hash;
 use comrak::Options;
 use comrak::nodes::{ListDelimType, ListType, NodeValue, TableAlignment};
 use flatmarkdown_ast::Node;
@@ -100,8 +101,9 @@ fn children_to_ast<'a>(
 }
 
 /// True if the URL of a wikilink names no page and no item: it is empty, or only `#`.
+/// An escaped `\#` is a `#` here too.
 fn names_no_page(url: &str) -> bool {
-    url.is_empty() || url == "#"
+    url.is_empty() || restored_as_hash(url) == "#"
 }
 
 /// True if a comrak wikilink has no label of its own. comrak then gives it one text child that
