@@ -191,7 +191,9 @@ GitHub-style alert (e.g. `> [!NOTE]`).
 
 #### `subtext`
 
-Block-level subscript text (`<sub>` block).
+A line of small text, written as `-# text`. Children are inline nodes.
+
+`<sub>text</sub>` written in the body is not a `subtext`. It is raw HTML, so it becomes `html_inline` nodes.
 
 ### Inline Nodes
 
