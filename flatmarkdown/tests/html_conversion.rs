@@ -1,4 +1,4 @@
-use flatmarkdown::{body_to_html, body_to_html_with, page_to_ast, BodyOptions, LinkResolution};
+use flatmarkdown::{BodyOptions, LinkResolution, body_to_html, body_to_html_with, page_to_ast};
 
 #[test]
 fn paragraph_with_bold_italic_code() {
@@ -23,7 +23,11 @@ fn handle_empty_lines() {
 #[test]
 fn resolve_links_with_prefix() {
     let input = "See [page](../docs/page.md) and [journal](../journals/2024-01-01.md) and [other](../other/page.md).";
-    let opts = BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../docs/".into(), "../journals/".into()] } };
+    let opts = BodyOptions {
+        link_resolution: LinkResolution::On {
+            prefixes: vec!["../docs/".into(), "../journals/".into()],
+        },
+    };
     let html = body_to_html_with(input, &opts);
     assert_eq!(
         html,
