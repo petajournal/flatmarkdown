@@ -62,3 +62,10 @@ fn missing_optional_fields_default() {
     let row = parse(r#"{"type":"table_row"}"#).unwrap();
     assert!(matches!(row, Node::TableRow { header: false, .. }));
 }
+
+// 古いASTの item にある tight は、無視して読める。
+#[test]
+fn tight_on_an_item_of_an_old_ast_is_ignored() {
+    let item = parse(r#"{"type":"item","list_type":"bullet","start":1,"tight":false}"#).unwrap();
+    assert!(matches!(item, Node::Item { start: 1, .. }));
+}

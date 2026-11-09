@@ -76,8 +76,6 @@ pub enum Node {
         list_type: String,
         #[serde(default)]
         start: u32,
-        #[serde(default)]
-        tight: bool,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },

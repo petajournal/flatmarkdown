@@ -104,7 +104,6 @@ fn tight_and_loose_lists() {
             assert_eq!(list_type, "bullet");
             assert!(*tight);
             assert_eq!(children.len(), 2);
-            // comrak only records tightness on the list; its items say `tight: false`.
             assert!(matches!(&children[0], Node::Item { list_type, .. } if list_type == "bullet"));
         }
         other => panic!("expected list, got {other:?}"),

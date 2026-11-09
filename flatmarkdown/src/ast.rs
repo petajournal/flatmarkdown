@@ -121,7 +121,6 @@ fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
         NodeValue::Item(nl) => Node::Item {
             list_type: list_type(nl.list_type),
             start: nl.start as u32,
-            tight: nl.tight,
             children,
         },
         NodeValue::CodeBlock(cb) => Node::CodeBlock {
