@@ -121,7 +121,7 @@ pub(crate) fn restore_escaped_hashes(node: &mut Node) {
                 restore_as_hash(title);
             }
         }
-        Node::CodeBlock { info, literal } => {
+        Node::CodeBlock { info, literal, .. } => {
             restore_as_hash(info);
             restore_as_written(literal);
         }

@@ -93,14 +93,17 @@ A paragraph block. Children are inline nodes.
 
 #### `code_block`
 
-A fenced code block. Has no children; content is in `literal`. Flatmarkdown does not support indented code blocks.
+A code block. The author writes it with fences or with an indent of four spaces. Has no children; content is in `literal`.
 
-| Attribute | Type    | Description                                     |
-|-----------|---------|-------------------------------------------------|
-| `info`    | string  | Info string after opening fence (e.g. `"rust"`) |
-| `literal` | string  | The code content                                |
+| Attribute | Type    | Description                                                    |
+|-----------|---------|----------------------------------------------------------------|
+| `fenced`  | boolean | `true` if written with fences, `false` if written with an indent |
+| `info`    | string  | Info string after opening fence (e.g. `"rust"`)                |
+| `literal` | string  | The code content                                               |
 
-Note: when no info string is specified, `info` defaults to `"text"` (configured via `default_info_string`).
+Note: when a fenced code block has no info string, `info` defaults to `"text"` (configured via `default_info_string`). An indented code block cannot have an info string, so its `info` is always `""`.
+
+Note: `fenced` does not change how a code block is rendered. It records what the author wrote. An AST written before this attribute existed has no `fenced`; a reader treats it as `true`.
 
 #### `block_quote`
 

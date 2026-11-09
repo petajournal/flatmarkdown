@@ -125,6 +125,7 @@ fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
             children,
         },
         NodeValue::CodeBlock(cb) => Node::CodeBlock {
+            fenced: cb.fenced,
             info: cb.info.clone(),
             literal: cb.literal.clone(),
         },
