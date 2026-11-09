@@ -2483,4 +2483,16 @@ mod tests {
             "<p><img src=\"u.png\" alt=\"a b c &lt;e&gt;\" /></p>\n"
         );
     }
+
+    // 画像のaltには、コードの文字とハッシュタグも入る。改行は空白になる。
+    #[test]
+    fn html_image_alt_holds_code_and_hashtags_and_turns_a_line_break_into_a_space() {
+        let opts = BodyOptions {
+            link_resolution: LinkResolution::On {
+                prefixes: vec!["./".into()],
+            },
+        };
+        let result = body_to_html_with("![a `b`\nc #t](u.png)", &opts);
+        assert_eq!(result, "<p><img src=\"u.png\" alt=\"a b c #t\" /></p>\n");
+    }
 }
