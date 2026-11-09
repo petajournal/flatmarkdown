@@ -58,3 +58,9 @@
   - `fenced`は描画には要らない。書き手がフェンスとインデントのどちらで書いたかを記録する
   - `fenced`のないJSONは、`true`として読む。これまでの仕様はフェンスだけを認めていたためである
   - ADR 014は「`fenced`は常にtrueなので消す」と書いている。peta-journalのADR 014に追記する
+- [x] `item`から`tight`を消す
+  - 2026-11-09に決めた。仕様は「親のリストがタイトなら`true`」と書いていたが、実際は常に`false`だった。comrakが項目にこの値を入れないためである
+  - CommonMarkでは、タイトかルーズかはリスト全体の性質である。値は`list.tight`の1か所だけに持つ
+  - 古いASTの`item.tight`は、無視して読める
+  - `body_to_html`は、前から`list.tight`を読んでいる。出力は変わらない
+  - レンダラー（peta-journalの`fm-leptos`と、TSの3つ）は`item.tight`を読んでいて、タイトなリストでも`<p>`を出している。`list.tight`を読むように直す（それぞれのリポジトリで行う）

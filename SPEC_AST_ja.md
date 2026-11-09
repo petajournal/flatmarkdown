@@ -142,7 +142,8 @@ YAML front matter。`page_to_ast` でページ全体を解析した場合にの�
 |-------------|---------|------------------------------------------|
 | `list_type` | string  | `"bullet"` または `"ordered"`            |
 | `start`     | integer | この項目の序数                           |
-| `tight`     | boolean | 親リストがタイトなら `true`              |
+
+注: 項目は `tight` を持たない。タイトかルーズかはリスト全体の性質なので、レンダラーは親の `list` の `tight` を読む。この変更の前に書かれたASTでは、各項目に `tight` があり、その値は常に `false` である。読み手はこれを無視する。
 
 #### `task_item`
 

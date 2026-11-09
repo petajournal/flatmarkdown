@@ -16,7 +16,7 @@ fn a_node_without_children_is_written_without_children() {
     assert_eq!(rewritten(&empty_document), empty_document);
 
     let empty_item = json!({"type": "list", "list_type": "bullet", "start": 1, "tight": true, "delimiter": "period",
-        "children": [{"type": "item", "list_type": "bullet", "start": 1, "tight": false}]});
+        "children": [{"type": "item", "list_type": "bullet", "start": 1}]});
     assert_eq!(rewritten(&empty_item), empty_item);
 }
 
