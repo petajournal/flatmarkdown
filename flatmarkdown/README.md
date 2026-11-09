@@ -43,6 +43,20 @@ Relative links are matched when the URL starts with one of `prefixes` (for examp
 | `body_to_html(input)` | Render an item body to HTML |
 | `body_to_html_with(input, opts)` | Same, with explicit `BodyOptions` |
 
+### HTML output is for trusted content
+
+`body_to_html` is made for content that you trust, such as your own notes.
+
+- Raw HTML in the body is written as it is. `<script>` and event attributes such as `onerror` are not removed.
+- The URL of a link is not checked. A `javascript:` link stays a link.
+
+This is on purpose. Flat Markdown lets you write HTML in a note.
+
+Do not show the HTML of Markdown that you do not trust without a sanitizer.
+
+Values that are text are escaped: the text itself, the info of a code fence, the title of an alert, and the `alt` of an image.
+The `alt` of an image holds only the text of the image description, without tags.
+
 ### Examples
 
 ```rust
