@@ -120,16 +120,13 @@ fn tight_and_loose_lists() {
         } => {
             assert_eq!(list_type, "ordered");
             assert!(!*tight);
-            assert_eq!(*start, Some(1));
+            assert_eq!(*start, 1);
             assert_eq!(delimiter, "period");
         }
         other => panic!("expected list, got {other:?}"),
     }
     let offset = ast("3) c\n4) d");
-    assert!(matches!(
-        first_block(&offset),
-        Node::List { start: Some(3), .. }
-    ));
+    assert!(matches!(first_block(&offset), Node::List { start: 3, .. }));
     assert_eq!(extract_text(&tight), "ab");
 }
 
@@ -178,7 +175,7 @@ fn blockquote_and_thematic_break() {
     assert_eq!(extract_text(&root), "quoted");
 }
 
-// リンクは url と title を持つ Link として解析され、Markdown の画像は flatmarkdown が出す Embed になる。npm パッケージ形式の image ノードも Image として解析される。
+// リンクは url と title を持つ Link として解析され、Markdown の画像は Embed になる。
 #[test]
 fn link_and_image() {
     let root = ast("[site](https://example.com \"Title\") ![alt](pic.png)");
@@ -209,13 +206,6 @@ fn link_and_image() {
         }
         other => panic!("expected embed, got {other:?}"),
     }
-    // An `image` node as defined by the npm package parses too.
-    let image = parse(
-        r#"{"type":"image","url":"a.png","title":"","children":[{"type":"text","value":"x"}]}"#,
-    )
-    .unwrap();
-    assert!(matches!(image, Node::Image { .. }));
-    assert_eq!(extract_text(&image), "x");
 }
 
 // ウィキリンクとハッシュタグは Wikilink と Hashtag として解析され、サーバーのオプションでは相対 Markdown リンクも同じノードに解決される。
@@ -353,21 +343,17 @@ fn malformed_known_node_is_an_error() {
     assert!(parse("not json").is_err());
 }
 
-// 省略された任意フィールドは既定値になる。children は空、fenced と display_math は false である。
+// 省略された任意フィールドは既定値になる。children は空、info と literal は空文字列、header は false である。
 #[test]
 fn missing_optional_fields_default() {
     let root = parse(r#"{"type":"document"}"#).unwrap();
     assert!(root.children().is_empty());
     let cb = parse(r#"{"type":"code_block"}"#).unwrap();
-    assert!(matches!(cb, Node::CodeBlock { fenced: false, .. }));
-    let math = parse(r#"{"type":"math","literal":"x"}"#).unwrap();
-    assert!(matches!(
-        math,
-        Node::Math {
-            display_math: false,
-            ..
-        }
-    ));
+    assert!(
+        matches!(cb, Node::CodeBlock { info, literal } if info.is_empty() && literal.is_empty())
+    );
+    let row = parse(r#"{"type":"table_row"}"#).unwrap();
+    assert!(matches!(row, Node::TableRow { header: false, .. }));
 }
 
 // 解析した AST は type タグつきの JSON にシリアライズされ、Unknown ノードの type は "unknown" になる。
@@ -383,4 +369,32 @@ fn serializes_back_to_tagged_json() {
         children: vec![],
     };
     assert_eq!(serde_json::to_value(&unknown).unwrap()["type"], "unknown");
+}
+
+// パーサーの出力は、型で読んで書き戻しても、同じJSONの値である。本文でもページでも成り立つ。
+#[test]
+fn parser_output_is_written_back_unchanged() {
+    let bodies = [
+        "# H\n\npara *e* **s** ~~d~~ `c` ==h== ^s^ ~s~ ||sp|| __u__ :smile: $`x`$ <b>i</b>\nline",
+        "```rust\ncode\n```\n\n> q\n\n>>>\nmq\n>>>\n\n---\n\n<div>\nb\n</div>",
+        "- a\n- b\n\n1. x\n\n2. y\n\n- [ ] t\n- [x] d\n\n| a | b |\n|:--|--:|\n| 1 | 2 |",
+        "> [!NOTE]\n> n\n\n> [!WARNING] Title\n> n\n\ntext[^1] ^[inline]\n\n[^1]: note",
+        "[l](https://e.com \"T\") ![alt](p.png) ![a](p.png#w=10&flag) [[P]] [[P#id|lab]] #tag [N](./n.md) [#t](../t.md)",
+        "",
+        "-# sub\n\n- \n",
+    ];
+    for md in bodies {
+        let json = flatmarkdown::body_to_ast_with(md, &options());
+        let original: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let written = serde_json::to_value(parse(&json).unwrap()).unwrap();
+        assert_eq!(written, original, "body {md:?}");
+    }
+
+    let page_md = "---\nk: v\n---\n\n<!-- @ 2026-09-26-18-14-47-32W15WT plan=\"2026-09-28\" -->\n# Title\n\nText[^1].\n\n[^1]: Note.\n\n<!-- @@ -->\n";
+    for md in [page_md, "", "plain"] {
+        let json = flatmarkdown::page_to_ast_with(md, &options());
+        let original: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let written = serde_json::to_value(flatmarkdown_ast::parse_page(&json).unwrap()).unwrap();
+        assert_eq!(written, original, "page {md:?}");
+    }
 }

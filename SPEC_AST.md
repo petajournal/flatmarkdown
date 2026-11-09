@@ -308,7 +308,7 @@ Emoji shortcode (e.g. `:rabbit:` → 🐰).
 
 #### `math`
 
-Inline math using code-style syntax: `` $`formula`$ `` (inline) or `` $$`formula`$$ `` (display). Block math via `math_dollars` (`$$`) is disabled.
+Inline math using code-style syntax: `` $`formula`$ ``. A `math` node is always inline math. Math via `math_dollars` (`$...$` and `$$...$$`) is disabled, so there is no display math.
 
 | Attribute | Type   | Description  |
 |-----------|--------|--------------|
