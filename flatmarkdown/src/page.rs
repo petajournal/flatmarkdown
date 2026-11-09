@@ -75,7 +75,9 @@ fn parse_metadata_line(line: &str) -> Option<ItemMetadata> {
     let inner = line
         .trim_end()
         .strip_prefix("<!-- @")?
-        .strip_suffix(" -->")?;
+        .strip_suffix("-->")?;
+    // One or more spaces stand before `-->`. How many does not matter, as between the elements.
+    let inner = inner.strip_suffix(' ')?.trim_end_matches(' ');
     let chars: Vec<char> = inner.chars().collect();
     let extra_ats = chars.iter().take_while(|&&c| c == '@').count();
     let level = 1 + extra_ats;
@@ -87,11 +89,9 @@ fn parse_metadata_line(line: &str) -> Option<ItemMetadata> {
         if chars[i] != ' ' {
             return None;
         }
-        while i < chars.len() && chars[i] == ' ' {
+        // The spaces at the end are already gone, so an element always follows these.
+        while chars[i] == ' ' {
             i += 1;
-        }
-        if i >= chars.len() {
-            return None;
         }
         let token_end = chars[i..]
             .iter()
