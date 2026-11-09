@@ -275,7 +275,13 @@ fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
         },
         NodeValue::WikiLink(wl) => Node::Wikilink {
             url: wl.url.clone(),
-            children,
+            // An empty label (`[[page|]]`) is no label. The page name is shown, as for
+            // `[[page]]`, so that the link is never drawn without any text.
+            children: if children.is_empty() {
+                vec![text(&wl.url)]
+            } else {
+                children
+            },
         },
         NodeValue::Underline => Node::Underline { children },
         NodeValue::Subscript => Node::Subscript { children },
