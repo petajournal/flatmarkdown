@@ -104,3 +104,10 @@ fn a_wikilink_with_an_empty_label_shows_its_page_name() {
         );
     }
 }
+
+// \#は#と同じである。[[\#]]も、wikilinkにならない。文字のままである。
+#[test]
+fn a_wikilink_with_only_an_escaped_hash_sign_stays_text() {
+    assert_eq!(inlines(&ast("[[\\#]]")), [text("[[#]]")]);
+    assert_eq!(inlines(&ast("[[\\#|label]]")), [text("[[#|label]]")]);
+}
