@@ -1,5 +1,6 @@
 //! Turns relative Markdown links into wikilink and hashtag nodes.
 
+use crate::hashtags::is_tag_name;
 use flatmarkdown_ast::Node;
 
 /// Strips a matching prefix from `url` and removes the `.md` suffix, returning the wikilink URL.
@@ -23,9 +24,14 @@ fn markdown_link_to_wikilink_url(url: &str, prefixes: &[String]) -> Option<Strin
 
 /// Returns `true` if the children of a `link` node represent a serialised tag:
 /// the only child is a text node whose value is `#` + `wikilink_url`.
+///
+/// The name must also follow the rules of a tag name. A link is the only way to a hashtag
+/// that does not go through those rules, and the name of a `.md` file can come from outside.
 fn is_tag_link(children: &[Node], wikilink_url: &str) -> bool {
     match children {
-        [Node::Text { value }] => value.strip_prefix('#') == Some(wikilink_url),
+        [Node::Text { value }] => {
+            value.strip_prefix('#') == Some(wikilink_url) && is_tag_name(wikilink_url)
+        }
         _ => false,
     }
 }
