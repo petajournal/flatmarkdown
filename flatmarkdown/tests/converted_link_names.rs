@@ -63,3 +63,27 @@ fn a_tag_link_is_matched_after_the_whitespace_is_dropped() {
         }]
     );
 }
+
+// ページパスに\#があるリンクは、wikilinkにならない。a#bは「aの項目b」と読めてしまうからである。
+#[test]
+fn a_link_with_an_escaped_hash_in_its_page_path_stays_a_link() {
+    assert_eq!(
+        inlines(&ast("[x](../a\\#b.md)")),
+        [Node::Link {
+            url: "../a#b.md".to_string(),
+            title: String::new(),
+            children: vec![Node::Text {
+                value: "x".to_string()
+            }],
+        }]
+    );
+}
+
+// パーサーが目印に使う文字がページパスにあっても、\#とは取り違えない。wikilinkになる。
+#[test]
+fn a_noncharacter_in_a_page_path_is_not_read_as_an_escaped_hash() {
+    assert_eq!(
+        inlines(&ast("[x](../\u{FDD0}\u{FDD1}.md)")),
+        [wikilink("\u{FDD0}\u{FDD1}", "x")]
+    );
+}
