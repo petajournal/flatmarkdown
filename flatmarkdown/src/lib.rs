@@ -2453,4 +2453,14 @@ mod tests {
             "<blockquote class=\"alert alert-note\">\n<p class=\"alert-title\">a &lt; b &amp; c</p>\n<p>body</p>\n</blockquote>\n"
         );
     }
+
+    // 画像のaltには、子の文字だけが入る。子のタグは入らない。
+    #[test]
+    fn html_image_alt_holds_only_the_text_of_its_children() {
+        let result = body_to_html("![a **b** [c](d) <e>](u.png)");
+        assert_eq!(
+            result,
+            "<p><img src=\"u.png\" alt=\"a b c &lt;e&gt;\" /></p>\n"
+        );
+    }
 }
