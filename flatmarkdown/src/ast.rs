@@ -110,7 +110,8 @@ fn merge_adjacent_texts(nodes: Vec<Node>) -> Vec<Node> {
 }
 
 /// Splits the URL of an image into the URL without its fragment and the properties that
-/// the fragment holds (`#key=value&flag`). A flag without `=` is `true`.
+/// the fragment holds (`#key=value&flag`). A flag without `=` is `true`. A key written twice
+/// keeps its last value.
 fn parse_embed_url(url: &str) -> (String, BTreeMap<String, Value>) {
     match url.find('#') {
         Some(pos) => {
@@ -125,6 +126,8 @@ fn parse_embed_url(url: &str) -> (String, BTreeMap<String, Value>) {
                     ),
                     None => (kv.to_string(), Value::Bool(true)),
                 })
+                // A property without a name cannot be read by a renderer, so `=value` is dropped.
+                .filter(|(key, _)| !key.is_empty())
                 .collect();
             (base, props)
         }
