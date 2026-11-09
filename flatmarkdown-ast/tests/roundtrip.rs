@@ -384,3 +384,31 @@ fn serializes_back_to_tagged_json() {
     };
     assert_eq!(serde_json::to_value(&unknown).unwrap()["type"], "unknown");
 }
+
+// パーサーの出力は、型で読んで書き戻しても、同じJSONの値である。本文でもページでも成り立つ。
+#[test]
+fn parser_output_is_written_back_unchanged() {
+    let bodies = [
+        "# H\n\npara *e* **s** ~~d~~ `c` ==h== ^s^ ~s~ ||sp|| __u__ :smile: $`x`$ <b>i</b>\nline",
+        "```rust\ncode\n```\n\n> q\n\n>>>\nmq\n>>>\n\n---\n\n<div>\nb\n</div>",
+        "- a\n- b\n\n1. x\n\n2. y\n\n- [ ] t\n- [x] d\n\n| a | b |\n|:--|--:|\n| 1 | 2 |",
+        "> [!NOTE]\n> n\n\n> [!WARNING] Title\n> n\n\ntext[^1] ^[inline]\n\n[^1]: note",
+        "[l](https://e.com \"T\") ![alt](p.png) ![a](p.png#w=10&flag) [[P]] [[P#id|lab]] #tag [N](./n.md) [#t](../t.md)",
+        "",
+        "-# sub\n\n- \n",
+    ];
+    for md in bodies {
+        let json = flatmarkdown::body_to_ast_with(md, &options());
+        let original: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let written = serde_json::to_value(parse(&json).unwrap()).unwrap();
+        assert_eq!(written, original, "body {md:?}");
+    }
+
+    let page_md = "---\nk: v\n---\n\n<!-- @ 2026-09-26-18-14-47-32W15WT plan=\"2026-09-28\" -->\n# Title\n\nText[^1].\n\n[^1]: Note.\n\n<!-- @@ -->\n";
+    for md in [page_md, "", "plain"] {
+        let json = flatmarkdown::page_to_ast_with(md, &options());
+        let original: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let written = serde_json::to_value(flatmarkdown_ast::parse_page(&json).unwrap()).unwrap();
+        assert_eq!(written, original, "page {md:?}");
+    }
+}
