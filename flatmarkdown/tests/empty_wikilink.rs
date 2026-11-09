@@ -104,3 +104,50 @@ fn a_wikilink_with_an_empty_label_shows_its_page_name() {
         );
     }
 }
+
+// \#は#と同じである。[[\#]]も、wikilinkにならない。文字のままである。
+#[test]
+fn a_wikilink_with_only_an_escaped_hash_sign_stays_text() {
+    assert_eq!(inlines(&ast("[[\\#]]")), [text("[[#]]")]);
+    assert_eq!(inlines(&ast("[[\\#|label]]")), [text("[[#|label]]")]);
+}
+
+// ページ名の前後の空白は、全角空白やノーブレークスペースも落とす。
+#[test]
+fn any_whitespace_around_a_page_name_is_dropped() {
+    for md in [
+        "[[\u{3000}a\u{3000}]]",
+        "[[\u{A0}a\u{A0}]]",
+        "[[ \u{3000} a]]",
+    ] {
+        assert_eq!(
+            inlines(&ast(md)),
+            [Node::Wikilink {
+                url: "a".to_string(),
+                children: vec![text("a")],
+            }],
+            "{md:?}"
+        );
+    }
+}
+
+// ラベルがあっても、ページ名の前後の空白を落とす。ラベルはそのまま残る。
+#[test]
+fn the_whitespace_is_dropped_when_a_label_follows() {
+    assert_eq!(
+        inlines(&ast("[[\u{3000}a\u{3000}|l]]")),
+        [Node::Wikilink {
+            url: "a".to_string(),
+            children: vec![text("l")],
+        }]
+    );
+}
+
+// 全角空白やノーブレークスペースだけの名前も、名前ではない。文字のままである。
+#[test]
+fn a_wikilink_with_only_wide_whitespace_as_its_name_stays_text() {
+    for md in ["[[\u{3000}]]", "[[\u{A0}]]", "[[ \u{3000} ]]"] {
+        assert_eq!(inlines(&ast(md)), [text("[[]]")], "{md:?}");
+    }
+    assert_eq!(inlines(&ast("[[\u{3000}|label]]")), [text("[[|label]]")]);
+}

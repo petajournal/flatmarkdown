@@ -58,6 +58,8 @@ A link to a `.md` file without a name is also kept as a `link` node: `[x](<prefi
 
 The whitespace around the page path is dropped, as it is for `[[ page ]]`: the page path of `[x](<<prefix> a .md>)` is `a`. Whitespace inside the page path is kept.
 
+A link with an escaped `\#` in its page path is also kept as a `link` node: `[x](<prefix>a\#b.md)`. As a wikilink, its `url` would be `a#b`. That reads as the item `b` of the page `a`, which the author did not write.
+
 When *LinkResolution::Off* (the default), this conversion is skipped entirely, as is the `#tag` text-node extraction described below.
 
 **Footnote completion**: the Markdown parser keeps a footnote only when its reference and its definition are in the same document. A body is parsed alone, so a body that holds only `[^label]` references or only `[^label]:` definitions would lose them. Such a body is parsed again with a placeholder for the missing side, and the placeholder nodes are removed afterwards. A `footnote_reference` therefore always appears for `[^label]` outside code, and a `footnote_definition` always appears for a definition line, even when the other side is in another item. Both sides keep `name`, so a renderer can link them by label across items.
@@ -304,7 +306,7 @@ A wikilink. Children are the label (inline nodes); when no label is given, the c
 |-----------|--------|-----------------|
 | `url`     | string | Link destination. May contain a `#id` fragment for block links. |
 
-A wikilink without a page name is not a wikilink. `[[]]` and `[[|label]]` stay text, so a `wikilink` node never has an empty `url`. Whitespace alone is no name: `[[ ]]` becomes the text `[[]]`. A `#` without a page name and without an ID is no name either: `[[#]]` and `[[#|label]]` stay text. `[[#id]]` is a wikilink, with the `url` `#id`.
+A wikilink without a page name is not a wikilink. `[[]]` and `[[|label]]` stay text, so a `wikilink` node never has an empty `url`. The whitespace around the page name is dropped. This holds for every kind of whitespace, also the full-width space (U+3000) and the no-break space (U+00A0). Whitespace alone is no name: `[[ ]]` becomes the text `[[]]`. A `#` without a page name and without an ID is no name either: `[[#]]` and `[[#|label]]` stay text. An escaped `\#` is a `#` here too, so `[[\#]]` becomes the text `[[#]]`. `[[#id]]` is a wikilink, with the `url` `#id`.
 
 #### `footnote_reference`
 
@@ -312,7 +314,7 @@ A wikilink without a page name is not a wikilink. `[[]]` and `[[|label]]` stay t
 |-----------|---------|---------------------------------------|
 | `name`    | string  | Footnote label                        |
 | `ref_num` | integer | Index of this reference to the same footnote |
-| `ix`      | integer | Index of the footnote in the body. It restarts in every body, so renderers should show `name` instead. |
+| `ix`      | integer | Index of the footnote in the body. It starts at 1 and has no gap, also when a footnote of the body has its other side in another item. It restarts in every body, so renderers should show `name` instead. |
 
 #### `shortcode`
 
@@ -351,11 +353,11 @@ The position is judged in the `text` node, not in the source. A `text` node star
 
 No hashtag is made inside the label of a `link` or a `wikilink`. `#tag` stays text there, also inside inline markup of the label. A renderer draws a hashtag as a link, so a hashtag in a label would be a link inside a link. The only hashtag that comes from a link is the tag link of *LinkResolution::On* (`[#tagname](<prefix>tagname.md)`), and there the whole link becomes the `hashtag` node. The alt text of an `embed` is not a label of a link: a hashtag is made there.
 
-`\#` is treated as a literal `#` and is never recognized as a hashtag. This holds wherever Markdown reads backslash escapes: in text, in the URL and title of a link or an embed, in the info string of a code block, and in the title of an alert. Where Markdown keeps the text raw, `\#` stays as written: in `code`, `code_block`, and `math` (`literal`), and in `html_inline` and `html_block`.
+`\#` is treated as a literal `#` and is never recognized as a hashtag. This holds wherever Markdown reads backslash escapes: in text, in the URL and title of a link or an embed, in the `props` of an embed, in the `url` of a wikilink, in the name of a footnote, in the info string of a code block, and in the title of an alert. Where Markdown keeps the text raw, `\#` stays as written: in `code`, `code_block`, and `math` (`literal`), and in `html_inline` and `html_block`.
 
 `\#` is the only way to write a `#` that is not a tag. A character reference of `#` (`&#35;`) is not such a way. Markdown turns it into `#` before the tags are found, so `&#35;tag` at the start of a `text` node is the tag `tag`.
 
-Every character of a body is kept as it is, also a noncharacter such as U+FDD0. No character of a body is read as a `#`, except `#` itself.
+A noncharacter in a body, such as U+FDD0, is an ordinary character. It stays in the text as it is. It is never read as a `#`.
 
 | Attribute | Type   | Description                                    |
 |-----------|--------|------------------------------------------------|

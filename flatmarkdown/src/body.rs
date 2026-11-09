@@ -1,7 +1,7 @@
 //! Parses the body of one item into the AST.
 
 use crate::ast::{node_to_ast, options};
-use crate::footnotes::{complete_footnotes, strip_footnote_placeholders};
+use crate::footnotes::{complete_footnotes, renumber_footnotes, strip_footnote_placeholders};
 use crate::hashtags::{mark_escaped_hashes, process_hashtags, restore_escaped_hashes};
 use crate::links::convert_markdown_links_to_wikilinks;
 use comrak::{Arena, parse_document};
@@ -38,6 +38,7 @@ pub(crate) fn body_to_node(input: &str, opts: &BodyOptions) -> Node {
         let root = parse_document(&arena, &completed, &options(false));
         ast = node_to_ast(root);
         strip_footnote_placeholders(&mut ast, &placeholder_defs);
+        renumber_footnotes(&mut ast);
     }
     if let LinkResolution::On { prefixes } = &opts.link_resolution {
         convert_markdown_links_to_wikilinks(&mut ast, prefixes);
