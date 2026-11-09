@@ -301,8 +301,11 @@ mod tests {
     #[test]
     fn tasklist() {
         let result = body_to_html("- [x] done\n- [ ] todo");
-        assert!(result.contains("checked"));
-        assert!(result.contains("type=\"checkbox\""));
+        assert_eq!(
+            result,
+            "<ul>\n<li><input type=\"checkbox\" checked disabled>done</li>\n\
+             <li><input type=\"checkbox\" disabled>todo</li>\n</ul>\n"
+        );
     }
 
     // SSoT: a plain newline is a GFM soft break, not a hard break.

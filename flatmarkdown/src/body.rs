@@ -61,6 +61,16 @@ mod tests {
     use super::*;
     use serde_json::Value;
 
+    /// Link resolution on. Hashtags and wikilinks are only made with it, so a test that says
+    /// "this is not a hashtag" or "this stays a link" proves nothing without it.
+    fn with_link_resolution() -> BodyOptions {
+        BodyOptions {
+            link_resolution: LinkResolution::On {
+                prefixes: vec!["../".into(), "./".into()],
+            },
+        }
+    }
+
     #[test]
     fn ast_multiline_block_quote() {
         let result = body_to_ast(">>>\nq1\n\nq2\n>>>");
@@ -180,7 +190,7 @@ mod tests {
 
     #[test]
     fn ast_hashtag_not_in_middle_of_word() {
-        let result = body_to_ast("foo#bar");
+        let result = body_to_ast_with("foo#bar", &with_link_resolution());
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -208,7 +218,7 @@ mod tests {
     #[test]
     fn ast_hashtag_leading_slash_not_hashtag() {
         // "#/tag" must not be recognized as a hashtag (leading '/' is invalid)
-        let result = body_to_ast("#/tag");
+        let result = body_to_ast_with("#/tag", &with_link_resolution());
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -237,7 +247,7 @@ mod tests {
     #[test]
     fn ast_hashtag_leading_and_trailing_slash_not_hashtag() {
         // "#/tag/" must not be recognized as a hashtag (leading '/' is invalid)
-        let result = body_to_ast("#/tag/");
+        let result = body_to_ast_with("#/tag/", &with_link_resolution());
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -254,7 +264,7 @@ mod tests {
 
     #[test]
     fn ast_escaped_hashtag_basic() {
-        let result = body_to_ast(r"\#tag");
+        let result = body_to_ast_with(r"\#tag", &with_link_resolution());
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -281,7 +291,7 @@ mod tests {
 
     #[test]
     fn ast_escaped_hashtag_multiple() {
-        let result = body_to_ast(r"\#a \#b");
+        let result = body_to_ast_with(r"\#a \#b", &with_link_resolution());
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -642,7 +652,7 @@ mod tests {
     // External links must not be converted to wikilinks
     #[test]
     fn ast_external_link_not_converted_to_wikilink() {
-        let result = body_to_ast("[text](https://example.com)");
+        let result = body_to_ast_with("[text](https://example.com)", &with_link_resolution());
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "link");
@@ -651,7 +661,7 @@ mod tests {
     // Relative links not ending in .md must not be converted to wikilinks
     #[test]
     fn ast_non_md_relative_link_not_converted() {
-        let result = body_to_ast("[text](../page.html)");
+        let result = body_to_ast_with("[text](../page.html)", &with_link_resolution());
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "link");
