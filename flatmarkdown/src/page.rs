@@ -420,6 +420,16 @@ mod tests {
         assert!(parse_metadata_line("<!-- @ --> x").is_none());
     }
 
+    // IDの末尾の7文字は、CrockfordのBase32である。小文字と、I、L、O、Uは使えない。
+    #[test]
+    fn metadata_id_with_a_tail_outside_crockford_base32_is_invalid() {
+        assert!(parse_metadata_line("<!-- @ 2026-09-26-18-14-47-0189ABZ -->").is_some());
+        for tail in ["32w15wt", "32W15WI", "32W15WL", "32W15WO", "32W15WU"] {
+            let line = format!("<!-- @ 2026-09-26-18-14-47-{tail} -->");
+            assert!(parse_metadata_line(&line).is_none(), "{tail}");
+        }
+    }
+
     // ---- Page parsing ----
 
     // 仕様書の例のページは4つの項目になる。メタデータ行のないブロックはレベル1の項目に、本文のないメタデータ行は空の項目になる。
