@@ -3,14 +3,20 @@
 use crate::hashtags::is_tag_name;
 use flatmarkdown_ast::Node;
 
-/// Strips a matching prefix from `url` and removes the `.md` suffix, returning the wikilink URL.
+/// Strips the longest matching prefix from `url` and removes the `.md` suffix, returning the
+/// wikilink URL.
 /// Returns `None` if no prefix matches or the URL does not end with `.md`.
 ///
 /// Also returns `None` if the file has no name: `.md` alone or after only whitespace, at the
 /// top or in a folder. The name of a `.md` file can come from outside, so such a link must
 /// not make a wikilink or a hashtag with an empty name.
 fn markdown_link_to_wikilink_url(url: &str, prefixes: &[String]) -> Option<String> {
-    let without_prefix = prefixes.iter().find_map(|p| url.strip_prefix(p.as_str()))?;
+    // The longest prefix that matches is used, so the order of the list does not matter.
+    // What is left is then the shortest.
+    let without_prefix = prefixes
+        .iter()
+        .filter_map(|p| url.strip_prefix(p.as_str()))
+        .min_by_key(|rest| rest.len())?;
     let (path_part, fragment) = match without_prefix.find('#') {
         Some(pos) => (&without_prefix[..pos], &without_prefix[pos..]),
         None => (without_prefix, ""),
