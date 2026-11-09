@@ -47,7 +47,7 @@ Each item has:
 
 ## Body Preprocessing
 
-**Markdown link → wikilink / hashtag conversion** *(LinkResolution::On only)*: After parsing, `link` nodes whose URL starts with one of the configured prefixes and ends with `.md` are converted as follows. The matching prefix and `.md` suffix are stripped to form the page path.
+**Markdown link → wikilink / hashtag conversion** *(LinkResolution::On only)*: After parsing, `link` nodes whose URL starts with one of the configured prefixes and ends with `.md` are converted as follows. The matching prefix and `.md` suffix are stripped to form the page path. When more than one prefix matches, the longest one is used: with the prefixes `../` and `../docs/`, the page path of `../docs/a.md` is `a`. The order of the prefixes does not change the result.
 
 - If the link text is a single text node whose value equals `#page_path` (i.e. `[#tagname](<prefix>tagname.md)`), the node becomes a `hashtag` node with `value = tagname`. The `url`, `title`, and `children` fields are removed. A link with a `#id` fragment is not such a link: `[#tagname](<prefix>tagname.md#id)` becomes a `wikilink`. The page path must also follow the rules of a tag name (see `hashtag`). When it does not, as in `[#a b](<prefix>a b.md)`, the node becomes a `wikilink` and its label stays the text `#a b`. A `hashtag` therefore always has a name that could be written as `#name` in text.
 - Otherwise, the node becomes a `wikilink` node. The `url` is the page path (prefix and `.md` suffix stripped); a `#id` fragment is preserved. The `title` field is removed; `children` (link text) are kept as the label.
@@ -61,6 +61,8 @@ When *LinkResolution::Off* (the default), this conversion is skipped entirely, a
 **Footnote completion**: the Markdown parser keeps a footnote only when its reference and its definition are in the same document. A body is parsed alone, so a body that holds only `[^label]` references or only `[^label]:` definitions would lose them. Such a body is parsed again with a placeholder for the missing side, and the placeholder nodes are removed afterwards. A `footnote_reference` therefore always appears for `[^label]` outside code, and a `footnote_definition` always appears for a definition line, even when the other side is in another item. Both sides keep `name`, so a renderer can link them by label across items.
 
 **Inline footnotes**: `^[content]` is a footnote written in place. The content can hold inline markup. It becomes a `footnote_reference` at that place and a `footnote_definition` at the end of the same body. The parser makes the name: `__inline_1` for the first inline footnote of the body, `__inline_2` for the second, and so on. The count restarts in every body, so inline footnotes of different items have the same name. Both sides of an inline footnote are always in the same body. A renderer must link a name that starts with `__inline_` only inside one item, and should show a number instead of the name. An empty `^[]` is plain text.
+
+A name that starts with `__inline_` belongs to the parser. An author must not write such a name by hand, as in `[^__inline_1]`. The result is not defined when they do: the name can be the same as the name of an inline footnote in that body, and then the two footnotes cannot be told apart.
 
 ## Node Structure
 
