@@ -25,7 +25,6 @@ pub(crate) fn options(front_matter: bool) -> Options<'static> {
 
     // Extension options (GFM)
     options.extension.strikethrough = true;
-    options.extension.tagfilter = true;
     options.extension.table = true;
     options.extension.autolink = true;
     options.extension.tasklist = true;
