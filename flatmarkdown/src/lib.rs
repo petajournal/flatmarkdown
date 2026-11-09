@@ -252,7 +252,8 @@ fn ast_to_html(node: &Value) -> String {
                     _ => "Note",
                 });
             format!(
-                "<blockquote class=\"alert alert-{alert_type}\">\n<p class=\"alert-title\">{title}</p>\n{}</blockquote>\n",
+                "<blockquote class=\"alert alert-{alert_type}\">\n<p class=\"alert-title\">{}</p>\n{}</blockquote>\n",
+                escape_html(title),
                 render_children(node)
             )
         }
