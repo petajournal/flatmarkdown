@@ -1,14 +1,8 @@
 //! Keeps footnote references and definitions that have no partner in the same item.
 
-use crate::hashtags::{FOOTNOTE, MARK};
+use crate::hashtags::FOOTNOTE_PLACEHOLDER;
 use flatmarkdown_ast::Node;
 use std::collections::HashSet;
-
-/// The placeholder text that completes unpaired footnotes before parsing.
-/// The body cannot hold it: a `MARK` of the body is always followed by a second `MARK`.
-fn footnote_placeholder() -> String {
-    format!("{MARK}{FOOTNOTE}")
-}
 
 /// Footnote labels found by a raw scan of a body: `[^label]` occurrences and
 /// `[^label]:` definition lines. The scan does not know about code spans or
@@ -125,12 +119,11 @@ pub(crate) fn complete_footnotes(input: &str, ast: &Node) -> Option<(String, Has
         return None;
     }
 
-    let placeholder = footnote_placeholder();
     let mut completed = String::new();
     for label in &missing_defs {
-        completed.push_str(&format!("[^{label}]: {placeholder}\n\n"));
+        completed.push_str(&format!("[^{label}]: {FOOTNOTE_PLACEHOLDER}\n\n"));
     }
-    completed.push_str(&placeholder);
+    completed.push_str(FOOTNOTE_PLACEHOLDER);
     for label in &missing_refs {
         completed.push_str(&format!("[^{label}]"));
     }
@@ -144,12 +137,11 @@ pub(crate) fn strip_footnote_placeholders(ast: &mut Node, placeholder_defs: &Has
     let Some(children) = ast.children_mut() else {
         return;
     };
-    let placeholder = footnote_placeholder();
     children.retain(|child| match child {
         Node::FootnoteDefinition { name, .. } => !placeholder_defs.contains(name),
         Node::Paragraph { children } => !matches!(
             children.first(),
-            Some(Node::Text { value }) if value.starts_with(&placeholder)
+            Some(Node::Text { value }) if value.starts_with(FOOTNOTE_PLACEHOLDER)
         ),
         _ => true,
     });
@@ -178,7 +170,7 @@ mod tests {
     }
 
     fn contains_placeholder(v: &Value) -> bool {
-        v.to_string().contains(&footnote_placeholder())
+        v.to_string().contains(FOOTNOTE_PLACEHOLDER)
     }
 
     // 定義のない脚注の参照は、footnote_referenceとして残る。

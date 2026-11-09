@@ -7,13 +7,14 @@ use flatmarkdown_ast::Node;
 /// A body can hold this character itself, because a body can come from outside. Such a
 /// character is written twice while the parser works. A mark is therefore never mistaken for
 /// text of the body, and the text of the body is never mistaken for a mark.
-pub(crate) const MARK: char = '\u{FDD0}';
+const MARK: char = '\u{FDD0}';
 
 /// After `MARK`: an escaped `\#` stood here.
 const ESCAPED_HASH: char = '\u{FDD1}';
 
-/// After `MARK`: a placeholder of the footnote completion.
-pub(crate) const FOOTNOTE: char = '\u{FDD2}';
+/// The placeholder text of the footnote completion: `MARK` and one more character.
+/// The body cannot hold it: a `MARK` of the body is always followed by a second `MARK`.
+pub(crate) const FOOTNOTE_PLACEHOLDER: &str = "\u{FDD0}\u{FDD2}";
 
 /// Puts a mark where `\#` is, so that the hashtag pass cannot mistake the escaped `#` for the
 /// start of a tag. A `MARK` of the body itself is written twice.
