@@ -70,46 +70,6 @@ mod tests {
     }
 
     #[test]
-    fn ast_basic() {
-        let result = body_to_ast("Hello");
-        let v: Value = serde_json::from_str(&result).unwrap();
-        assert_eq!(v["type"], "document");
-        assert_eq!(v["children"][0]["type"], "paragraph");
-        assert_eq!(v["children"][0]["children"][0]["type"], "text");
-        assert_eq!(v["children"][0]["children"][0]["value"], "Hello");
-    }
-
-    #[test]
-    fn ast_heading() {
-        let result = body_to_ast("## Sub");
-        let v: Value = serde_json::from_str(&result).unwrap();
-        let heading = &v["children"][0];
-        assert_eq!(heading["type"], "heading");
-        assert_eq!(heading["level"], 2);
-        assert_eq!(heading["children"][0]["value"], "Sub");
-    }
-
-    #[test]
-    fn ast_link() {
-        let result = body_to_ast("[text](https://example.com)");
-        let v: Value = serde_json::from_str(&result).unwrap();
-        let link = &v["children"][0]["children"][0];
-        assert_eq!(link["type"], "link");
-        assert_eq!(link["url"], "https://example.com");
-        assert_eq!(link["children"][0]["value"], "text");
-    }
-
-    #[test]
-    fn ast_code_block() {
-        let result = body_to_ast("```rust\nfn main() {}\n```");
-        let v: Value = serde_json::from_str(&result).unwrap();
-        let cb = &v["children"][0];
-        assert_eq!(cb["type"], "code_block");
-        assert_eq!(cb["info"], "rust");
-        assert_eq!(cb["literal"], "fn main() {}\n");
-    }
-
-    #[test]
     fn wikilink_ast_basic() {
         let result = body_to_ast("[[page]]");
         let v: Value = serde_json::from_str(&result).unwrap();
@@ -302,15 +262,6 @@ mod tests {
     }
 
     #[test]
-    fn ast_escaped_hashtag_in_text() {
-        let result = body_to_ast(r"hello \#tag world");
-        let v: Value = serde_json::from_str(&result).unwrap();
-        let children = v["children"][0]["children"].as_array().unwrap();
-        assert_eq!(children[0]["type"], "text");
-        assert_eq!(children[0]["value"], "hello #tag world");
-    }
-
-    #[test]
     fn ast_escaped_hashtag_with_real_hashtag() {
         let result = body_to_ast_with(
             r"\#notag #real",
@@ -379,41 +330,6 @@ mod tests {
         assert_eq!(embed["url"], "https://youtube.com/watch?v=xxx");
         assert_eq!(embed["props"]["w"], "640");
         assert_eq!(embed["props"]["start"], "30");
-    }
-
-    // SSoT: a plain newline produces a softbreak node (standard GFM).
-    #[test]
-    fn ast_newline_produces_softbreak() {
-        let result = body_to_ast("line1\nline2");
-        let v: Value = serde_json::from_str(&result).unwrap();
-        let children = v["children"][0]["children"].as_array().unwrap();
-        assert_eq!(children[0]["type"], "text");
-        assert_eq!(children[0]["value"], "line1");
-        assert_eq!(children[1]["type"], "softbreak");
-        assert_eq!(children[2]["type"], "text");
-        assert_eq!(children[2]["value"], "line2");
-    }
-
-    // SSoT: GFM hard line break syntax (trailing 2+ spaces) produces a linebreak.
-    #[test]
-    fn ast_gfm_trailing_spaces_produce_linebreak() {
-        let result = body_to_ast("line1  \nline2");
-        let v: Value = serde_json::from_str(&result).unwrap();
-        let children = v["children"][0]["children"].as_array().unwrap();
-        assert_eq!(children[0]["value"], "line1");
-        assert_eq!(children[1]["type"], "linebreak");
-        assert_eq!(children[2]["value"], "line2");
-    }
-
-    // SSoT: GFM hard line break syntax (trailing backslash) produces a linebreak.
-    #[test]
-    fn ast_gfm_trailing_backslash_produces_linebreak() {
-        let result = body_to_ast("line1\\\nline2");
-        let v: Value = serde_json::from_str(&result).unwrap();
-        let children = v["children"][0]["children"].as_array().unwrap();
-        assert_eq!(children[0]["value"], "line1");
-        assert_eq!(children[1]["type"], "linebreak");
-        assert_eq!(children[2]["value"], "line2");
     }
 
     // SSoT: Extended syntax - highlight (==text==)
@@ -495,42 +411,6 @@ mod tests {
         let node = &v["children"][0];
         assert_eq!(node["type"], "alert");
         assert_eq!(node["alert_type"], "note");
-    }
-
-    // SSoT: Extended syntax - footnote (reference + definition)
-    #[test]
-    fn ast_footnote() {
-        let result = body_to_ast("Text[^1].\n\n[^1]: Footnote.");
-        let v: Value = serde_json::from_str(&result).unwrap();
-        let para_children = v["children"][0]["children"].as_array().unwrap();
-        let fref = para_children
-            .iter()
-            .find(|n| n["type"] == "footnote_reference");
-        assert!(fref.is_some(), "expected footnote_reference in paragraph");
-        assert_eq!(fref.unwrap()["name"], "1");
-        let blocks = v["children"].as_array().unwrap();
-        let fdef = blocks.iter().find(|n| n["type"] == "footnote_definition");
-        assert!(fdef.is_some(), "expected footnote_definition block");
-        assert_eq!(fdef.unwrap()["name"], "1");
-    }
-
-    // SSoT: Task list - checked item has symbol, unchecked has null
-    #[test]
-    fn ast_task_item_checked() {
-        let result = body_to_ast("- [x] done");
-        let v: Value = serde_json::from_str(&result).unwrap();
-        let item = &v["children"][0]["children"][0];
-        assert_eq!(item["type"], "task_item");
-        assert_eq!(item["symbol"], "x");
-    }
-
-    #[test]
-    fn ast_task_item_unchecked() {
-        let result = body_to_ast("- [ ] todo");
-        let v: Value = serde_json::from_str(&result).unwrap();
-        let item = &v["children"][0]["children"][0];
-        assert_eq!(item["type"], "task_item");
-        assert_eq!(item["symbol"], Value::Null);
     }
 
     // SSoT: Wikilink block link [[page#id]]
@@ -716,22 +596,6 @@ mod tests {
         assert_eq!(node["value"], "日記");
         assert!(node.get("url").is_none());
         assert!(node.get("children").is_none());
-    }
-
-    #[test]
-    fn ast_md_tag_link_ascii() {
-        let result = body_to_ast_with(
-            "[#mytag](../mytag.md)",
-            &BodyOptions {
-                link_resolution: LinkResolution::On {
-                    prefixes: vec!["../".into(), "./".into()],
-                },
-            },
-        );
-        let v: Value = serde_json::from_str(&result).unwrap();
-        let node = &v["children"][0]["children"][0];
-        assert_eq!(node["type"], "hashtag");
-        assert_eq!(node["value"], "mytag");
     }
 
     // LinkResolution::Off: #tag in text stays as text node

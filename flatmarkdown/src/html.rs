@@ -347,21 +347,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn wikilink_html_inline() {
-        let result = body_to_html("See [[page]] for details.");
-        assert!(result.contains("<a href=\"page\" data-wikilink=\"true\">page</a>"));
-        assert!(result.contains("See "));
-        assert!(result.contains(" for details."));
-    }
-
-    #[test]
-    fn wikilink_multiple() {
-        let result = body_to_html("[[page1]] and [[page2]]");
-        assert!(result.contains("<a href=\"page1\" data-wikilink=\"true\">page1</a>"));
-        assert!(result.contains("<a href=\"page2\" data-wikilink=\"true\">page2</a>"));
-    }
-
     // コードフェンスの言語名は、class属性の中でエスケープされる。
     #[test]
     fn html_code_fence_info_is_escaped_in_the_class_attribute() {

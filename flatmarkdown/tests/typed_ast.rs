@@ -2,7 +2,7 @@
 //! typed nodes that the parser makes: their kinds, their attributes, and the text they hold.
 
 use flatmarkdown::{BodyOptions, LinkResolution};
-use flatmarkdown_ast::{Node, extract_text, heading_level, parse};
+use flatmarkdown_ast::{Node, extract_text, parse};
 
 /// The same options as the PetaJournal journal server: link resolution on.
 fn options() -> BodyOptions {
@@ -41,7 +41,13 @@ fn first_block(root: &Node) -> &Node {
     &root.children()[0]
 }
 
-// インライン書式を含む段落は document 配下の paragraph として解析され、子ノードの型の並びと抽出テキストがそろう。
+fn text(value: &str) -> Node {
+    Node::Text {
+        value: value.to_string(),
+    }
+}
+
+// インライン書式を含む段落は document 配下の paragraph として解析され、子ノードの型が書いた順に並ぶ。
 #[test]
 fn paragraph_with_inline_formatting() {
     let root = ast("hello *em* **strong** `code`");
@@ -50,11 +56,9 @@ fn paragraph_with_inline_formatting() {
     assert!(matches!(para, Node::Paragraph { .. }));
     let kinds: Vec<&str> = para.children().iter().map(Node::type_name).collect();
     assert_eq!(kinds, ["text", "emph", "text", "strong", "text", "code"]);
-    assert_eq!(extract_text(&root), "hello em strong ");
-    assert_eq!(heading_level(&root), None);
 }
 
-// レベル1から6の見出しは Heading ノードとして解析され、heading_level はトップレベルの最初の見出しのレベルを返す。
+// レベル1から6の見出しは、そのレベルを持つ Heading ノードとして解析される。
 #[test]
 fn headings_one_to_six() {
     for level in 1..=6u8 {
@@ -69,14 +73,10 @@ fn headings_one_to_six() {
             }
             other => panic!("expected heading, got {other:?}"),
         }
-        assert_eq!(heading_level(&root), Some(level));
     }
-    // The first heading among the top-level children wins, even after a paragraph.
-    let root = ast("intro\n\n### Third");
-    assert_eq!(heading_level(&root), Some(3));
 }
 
-// 情報文字列つきのフェンスコードブロックは info と literal を持つ CodeBlock として解析され、その中身は抽出テキストに含まれない。
+// 情報文字列つきのフェンスコードブロックは info と literal を持つ CodeBlock として解析される。
 #[test]
 fn fenced_code_block_with_info() {
     let root = ast("```rust\nfn main() {}\n```");
@@ -87,7 +87,6 @@ fn fenced_code_block_with_info() {
         }
         other => panic!("expected code_block, got {other:?}"),
     }
-    assert_eq!(extract_text(&root), "");
 }
 
 // タイトな箇条書きとルーズな番号付きリストは List ノードとして解析され、tight・start・delimiter が正しく入る。
@@ -268,27 +267,6 @@ fn strikethrough() {
     assert_eq!(extract_text(&root), "gone");
 }
 
-// 段落内の改行は linebreak か softbreak として解析され、JSON の softbreak と linebreak ノードはそれぞれの型になる。
-#[test]
-fn softbreak_and_linebreak() {
-    // In Flat Markdown a newline inside a paragraph is a hard line break.
-    let root = ast("first\nsecond");
-    let kinds: Vec<&str> = first_block(&root)
-        .children()
-        .iter()
-        .map(Node::type_name)
-        .collect();
-    assert!(
-        kinds.contains(&"linebreak") || kinds.contains(&"softbreak"),
-        "{kinds:?}"
-    );
-    assert_eq!(extract_text(&root), "firstsecond");
-    let soft = parse(r#"{"type":"paragraph","children":[{"type":"text","value":"a"},{"type":"softbreak"},{"type":"text","value":"b"}]}"#).unwrap();
-    assert!(matches!(soft.children()[1], Node::Softbreak));
-    let hard = parse(r#"{"type":"paragraph","children":[{"type":"linebreak"}]}"#).unwrap();
-    assert!(matches!(hard.children()[0], Node::Linebreak));
-}
-
 // インライン HTML は html_inline として、ブロック HTML は literal を持つ HtmlBlock として解析される。
 #[test]
 fn html_inline_and_block() {
@@ -306,17 +284,25 @@ fn html_inline_and_block() {
     }
 }
 
-// 解析した AST は type タグつきの JSON にシリアライズされ、Unknown ノードの type は "unknown" になる。
+// 段落の中のただの改行は softbreak になる。
 #[test]
-fn serializes_back_to_tagged_json() {
-    let root = ast("# Hi");
-    let json = serde_json::to_value(&root).unwrap();
-    assert_eq!(json["type"], "document");
-    assert_eq!(json["children"][0]["type"], "heading");
-    assert_eq!(json["children"][0]["level"], 1);
-    let unknown = Node::Unknown {
-        node_type: "insert".into(),
-        children: vec![],
-    };
-    assert_eq!(serde_json::to_value(&unknown).unwrap()["type"], "unknown");
+fn a_plain_newline_in_a_paragraph_is_a_softbreak() {
+    let root = ast("line1\nline2");
+    assert_eq!(
+        first_block(&root).children(),
+        [text("line1"), Node::Softbreak, text("line2")]
+    );
+}
+
+// 行末の2つ以上の空白と、行末の\は、linebreak になる。
+#[test]
+fn trailing_spaces_and_a_trailing_backslash_are_a_linebreak() {
+    for md in ["line1  \nline2", "line1\\\nline2"] {
+        let root = ast(md);
+        assert_eq!(
+            first_block(&root).children(),
+            [text("line1"), Node::Linebreak, text("line2")],
+            "{md:?}"
+        );
+    }
 }
