@@ -56,8 +56,61 @@ pub(crate) fn options(front_matter: bool) -> Options<'static> {
 pub(crate) fn node_to_ast<'a>(
     node: &'a comrak::arena_tree::Node<'a, std::cell::RefCell<comrak::nodes::Ast>>,
 ) -> Node {
-    let children: Vec<Node> = node.children().map(node_to_ast).collect();
-    to_node(&node.data.borrow().value, children)
+    to_node(&node.data.borrow().value, children_to_ast(node))
+}
+
+/// Builds the children of a comrak node.
+///
+/// comrak wraps text in `EscapedTag` when delimiters look like markup but are not. With the
+/// options of this crate that is a single `|` on each side: `|text|` is not a spoiler, which
+/// needs `||`. Such a node means plain text, so it does not stay in the AST. Its delimiter
+/// comes back as text on both sides, and its children take its place.
+fn children_to_ast<'a>(
+    node: &'a comrak::arena_tree::Node<'a, std::cell::RefCell<comrak::nodes::Ast>>,
+) -> Vec<Node> {
+    let mut children = Vec::new();
+    let mut unwrapped = false;
+    for child in node.children() {
+        let delimiter = match &child.data.borrow().value {
+            NodeValue::EscapedTag(delimiter) => Some(*delimiter),
+            _ => None,
+        };
+        match delimiter {
+            Some(delimiter) => {
+                unwrapped = true;
+                children.push(text(delimiter));
+                children.extend(children_to_ast(child));
+                children.push(text(delimiter));
+            }
+            None => children.push(node_to_ast(child)),
+        }
+    }
+    if unwrapped {
+        merge_adjacent_texts(children)
+    } else {
+        children
+    }
+}
+
+fn text(value: &str) -> Node {
+    Node::Text {
+        value: value.to_string(),
+    }
+}
+
+/// Joins text nodes that stand next to each other into one.
+///
+/// A delimiter that came back as text must join the text around it. A `#` is a hashtag only
+/// at the start of a text or after a space, so `|#tag|` in three pieces would make a hashtag.
+fn merge_adjacent_texts(nodes: Vec<Node>) -> Vec<Node> {
+    let mut merged: Vec<Node> = Vec::with_capacity(nodes.len());
+    for node in nodes {
+        match (merged.last_mut(), node) {
+            (Some(Node::Text { value: last }), Node::Text { value }) => last.push_str(&value),
+            (_, node) => merged.push(node),
+        }
+    }
+    merged
 }
 
 /// Splits the URL of an image into the URL without its fragment and the properties that
@@ -229,10 +282,12 @@ fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
         NodeValue::HeexBlock(_) => unknown("heex_block", children),
         NodeValue::HeexInline(_) => unknown("heex_inline", children),
         NodeValue::Insert => unknown("insert", children),
-        // `raw` is only put into a tree by a program, `escaped` needs `escaped_char_spans`, and
-        // `escaped_tag` belongs to the tagfilter extension. This crate does none of these.
+        // `raw` is only put into a tree by a program, and `escaped` needs `escaped_char_spans`.
+        // This crate does neither.
         NodeValue::Raw(_) => unknown("raw", children),
         NodeValue::Escaped => unknown("escaped", children),
+        // comrak does make this node, but `children_to_ast` turns it back into text before it
+        // gets here. It is always a child of another node, so this is not reached.
         NodeValue::EscapedTag(_) => unknown("escaped_tag", children),
         // Only the page parser turns front matter on. It takes the front matter out as a string
         // before any node is built, so this is not reached either.
