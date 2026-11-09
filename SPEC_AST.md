@@ -56,6 +56,8 @@ Links that do not match any prefix (external URLs, non-`.md` paths, or paths wit
 
 A link to a `.md` file without a name is also kept as a `link` node: `[x](<prefix>.md)` and `[x](<prefix>folder/.md)`, with or without a `#id` fragment. Whitespace alone is no name, so `[x](<<prefix> .md>)` is kept too. The name of a `.md` file can come from outside. A `wikilink` or a `hashtag` therefore never has an empty page name.
 
+The whitespace around the page path is dropped, as it is for `[[ page ]]`: the page path of `[x](<<prefix> a .md>)` is `a`. Whitespace inside the page path is kept.
+
 When *LinkResolution::Off* (the default), this conversion is skipped entirely, as is the `#tag` text-node extraction described below.
 
 **Footnote completion**: the Markdown parser keeps a footnote only when its reference and its definition are in the same document. A body is parsed alone, so a body that holds only `[^label]` references or only `[^label]:` definitions would lose them. Such a body is parsed again with a placeholder for the missing side, and the placeholder nodes are removed afterwards. A `footnote_reference` therefore always appears for `[^label]` outside code, and a `footnote_definition` always appears for a definition line, even when the other side is in another item. Both sides keep `name`, so a renderer can link them by label across items.
@@ -343,6 +345,8 @@ A hashtag (e.g. `#tag`, `#diary`). Extracted from `text` nodes in AST post-proce
 
 `#` must appear at the start of a `text` node or immediately after a half-width space (U+0020). A `#` preceded by any other character in the same `text` node is not recognized as a tag. The tag name consists of Unicode alphanumerics, `_`, `-`, and `/`; any other character (punctuation, whitespace, end of string, etc.) terminates the tag. `/` is not allowed as the first or last character of the tag name.
 
+Tag names are written in NFC. The parser does not normalize the text. A combining character is not an alphanumeric, so it ends the tag: when `が` is written as `か` and U+3099, the tag name ends after `か`.
+
 The position is judged in the `text` node, not in the source. A `text` node starts after a line break and after inline markup. So `#tag` at the start of a line is a tag. `#tag` in `**b**#tag` is also a tag, without a space: the `text` node starts right after the `strong` node. In `foo#bar`, the `#` is in the middle of one `text` node, so it is not a tag.
 
 No hashtag is made inside the label of a `link` or a `wikilink`. `#tag` stays text there, also inside inline markup of the label. A renderer draws a hashtag as a link, so a hashtag in a label would be a link inside a link. The only hashtag that comes from a link is the tag link of *LinkResolution::On* (`[#tagname](<prefix>tagname.md)`), and there the whole link becomes the `hashtag` node. The alt text of an `embed` is not a label of a link: a hashtag is made there.
@@ -350,6 +354,8 @@ No hashtag is made inside the label of a `link` or a `wikilink`. `#tag` stays te
 `\#` is treated as a literal `#` and is never recognized as a hashtag. This holds wherever Markdown reads backslash escapes: in text, in the URL and title of a link or an embed, in the info string of a code block, and in the title of an alert. Where Markdown keeps the text raw, `\#` stays as written: in `code`, `code_block`, and `math` (`literal`), and in `html_inline` and `html_block`.
 
 `\#` is the only way to write a `#` that is not a tag. A character reference of `#` (`&#35;`) is not such a way. Markdown turns it into `#` before the tags are found, so `&#35;tag` at the start of a `text` node is the tag `tag`.
+
+Every character of a body is kept as it is, also a noncharacter such as U+FDD0. No character of a body is read as a `#`, except `#` itself.
 
 | Attribute | Type   | Description                                    |
 |-----------|--------|------------------------------------------------|
