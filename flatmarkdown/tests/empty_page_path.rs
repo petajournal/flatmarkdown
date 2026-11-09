@@ -64,3 +64,10 @@ fn a_link_to_a_named_md_file_in_a_folder_is_still_a_wikilink() {
         }]
     );
 }
+
+// フォルダの中の、名前のない.mdへのリンクも、linkのままである。
+#[test]
+fn a_link_to_a_md_file_without_a_name_in_a_folder_stays_a_link() {
+    let root = ast("[x](../a/.md)");
+    assert_eq!(inlines(&root), [link("../a/.md", "x")]);
+}
