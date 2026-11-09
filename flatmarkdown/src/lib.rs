@@ -59,11 +59,7 @@ fn escape_html(s: &str) -> String {
 fn render_children(node: &Value) -> String {
     node.get("children")
         .and_then(|c| c.as_array())
-        .map(|arr| {
-            arr.iter()
-                .map(|child| ast_to_html(child))
-                .collect::<String>()
-        })
+        .map(|arr| arr.iter().map(ast_to_html).collect::<String>())
         .unwrap_or_default()
 }
 
@@ -405,7 +401,7 @@ fn is_tag_link(link_node: &Value, wikilink_url: &str) -> bool {
         .and_then(|c| c.first())
         .filter(|n| n.get("type").and_then(|t| t.as_str()) == Some("text"))
         .and_then(|n| n.get("value").and_then(|v| v.as_str()))
-        .map_or(false, |s| s == expected)
+        .is_some_and(|s| s == expected)
 }
 
 /// Walks the AST and converts `link` nodes whose URL starts with one of `prefixes`
@@ -413,26 +409,25 @@ fn is_tag_link(link_node: &Value, wikilink_url: &str) -> bool {
 /// A link of the form `[#tagname](<prefix>tagname.md)` becomes a `hashtag` node;
 /// all other matching links become `wikilink` nodes.
 fn convert_markdown_links_to_wikilinks(node: &mut Value, prefixes: &[String]) {
-    if node.get("type").and_then(|t| t.as_str()) == Some("link") {
-        if let Some(url) = node.get("url").and_then(|u| u.as_str()) {
-            if let Some(wikilink_url) = markdown_link_to_wikilink_url(url, prefixes) {
-                let is_tag = is_tag_link(node, &wikilink_url);
-                if let Some(obj) = node.as_object_mut() {
-                    if is_tag {
-                        obj.insert("type".into(), Value::String("hashtag".into()));
-                        obj.insert("value".into(), Value::String(wikilink_url));
-                        obj.remove("url");
-                        obj.remove("title");
-                        obj.remove("children");
-                    } else {
-                        obj.insert("type".into(), Value::String("wikilink".into()));
-                        obj.insert("url".into(), Value::String(wikilink_url));
-                        obj.remove("title");
-                    }
-                }
-                return;
+    if node.get("type").and_then(|t| t.as_str()) == Some("link")
+        && let Some(url) = node.get("url").and_then(|u| u.as_str())
+        && let Some(wikilink_url) = markdown_link_to_wikilink_url(url, prefixes)
+    {
+        let is_tag = is_tag_link(node, &wikilink_url);
+        if let Some(obj) = node.as_object_mut() {
+            if is_tag {
+                obj.insert("type".into(), Value::String("hashtag".into()));
+                obj.insert("value".into(), Value::String(wikilink_url));
+                obj.remove("url");
+                obj.remove("title");
+                obj.remove("children");
+            } else {
+                obj.insert("type".into(), Value::String("wikilink".into()));
+                obj.insert("url".into(), Value::String(wikilink_url));
+                obj.remove("title");
             }
         }
+        return;
     }
     if let Some(Value::Array(children)) = node.get_mut("children") {
         for child in children.iter_mut() {
@@ -959,12 +954,11 @@ fn split_hashtags(text: &str) -> Vec<Value> {
 
 /// Restores the escaped-hash placeholder back to `#` in all text node values.
 fn restore_escaped_hashes(node: &mut Value) {
-    if let Some(val) = node.get_mut("value") {
-        if let Some(s) = val.as_str() {
-            if s.contains(ESCAPED_HASH_PLACEHOLDER) {
-                *val = Value::String(s.replace(ESCAPED_HASH_PLACEHOLDER, "#"));
-            }
-        }
+    if let Some(val) = node.get_mut("value")
+        && let Some(s) = val.as_str()
+        && s.contains(ESCAPED_HASH_PLACEHOLDER)
+    {
+        *val = Value::String(s.replace(ESCAPED_HASH_PLACEHOLDER, "#"));
     }
     if let Some(Value::Array(children)) = node.get_mut("children") {
         for child in children.iter_mut() {
@@ -984,19 +978,19 @@ fn process_hashtags(node: &mut Value) {
         // Split text nodes containing hashtags
         let mut new_children: Vec<Value> = Vec::with_capacity(children.len());
         for child in children.drain(..) {
-            if child.get("type").and_then(|t| t.as_str()) == Some("text") {
-                if let Some(text) = child.get("value").and_then(|v| v.as_str()) {
-                    let parts = split_hashtags(text);
-                    if parts.len() > 1
-                        || parts
-                            .first()
-                            .and_then(|p| p.get("type"))
-                            .and_then(|t| t.as_str())
-                            == Some("hashtag")
-                    {
-                        new_children.extend(parts);
-                        continue;
-                    }
+            if child.get("type").and_then(|t| t.as_str()) == Some("text")
+                && let Some(text) = child.get("value").and_then(|v| v.as_str())
+            {
+                let parts = split_hashtags(text);
+                if parts.len() > 1
+                    || parts
+                        .first()
+                        .and_then(|p| p.get("type"))
+                        .and_then(|t| t.as_str())
+                        == Some("hashtag")
+                {
+                    new_children.extend(parts);
+                    continue;
                 }
             }
             new_children.push(child);
@@ -1016,11 +1010,11 @@ fn node_to_ast<'a>(
 
     let mut obj = serde_json::Map::new();
     obj.insert("type".into(), Value::String(node_type));
-    if !attrs.is_null() {
-        if let Value::Object(map) = attrs {
-            for (k, v) in map {
-                obj.insert(k, v);
-            }
+    if !attrs.is_null()
+        && let Value::Object(map) = attrs
+    {
+        for (k, v) in map {
+            obj.insert(k, v);
         }
     }
     if !children.is_empty() {
