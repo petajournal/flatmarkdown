@@ -25,3 +25,10 @@ fn a_wikilink_without_a_page_name_stays_text() {
     let root = ast("[[]]");
     assert_eq!(inlines(&root), [text("[[]]")]);
 }
+
+// ページ名がなくラベルだけの[[|label]]も、wikilinkにならない。|も文字として残る。
+#[test]
+fn a_wikilink_with_only_a_label_stays_text() {
+    let root = ast("[[|label]]");
+    assert_eq!(inlines(&root), [text("[[|label]]")]);
+}
