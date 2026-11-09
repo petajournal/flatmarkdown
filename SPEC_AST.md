@@ -276,6 +276,13 @@ All Markdown image syntax (`![alt](url)`) is interpreted as a media embed (image
 | `title`   | string | Title |
 | `props`   | object | Key-value properties parsed from the URL fragment (`#key=value&flag`). Boolean flags without `=` are represented as `true`. Omitted when no properties are present. |
 
+The fragment is split at `&`. The rules for the unusual forms are:
+
+- A key written twice keeps its last value: `#w=1&w=2` gives `{"w": "2"}`.
+- A property with an empty key is dropped: `=3` in `#w=1&=3`. A renderer reads a property by its name, so it could not read this one. When nothing else is left, `props` is omitted.
+- A property with an empty value is an empty string: `#k=` gives `{"k": ""}`. This is not the same as the flag `#k`, which gives `{"k": true}`.
+- An empty part is no property: `#a=1&&b=2&` gives `{"a": "1", "b": "2"}`.
+
 Children are the alt text (inline nodes).
 
 #### `wikilink`
@@ -337,6 +344,8 @@ The position is judged in the `text` node, not in the source. A `text` node star
 No hashtag is made inside the label of a `link` or a `wikilink`. `#tag` stays text there, also inside inline markup of the label. A renderer draws a hashtag as a link, so a hashtag in a label would be a link inside a link. The only hashtag that comes from a link is the tag link of *LinkResolution::On* (`[#tagname](<prefix>tagname.md)`), and there the whole link becomes the `hashtag` node. The alt text of an `embed` is not a label of a link: a hashtag is made there.
 
 `\#` is treated as a literal `#` and is never recognized as a hashtag. This holds wherever Markdown reads backslash escapes: in text, in the URL and title of a link or an embed, in the info string of a code block, and in the title of an alert. Where Markdown keeps the text raw, `\#` stays as written: in `code`, `code_block`, and `math` (`literal`), and in `html_inline` and `html_block`.
+
+`\#` is the only way to write a `#` that is not a tag. A character reference of `#` (`&#35;`) is not such a way. Markdown turns it into `#` before the tags are found, so `&#35;tag` at the start of a `text` node is the tag `tag`.
 
 | Attribute | Type   | Description                                    |
 |-----------|--------|------------------------------------------------|
