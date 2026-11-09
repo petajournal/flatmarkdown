@@ -8,3 +8,10 @@ version = "0.4.3"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/petajournal/flatmarkdown"
+
+# Less debug info makes linking faster. A panic still shows the file name and the line number.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
