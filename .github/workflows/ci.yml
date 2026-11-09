@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "**.md"]
+  pull_request:
+    paths-ignore: ["docs/**", "**.md"]
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: fmt, clippy, test, package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      # Clippy warnings do not fail this step. Only the lints set to "deny" or "forbid" in
+      # [workspace.lints] of Cargo.toml do.
+      - run: cargo clippy --workspace --all-targets --locked
+      - run: cargo test --workspace --locked
+      # Builds each crate from its packaged files, as crates.io would. The tests above cannot
+      # show a file that is missing from the package.
+      - run: cargo package --workspace --locked
