@@ -20,3 +20,5 @@
   - 2026-11-09に決めた。clippyの警告は、いったん警告のままにする。重要度の高いものだけを、個別にエラーにする
   - [x] エラーにするlintを、`Cargo.toml`の`[workspace.lints]`に書く（`unsafe_code`、`unused_must_use`、`dbg_macro`、`todo`、`unimplemented`）
   - [x] GitHub Actionsのワークフローを足す。Markdownと`docs/`だけの変更では走らせない
+- [x] `rust-version`を1.88と宣言し、CIでその版でもビルドする
+  - 2026-11-09に確かめた。1.88では通り、1.87では依存（`time`、`darling`）の宣言で止まる

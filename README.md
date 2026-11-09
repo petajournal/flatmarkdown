@@ -42,6 +42,10 @@ GitHub Actions runs the same commands on every pull request and on `main`.
 It also runs `cargo package --workspace`, to build each crate from its packaged files.
 A change of only Markdown files or `docs/` does not start it.
 
+The crates need Rust 1.88 or later. This is `rust-version` in the top `Cargo.toml`.
+The CI also builds the workspace with Rust 1.88, so that the declared version stays true.
+When you raise `rust-version`, change the version of the `msrv` job in `.github/workflows/ci.yml` too.
+
 Clippy warnings do not fail the build.
 Only the lints in `[workspace.lints]` of the top `Cargo.toml` are errors: `unsafe_code`, `unused_must_use`, `dbg_macro`, `todo`, and `unimplemented`.
 
