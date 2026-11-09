@@ -349,6 +349,41 @@ mod tests {
         assert!(parse_metadata_line("<!-- @-->").is_none());
     }
 
+    // IDの日付の部分は数字でなければならない。英字が入るとメタデータ行ではない。
+    #[test]
+    fn metadata_id_with_a_letter_in_its_date_part_is_invalid() {
+        assert!(parse_metadata_line("<!-- @ 2026-09-26-18-14-47-32W15WT -->").is_some());
+        assert!(parse_metadata_line("<!-- @ 2026-09-2X-18-14-47-32W15WT -->").is_none());
+        assert!(parse_metadata_line("<!-- @ X026-09-26-18-14-47-32W15WT -->").is_none());
+    }
+
+    // @の直後は空白でなければならない。
+    #[test]
+    fn metadata_needs_a_space_right_after_the_at_signs() {
+        assert!(parse_metadata_line("<!-- @x -->").is_none());
+        assert!(parse_metadata_line("<!-- @@k=\"v\" -->").is_none());
+    }
+
+    // -->の前の空白は1つでなければならない。
+    #[test]
+    fn metadata_with_two_spaces_before_the_end_is_invalid() {
+        assert!(parse_metadata_line("<!-- @  -->").is_none());
+        assert!(parse_metadata_line("<!-- @ k=\"v\"  -->").is_none());
+    }
+
+    // =で終わるプロパティは、値がないのでメタデータ行ではない。
+    #[test]
+    fn metadata_property_that_ends_at_the_equals_sign_is_invalid() {
+        assert!(parse_metadata_line("<!-- @ k= -->").is_none());
+    }
+
+    // 値の中の\は、"か\の前でだけ使える。-->を含む値は使えない。
+    #[test]
+    fn metadata_value_with_another_escape_or_a_comment_end_is_invalid() {
+        assert!(parse_metadata_line(r#"<!-- @ k="a\n" -->"#).is_none());
+        assert!(parse_metadata_line(r#"<!-- @ k="a-->b" -->"#).is_none());
+    }
+
     // ---- Page parsing ----
 
     #[test]

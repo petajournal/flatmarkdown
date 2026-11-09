@@ -77,3 +77,53 @@ fn walk_visits_the_node_and_its_descendants_depth_first() {
     root.walk(&mut |node| names.push(node.type_name()));
     assert_eq!(names, ["document", "paragraph", "text", "thematic_break"]);
 }
+
+// どの種類のノードでも、type_nameはJSONのtypeと同じ名前を返す。
+#[test]
+fn type_name_is_the_type_of_the_json_for_every_kind_of_node() {
+    let names = [
+        "document",
+        "paragraph",
+        "heading",
+        "code_block",
+        "block_quote",
+        "multiline_block_quote",
+        "list",
+        "item",
+        "task_item",
+        "table",
+        "table_row",
+        "table_cell",
+        "thematic_break",
+        "html_block",
+        "footnote_definition",
+        "alert",
+        "subtext",
+        "text",
+        "softbreak",
+        "linebreak",
+        "emph",
+        "strong",
+        "strikethrough",
+        "underline",
+        "highlight",
+        "superscript",
+        "subscript",
+        "spoilered_text",
+        "code",
+        "link",
+        "embed",
+        "wikilink",
+        "footnote_reference",
+        "shortcode",
+        "math",
+        "html_inline",
+        "hashtag",
+    ];
+    for name in names {
+        let node = parse(&format!(r#"{{"type":"{name}"}}"#)).unwrap();
+        assert!(!matches!(node, Node::Unknown { .. }), "{name} is unknown");
+        assert_eq!(node.type_name(), name);
+        assert_eq!(serde_json::to_value(&node).unwrap()["type"], name);
+    }
+}
