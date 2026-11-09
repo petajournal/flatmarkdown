@@ -26,3 +26,19 @@
   - 公開APIは変えない。`lib.rs`は、モジュールの宣言と再公開だけにする
   - [x] コードを`ast`、`body`、`footnotes`、`hashtags`、`html`、`links`、`page`に分ける
   - [x] テストを、確かめている入口のモジュールへ移す（`html`、`body`、`page`、`footnotes`）
+- [ ] `flatmarkdown`が、ASTを`flatmarkdown-ast`の型で作る（peta-journalのADR 014）
+  - `SPEC_AST.md`が正本である。公開の前に、3つのPRで行う
+  - [x] 型を仕様に合わせる
+    - [x] 仕様にない4つの項目（`setext`、`fenced`、`dollar_math`、`display_math`）を消す
+    - [x] 仕様にない7種類のノード（`image`、説明リストの4種類、HEExの2種類）を消す
+    - [x] 子のないノードは`children`を、`embed`は空の`props`を書き出さない
+    - [x] `list`の`start`を、仕様どおり整数にする
+    - [x] ページと項目の型（`Page`、`Item`）と、`parse_page`を足す
+    - [x] 仕様の`math`の節から、解析されない書き方（`` $$`formula`$$ ``）の記述を消す
+  - [ ] パーサーと後処理を型で書く
+    - [ ] comrakの木から`Node`を直接作る。仕様にないcomrakのノードは`Node::Unknown`にする
+    - [ ] 脚注、ハッシュタグ、リンクの後処理を`Node`の上で行う。`flatmarkdown-ast`に`children_mut`を足す
+    - [ ] `page_to_ast`が、`Page`と`Item`を書き出す
+    - [ ] 往復のテストのうち、パーサーの出力を読むものを消す。開発時の依存を消す
+    - [ ] READMEのリリースの手順を、`flatmarkdown-ast`、`flatmarkdown`の順に直す
+  - [ ] HTMLを作るコードを型で書く。`body_to_html`は、JSONの文字列を経由しない
