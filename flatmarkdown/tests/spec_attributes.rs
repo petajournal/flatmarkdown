@@ -155,3 +155,12 @@ fn a_hashtag_can_start_right_after_inline_markup() {
         ]
     );
 }
+
+// 文字参照の&#35;は#になる。textノードの先頭なら、ハッシュタグになる。タグにしない書き方は\#である。
+#[test]
+fn a_character_reference_of_the_hash_sign_can_start_a_hashtag() {
+    let root = ast_with_hashtags("&#35;tag");
+    assert_eq!(root.children()[0].children(), [hashtag("tag")]);
+    let root = ast_with_hashtags("a&#35;tag");
+    assert_eq!(root.children()[0].children(), [text("a#tag")]);
+}
