@@ -2442,4 +2442,14 @@ mod tests {
             "<pre><code class=\"language-a&quot;&gt;&lt;b&gt;\">code\n</code></pre>\n"
         );
     }
+
+    // アラートの題名は、文字としてエスケープされる。
+    #[test]
+    fn html_alert_title_is_escaped_as_text() {
+        let result = body_to_html("> [!NOTE] a < b & c\n> body");
+        assert_eq!(
+            result,
+            "<blockquote class=\"alert alert-note\">\n<p class=\"alert-title\">a &lt; b &amp; c</p>\n<p>body</p>\n</blockquote>\n"
+        );
+    }
 }
