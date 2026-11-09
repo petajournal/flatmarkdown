@@ -10,6 +10,17 @@ license = "MIT"
 repository = "https://github.com/petajournal/flatmarkdown"
 
 # Less debug info makes linking faster. A panic still shows the file name and the line number.
+# Clippy warnings stay warnings, so that a new lint of a new toolchain does not stop the build.
+# Only the lints below are errors: each one marks code that must not reach a release.
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+unimplemented = "deny"
+
 [profile.dev]
 debug = "line-tables-only"
 

@@ -38,6 +38,13 @@ cargo test --workspace
 The round-trip tests of `flatmarkdown-ast` parse Markdown with the `flatmarkdown` crate of this repository.
 So they always test the two crates of the same version together.
 
+GitHub Actions runs the same commands on every pull request and on `main`.
+It also runs `cargo package --workspace`, to build each crate from its packaged files.
+A change of only Markdown files or `docs/` does not start it.
+
+Clippy warnings do not fail the build.
+Only the lints in `[workspace.lints]` of the top `Cargo.toml` are errors: `unsafe_code`, `unused_must_use`, `dbg_macro`, `todo`, and `unimplemented`.
+
 ## Release
 
 1. Set `version` in the `Cargo.toml` at the top of the repository, and merge the change into `main`.

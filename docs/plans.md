@@ -16,5 +16,7 @@
   - [x] アラートの題名は、文字としてエスケープされる
   - [x] 画像の`alt`には、子の文字だけが入る。子のタグは入らない
   - [x] 本文の生のHTMLと`javascript:`のリンクをそのまま出すのは、意図した動きである。READMEに書く
-- [ ] CIを入れる（整形の検査、lint、テスト、パッケージのビルド）
+- [x] CIを入れる（整形の検査、lint、テスト、パッケージのビルド）
   - 2026-11-09に決めた。clippyの警告は、いったん警告のままにする。重要度の高いものだけを、個別にエラーにする
+  - [x] エラーにするlintを、`Cargo.toml`の`[workspace.lints]`に書く（`unsafe_code`、`unused_must_use`、`dbg_macro`、`todo`、`unimplemented`）
+  - [x] GitHub Actionsのワークフローを足す。Markdownと`docs/`だけの変更では走らせない
