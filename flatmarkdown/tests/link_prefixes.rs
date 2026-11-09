@@ -29,3 +29,22 @@ fn the_longest_matching_prefix_is_used_whatever_the_order() {
         assert_eq!(wikilink_url(&root), "a", "{prefixes:?}");
     }
 }
+
+// 長い接頭辞が合わないリンクには、合う方の短い接頭辞を使う。
+#[test]
+fn a_shorter_prefix_is_used_when_the_longer_one_does_not_match() {
+    for prefixes in [["../", "../docs/"], ["../docs/", "../"]] {
+        let root = ast("[x](../other/a.md)", &prefixes);
+        assert_eq!(wikilink_url(&root), "other/a", "{prefixes:?}");
+    }
+}
+
+// どの接頭辞にも合わないリンクは、linkのままである。
+#[test]
+fn a_link_that_matches_no_prefix_stays_a_link() {
+    let root = ast("[x](./a.md)", &["../", "../docs/"]);
+    assert!(matches!(
+        root.children()[0].children(),
+        [Node::Link { url, .. }] if url == "./a.md"
+    ));
+}
