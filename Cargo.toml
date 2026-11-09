@@ -13,6 +13,11 @@ license = "MIT"
 repository = "https://github.com/petajournal/flatmarkdown"
 
 # Less debug info makes linking faster. A panic still shows the file name and the line number.
+# flatmarkdown builds its AST with the types of flatmarkdown-ast (ADR 014 of peta-journal).
+# Keep this version the same as `version` above: a release always has both crates.
+[workspace.dependencies]
+flatmarkdown-ast = { version = "=0.4.3", path = "flatmarkdown-ast" }
+
 # Clippy warnings stay warnings, so that a new lint of a new toolchain does not stop the build.
 # Only the lints below are errors: each one marks code that must not reach a release.
 [workspace.lints.rust]

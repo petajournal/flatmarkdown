@@ -1,8 +1,10 @@
-//! Turns the tree that comrak parses into the JSON AST.
+//! Turns the tree that comrak parses into the typed AST.
 
 use comrak::Options;
-use comrak::nodes::NodeValue;
-use serde_json::{Value, json};
+use comrak::nodes::{ListDelimType, ListType, NodeValue, TableAlignment};
+use flatmarkdown_ast::Node;
+use serde_json::Value;
+use std::collections::BTreeMap;
 
 /// Builds the comrak options shared by body and page parsing.
 /// Front matter is only recognised when parsing a whole page, because a body
@@ -50,31 +52,17 @@ pub(crate) fn options(front_matter: bool) -> Options<'static> {
     options
 }
 
+/// Turns a comrak node and its descendants into a [`Node`].
 pub(crate) fn node_to_ast<'a>(
     node: &'a comrak::arena_tree::Node<'a, std::cell::RefCell<comrak::nodes::Ast>>,
-) -> Value {
-    let ast = node.data.borrow();
-    let (node_type, attrs) = serialize_node_value(&ast.value);
-
-    let children: Vec<Value> = node.children().map(node_to_ast).collect();
-
-    let mut obj = serde_json::Map::new();
-    obj.insert("type".into(), Value::String(node_type));
-    if !attrs.is_null()
-        && let Value::Object(map) = attrs
-    {
-        for (k, v) in map {
-            obj.insert(k, v);
-        }
-    }
-    if !children.is_empty() {
-        obj.insert("children".into(), Value::Array(children));
-    }
-
-    Value::Object(obj)
+) -> Node {
+    let children: Vec<Node> = node.children().map(node_to_ast).collect();
+    to_node(&node.data.borrow().value, children)
 }
 
-fn parse_embed_url(url: &str) -> (String, serde_json::Map<String, Value>) {
+/// Splits the URL of an image into the URL without its fragment and the properties that
+/// the fragment holds (`#key=value&flag`). A flag without `=` is `true`.
+fn parse_embed_url(url: &str) -> (String, BTreeMap<String, Value>) {
     match url.find('#') {
         Some(pos) => {
             let base = url[..pos].to_string();
@@ -91,176 +79,161 @@ fn parse_embed_url(url: &str) -> (String, serde_json::Map<String, Value>) {
                 .collect();
             (base, props)
         }
-        None => (url.to_string(), serde_json::Map::new()),
+        None => (url.to_string(), BTreeMap::new()),
     }
 }
 
-fn serialize_node_value(value: &NodeValue) -> (String, Value) {
+fn list_type(list_type: ListType) -> String {
+    match list_type {
+        ListType::Bullet => "bullet",
+        ListType::Ordered => "ordered",
+    }
+    .to_string()
+}
+
+/// A comrak node that SPEC_AST.md does not define. The parser turns none of the extensions
+/// on that make these nodes, so this is not reached with the options of this crate.
+fn unknown(node_type: &str, children: Vec<Node>) -> Node {
+    Node::Unknown {
+        node_type: node_type.to_string(),
+        children,
+    }
+}
+
+/// Builds the [`Node`] of one comrak node. `children` are its children, already built.
+/// A leaf node of comrak has no children, so the leaf arms do not use them.
+fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
     match value {
-        NodeValue::Document => ("document".into(), Value::Null),
-        NodeValue::FrontMatter(s) => ("front_matter".into(), json!({ "value": s })),
-        NodeValue::BlockQuote => ("block_quote".into(), Value::Null),
-        NodeValue::List(nl) => (
-            "list".into(),
-            json!({
-                "list_type": match nl.list_type {
-                    comrak::nodes::ListType::Bullet => "bullet",
-                    comrak::nodes::ListType::Ordered => "ordered",
-                },
-                "start": nl.start,
-                "tight": nl.tight,
-                "delimiter": match nl.delimiter {
-                    comrak::nodes::ListDelimType::Period => "period",
-                    comrak::nodes::ListDelimType::Paren => "paren",
-                },
-            }),
-        ),
-        NodeValue::Item(nl) => (
-            "item".into(),
-            json!({
-                "list_type": match nl.list_type {
-                    comrak::nodes::ListType::Bullet => "bullet",
-                    comrak::nodes::ListType::Ordered => "ordered",
-                },
-                "start": nl.start,
-                "tight": nl.tight,
-            }),
-        ),
-        NodeValue::DescriptionList => ("description_list".into(), Value::Null),
-        NodeValue::DescriptionItem(_) => ("description_item".into(), Value::Null),
-        NodeValue::DescriptionTerm => ("description_term".into(), Value::Null),
-        NodeValue::DescriptionDetails => ("description_details".into(), Value::Null),
-        NodeValue::CodeBlock(cb) => (
-            "code_block".into(),
-            json!({
-                "info": cb.info,
-                "literal": cb.literal,
-            }),
-        ),
-        NodeValue::HtmlBlock(hb) => (
-            "html_block".into(),
-            json!({
-                "block_type": hb.block_type,
-                "literal": hb.literal,
-            }),
-        ),
-        NodeValue::HeexBlock(_) => ("heex_block".into(), Value::Null),
-        NodeValue::Paragraph => ("paragraph".into(), Value::Null),
-        NodeValue::Heading(h) => (
-            "heading".into(),
-            json!({
-                "level": h.level,
-            }),
-        ),
-        NodeValue::ThematicBreak => ("thematic_break".into(), Value::Null),
-        NodeValue::FootnoteDefinition(fd) => (
-            "footnote_definition".into(),
-            json!({
-                "name": fd.name,
-            }),
-        ),
-        NodeValue::Table(t) => (
-            "table".into(),
-            json!({
-                "alignments": t.alignments.iter().map(|a| match a {
-                    comrak::nodes::TableAlignment::None => "none",
-                    comrak::nodes::TableAlignment::Left => "left",
-                    comrak::nodes::TableAlignment::Center => "center",
-                    comrak::nodes::TableAlignment::Right => "right",
-                }).collect::<Vec<_>>(),
-                "num_columns": t.num_columns,
-                "num_rows": t.num_rows,
-            }),
-        ),
-        NodeValue::TableRow(header) => (
-            "table_row".into(),
-            json!({
-                "header": header,
-            }),
-        ),
-        NodeValue::TableCell => ("table_cell".into(), Value::Null),
-        NodeValue::Text(s) => ("text".into(), json!({ "value": s.as_ref() })),
-        NodeValue::TaskItem(ti) => (
-            "task_item".into(),
-            json!({
-                "symbol": ti.symbol.map(|c| c.to_string()),
-            }),
-        ),
-        NodeValue::SoftBreak => ("softbreak".into(), Value::Null),
-        NodeValue::LineBreak => ("linebreak".into(), Value::Null),
-        NodeValue::Code(c) => (
-            "code".into(),
-            json!({
-                "literal": c.literal,
-            }),
-        ),
-        NodeValue::HtmlInline(s) => ("html_inline".into(), json!({ "value": s })),
-        NodeValue::HeexInline(s) => ("heex_inline".into(), json!({ "value": s })),
-        NodeValue::Raw(s) => ("raw".into(), json!({ "value": s })),
-        NodeValue::Emph => ("emph".into(), Value::Null),
-        NodeValue::Strong => ("strong".into(), Value::Null),
-        NodeValue::Strikethrough => ("strikethrough".into(), Value::Null),
-        NodeValue::Highlight => ("highlight".into(), Value::Null),
-        NodeValue::Superscript => ("superscript".into(), Value::Null),
-        NodeValue::Link(link) => (
-            "link".into(),
-            json!({
-                "url": link.url,
-                "title": link.title,
-            }),
-        ),
+        NodeValue::Document => Node::Document { children },
+        NodeValue::FrontMatter(s) => Node::FrontMatter { value: s.clone() },
+        NodeValue::BlockQuote => Node::BlockQuote { children },
+        NodeValue::List(nl) => Node::List {
+            list_type: list_type(nl.list_type),
+            start: nl.start as u32,
+            tight: nl.tight,
+            delimiter: match nl.delimiter {
+                ListDelimType::Period => "period",
+                ListDelimType::Paren => "paren",
+            }
+            .to_string(),
+            children,
+        },
+        NodeValue::Item(nl) => Node::Item {
+            list_type: list_type(nl.list_type),
+            start: nl.start as u32,
+            tight: nl.tight,
+            children,
+        },
+        NodeValue::CodeBlock(cb) => Node::CodeBlock {
+            info: cb.info.clone(),
+            literal: cb.literal.clone(),
+        },
+        NodeValue::HtmlBlock(hb) => Node::HtmlBlock {
+            block_type: hb.block_type,
+            literal: hb.literal.clone(),
+        },
+        NodeValue::Paragraph => Node::Paragraph { children },
+        NodeValue::Heading(h) => Node::Heading {
+            level: h.level,
+            children,
+        },
+        NodeValue::ThematicBreak => Node::ThematicBreak,
+        NodeValue::FootnoteDefinition(fd) => Node::FootnoteDefinition {
+            name: fd.name.clone(),
+            children,
+        },
+        NodeValue::Table(t) => Node::Table {
+            alignments: t
+                .alignments
+                .iter()
+                .map(|a| {
+                    match a {
+                        TableAlignment::None => "none",
+                        TableAlignment::Left => "left",
+                        TableAlignment::Center => "center",
+                        TableAlignment::Right => "right",
+                    }
+                    .to_string()
+                })
+                .collect(),
+            num_columns: t.num_columns,
+            num_rows: t.num_rows,
+            children,
+        },
+        NodeValue::TableRow(header) => Node::TableRow {
+            header: *header,
+            children,
+        },
+        NodeValue::TableCell => Node::TableCell { children },
+        NodeValue::Text(s) => Node::Text {
+            value: s.to_string(),
+        },
+        NodeValue::TaskItem(ti) => Node::TaskItem {
+            symbol: ti.symbol.map(|c| c.to_string()),
+            children,
+        },
+        NodeValue::SoftBreak => Node::Softbreak,
+        NodeValue::LineBreak => Node::Linebreak,
+        NodeValue::Code(c) => Node::Code {
+            literal: c.literal.clone(),
+        },
+        NodeValue::HtmlInline(s) => Node::HtmlInline { value: s.clone() },
+        NodeValue::Raw(s) => Node::Raw { value: s.clone() },
+        NodeValue::Emph => Node::Emph { children },
+        NodeValue::Strong => Node::Strong { children },
+        NodeValue::Strikethrough => Node::Strikethrough { children },
+        NodeValue::Highlight => Node::Highlight { children },
+        NodeValue::Superscript => Node::Superscript { children },
+        NodeValue::Link(link) => Node::Link {
+            url: link.url.clone(),
+            title: link.title.clone(),
+            children,
+        },
         NodeValue::Image(link) => {
             let (url, props) = parse_embed_url(link.url.as_str());
-            let mut attrs = json!({ "url": url, "title": link.title });
-            if !props.is_empty() {
-                attrs
-                    .as_object_mut()
-                    .unwrap()
-                    .insert("props".into(), Value::Object(props));
+            Node::Embed {
+                url,
+                title: link.title.clone(),
+                props,
+                children,
             }
-            ("embed".into(), attrs)
         }
-        NodeValue::FootnoteReference(fr) => (
-            "footnote_reference".into(),
-            json!({
-                "name": fr.name,
-                "ref_num": fr.ref_num,
-                "ix": fr.ix,
-            }),
-        ),
-        NodeValue::ShortCode(sc) => (
-            "shortcode".into(),
-            json!({
-                "code": sc.code,
-                "emoji": sc.emoji,
-            }),
-        ),
-        NodeValue::Math(m) => (
-            "math".into(),
-            json!({
-                "literal": m.literal,
-            }),
-        ),
-        NodeValue::Escaped => ("escaped".into(), Value::Null),
-        NodeValue::WikiLink(wl) => (
-            "wikilink".into(),
-            json!({
-                "url": wl.url,
-            }),
-        ),
-        NodeValue::Underline => ("underline".into(), Value::Null),
-        NodeValue::Subscript => ("subscript".into(), Value::Null),
-        NodeValue::SpoileredText => ("spoilered_text".into(), Value::Null),
-        NodeValue::EscapedTag(s) => ("escaped_tag".into(), json!({ "value": s })),
-        NodeValue::Alert(a) => (
-            "alert".into(),
-            json!({
-                "alert_type": format!("{:?}", a.alert_type).to_lowercase(),
-                "title": a.title,
-            }),
-        ),
-        NodeValue::Subtext => ("subtext".into(), Value::Null),
-        NodeValue::Insert => ("insert".into(), Value::Null),
-        NodeValue::MultilineBlockQuote(_) => ("multiline_block_quote".into(), Value::Null),
+        NodeValue::FootnoteReference(fr) => Node::FootnoteReference {
+            name: fr.name.clone(),
+            ref_num: fr.ref_num,
+            ix: fr.ix,
+        },
+        NodeValue::ShortCode(sc) => Node::Shortcode {
+            code: sc.code.clone(),
+            emoji: sc.emoji.clone(),
+        },
+        NodeValue::Math(m) => Node::Math {
+            literal: m.literal.clone(),
+        },
+        NodeValue::Escaped => Node::Escaped,
+        NodeValue::WikiLink(wl) => Node::Wikilink {
+            url: wl.url.clone(),
+            children,
+        },
+        NodeValue::Underline => Node::Underline { children },
+        NodeValue::Subscript => Node::Subscript { children },
+        NodeValue::SpoileredText => Node::SpoileredText { children },
+        NodeValue::EscapedTag(s) => Node::EscapedTag {
+            value: s.to_string(),
+        },
+        NodeValue::Alert(a) => Node::Alert {
+            alert_type: format!("{:?}", a.alert_type).to_lowercase(),
+            title: a.title.clone(),
+            children,
+        },
+        NodeValue::Subtext => Node::Subtext { children },
+        NodeValue::MultilineBlockQuote(_) => Node::MultilineBlockQuote { children },
+        NodeValue::DescriptionList => unknown("description_list", children),
+        NodeValue::DescriptionItem(_) => unknown("description_item", children),
+        NodeValue::DescriptionTerm => unknown("description_term", children),
+        NodeValue::DescriptionDetails => unknown("description_details", children),
+        NodeValue::HeexBlock(_) => unknown("heex_block", children),
+        NodeValue::HeexInline(_) => unknown("heex_inline", children),
+        NodeValue::Insert => unknown("insert", children),
     }
 }

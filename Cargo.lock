@@ -351,6 +351,7 @@ name = "flatmarkdown"
 version = "0.4.3"
 dependencies = [
  "comrak",
+ "flatmarkdown-ast",
  "serde_json",
 ]
 
