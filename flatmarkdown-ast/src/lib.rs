@@ -1,8 +1,9 @@
 //! Typed serde model of the Flat Markdown AST.
 //!
-//! The JSON is produced by the `flatmarkdown` crate (`body_to_ast*`) and mirrors the
-//! `flatmarkdown-ast` npm package: every node is an object discriminated by its `type`
-//! field (snake_case), with an optional `children` array.
+//! The AST is defined in `SPEC_AST.md` of the flatmarkdown repository, and the types hold
+//! what that specification defines. The JSON is produced by the `flatmarkdown` crate
+//! (`body_to_ast*` and `page_to_ast*`): every node is an object discriminated by its `type`
+//! field (snake_case), with a `children` array when it has children.
 //!
 //! Deserialization is tolerant: unknown fields are ignored, scalar fields the producer
 //! omits fall back to their defaults, and a node whose `type` is not modelled here becomes
@@ -16,42 +17,38 @@ use serde_json::Value;
 
 /// One node of the Flat Markdown AST.
 ///
-/// Variants follow the `flatmarkdown-ast` TypeScript definitions. Nodes that may contain
-/// other nodes carry `children`; leaf nodes do not.
+/// Variants follow the node types of `SPEC_AST.md`. Nodes that may contain other nodes carry
+/// `children`; leaf nodes do not. An empty `children` is not written to the JSON.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", remote = "Self")]
 pub enum Node {
     // ── Block nodes ──
     Document {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     Paragraph {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     Heading {
         #[serde(default)]
         level: u8,
-        #[serde(default)]
-        setext: bool,
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     CodeBlock {
-        #[serde(default)]
-        fenced: bool,
         #[serde(default)]
         info: String,
         #[serde(default)]
         literal: String,
     },
     BlockQuote {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     MultilineBlockQuote {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     List {
@@ -59,13 +56,13 @@ pub enum Node {
         #[serde(default)]
         list_type: String,
         #[serde(default)]
-        start: Option<u32>,
+        start: u32,
         #[serde(default)]
         tight: bool,
         /// `"period"` or `"paren"`.
         #[serde(default)]
         delimiter: String,
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     Item {
@@ -75,14 +72,14 @@ pub enum Node {
         start: u32,
         #[serde(default)]
         tight: bool,
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     TaskItem {
         /// The character inside the brackets (`"x"`), or `None` for an unchecked `[ ]`.
         #[serde(default)]
         symbol: Option<String>,
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     Table {
@@ -93,17 +90,17 @@ pub enum Node {
         num_columns: usize,
         #[serde(default)]
         num_rows: usize,
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     TableRow {
         #[serde(default)]
         header: bool,
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     TableCell {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     ThematicBreak,
@@ -116,23 +113,7 @@ pub enum Node {
     FootnoteDefinition {
         #[serde(default)]
         name: String,
-        #[serde(default)]
-        children: Vec<Node>,
-    },
-    DescriptionList {
-        #[serde(default)]
-        children: Vec<Node>,
-    },
-    DescriptionItem {
-        #[serde(default)]
-        children: Vec<Node>,
-    },
-    DescriptionTerm {
-        #[serde(default)]
-        children: Vec<Node>,
-    },
-    DescriptionDetails {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     Alert {
@@ -140,19 +121,15 @@ pub enum Node {
         alert_type: String,
         #[serde(default)]
         title: Option<String>,
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     FrontMatter {
         #[serde(default)]
         value: String,
     },
-    HeexBlock {
-        #[serde(default)]
-        children: Vec<Node>,
-    },
     Subtext {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
 
@@ -164,35 +141,35 @@ pub enum Node {
     Softbreak,
     Linebreak,
     Emph {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     Strong {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     Strikethrough {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     Underline {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     Highlight {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     Superscript {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     Subscript {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     SpoileredText {
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     Code {
@@ -204,27 +181,19 @@ pub enum Node {
         url: String,
         #[serde(default)]
         title: String,
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
-    Image {
-        #[serde(default)]
-        url: String,
-        #[serde(default)]
-        title: String,
-        #[serde(default)]
-        children: Vec<Node>,
-    },
-    /// What the `flatmarkdown` crate emits for `![alt](url#k=v)`: an image with the URL
-    /// fragment split into `props`. Not part of the npm type definitions.
+    /// Every Markdown image (`![alt](url#k=v)`): a media embed with the URL fragment split
+    /// into `props`. Empty `props` are not written to the JSON.
     Embed {
         #[serde(default)]
         url: String,
         #[serde(default)]
         title: String,
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
         props: BTreeMap<String, Value>,
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     FootnoteReference {
@@ -243,17 +212,9 @@ pub enum Node {
     },
     Math {
         #[serde(default)]
-        dollar_math: bool,
-        #[serde(default)]
-        display_math: bool,
-        #[serde(default)]
         literal: String,
     },
     HtmlInline {
-        #[serde(default)]
-        value: String,
-    },
-    HeexInline {
         #[serde(default)]
         value: String,
     },
@@ -269,7 +230,7 @@ pub enum Node {
     Wikilink {
         #[serde(default)]
         url: String,
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     Hashtag {
@@ -282,7 +243,7 @@ pub enum Node {
     Unknown {
         #[serde(skip)]
         node_type: String,
-        #[serde(default)]
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
 }
@@ -344,12 +305,7 @@ impl Node {
             | Node::TableRow { children, .. }
             | Node::TableCell { children }
             | Node::FootnoteDefinition { children, .. }
-            | Node::DescriptionList { children }
-            | Node::DescriptionItem { children }
-            | Node::DescriptionTerm { children }
-            | Node::DescriptionDetails { children }
             | Node::Alert { children, .. }
-            | Node::HeexBlock { children }
             | Node::Subtext { children }
             | Node::Emph { children }
             | Node::Strong { children }
@@ -360,7 +316,6 @@ impl Node {
             | Node::Subscript { children }
             | Node::SpoileredText { children }
             | Node::Link { children, .. }
-            | Node::Image { children, .. }
             | Node::Embed { children, .. }
             | Node::Wikilink { children, .. }
             | Node::Unknown { children, .. } => children,
@@ -376,7 +331,6 @@ impl Node {
             | Node::Shortcode { .. }
             | Node::Math { .. }
             | Node::HtmlInline { .. }
-            | Node::HeexInline { .. }
             | Node::Raw { .. }
             | Node::Escaped
             | Node::EscapedTag { .. }
@@ -402,13 +356,8 @@ impl Node {
             Node::ThematicBreak => "thematic_break",
             Node::HtmlBlock { .. } => "html_block",
             Node::FootnoteDefinition { .. } => "footnote_definition",
-            Node::DescriptionList { .. } => "description_list",
-            Node::DescriptionItem { .. } => "description_item",
-            Node::DescriptionTerm { .. } => "description_term",
-            Node::DescriptionDetails { .. } => "description_details",
             Node::Alert { .. } => "alert",
             Node::FrontMatter { .. } => "front_matter",
-            Node::HeexBlock { .. } => "heex_block",
             Node::Subtext { .. } => "subtext",
             Node::Text { .. } => "text",
             Node::Softbreak => "softbreak",
@@ -423,13 +372,11 @@ impl Node {
             Node::SpoileredText { .. } => "spoilered_text",
             Node::Code { .. } => "code",
             Node::Link { .. } => "link",
-            Node::Image { .. } => "image",
             Node::Embed { .. } => "embed",
             Node::FootnoteReference { .. } => "footnote_reference",
             Node::Shortcode { .. } => "shortcode",
             Node::Math { .. } => "math",
             Node::HtmlInline { .. } => "html_inline",
-            Node::HeexInline { .. } => "heex_inline",
             Node::Raw { .. } => "raw",
             Node::Escaped => "escaped",
             Node::EscapedTag { .. } => "escaped_tag",
@@ -448,9 +395,41 @@ impl Node {
     }
 }
 
+/// A whole page, as `flatmarkdown::page_to_ast` returns it.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", rename = "page")]
+pub struct Page {
+    /// The raw YAML front matter with its `---` delimiters, or `None` when the page has none.
+    pub front_matter: Option<String>,
+    /// The outline items in source order.
+    pub items: Vec<Item>,
+}
+
+/// One outline item of a page.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Item {
+    /// The indent level. `1` is the shallowest level.
+    pub level: u32,
+    /// The HMTID of the metadata line, or `None` when the item has none.
+    #[serde(default)]
+    pub id: Option<String>,
+    /// The `key="value"` pairs of the metadata line.
+    #[serde(default)]
+    pub properties: BTreeMap<String, String>,
+    /// The Markdown source of the item.
+    pub body: String,
+    /// The AST of `body`. The root is normally a [`Node::Document`].
+    pub ast: Node,
+}
+
 /// Parses an AST JSON string (as returned by `flatmarkdown::body_to_ast`).
 /// The root is normally a [`Node::Document`].
 pub fn parse(json: &str) -> Result<Node, serde_json::Error> {
+    serde_json::from_str(json)
+}
+
+/// Parses the JSON string of a whole page (as returned by `flatmarkdown::page_to_ast`).
+pub fn parse_page(json: &str) -> Result<Page, serde_json::Error> {
     serde_json::from_str(json)
 }
 
