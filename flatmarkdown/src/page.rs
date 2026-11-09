@@ -370,11 +370,25 @@ mod tests {
         assert!(parse_metadata_line("<!-- @@k=\"v\" -->").is_none());
     }
 
-    // -->の前の空白は1つでなければならない。
+    // -->の前の空白は、2つ以上あってもよい。1つのときと同じ結果になる。
     #[test]
-    fn metadata_with_two_spaces_before_the_end_is_invalid() {
-        assert!(parse_metadata_line("<!-- @  -->").is_none());
-        assert!(parse_metadata_line("<!-- @ k=\"v\"  -->").is_none());
+    fn metadata_may_have_several_spaces_before_the_end() {
+        assert_eq!(
+            parse_metadata_line("<!-- @@   -->"),
+            parse_metadata_line("<!-- @@ -->")
+        );
+        assert_eq!(
+            parse_metadata_line("<!-- @ k=\"v\"  -->"),
+            parse_metadata_line("<!-- @ k=\"v\" -->")
+        );
+        assert!(parse_metadata_line("<!-- @ k=\"v\"  -->").is_some());
+    }
+
+    // -->の前の空白が1つもなければ、メタデータ行ではない。
+    #[test]
+    fn metadata_without_a_space_before_the_end_is_invalid() {
+        assert!(parse_metadata_line("<!-- @@-->").is_none());
+        assert!(parse_metadata_line("<!-- @ k=\"v\"-->").is_none());
     }
 
     // =で終わるプロパティは、値がないのでメタデータ行ではない。
