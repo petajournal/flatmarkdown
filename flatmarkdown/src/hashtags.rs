@@ -12,6 +12,15 @@ fn is_hashtag_char(c: char) -> bool {
     c.is_alphanumeric() || c == '_' || c == '-' || c == '/'
 }
 
+/// Returns true if `name` can be the name of a hashtag: only hashtag characters, at least
+/// one, and no `/` at the start or at the end.
+pub(crate) fn is_tag_name(name: &str) -> bool {
+    !name.is_empty()
+        && name.chars().all(is_hashtag_char)
+        && !name.starts_with('/')
+        && !name.ends_with('/')
+}
+
 /// Splits a text string into a sequence of `text` and `hashtag` nodes.
 /// A hashtag starts with `#` at the beginning of the string or after a half-width space (U+0020),
 /// and ends when a non-hashtag character is encountered.

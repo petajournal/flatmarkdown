@@ -1,13 +1,14 @@
 //! Turns relative Markdown links into wikilink and hashtag nodes.
 
+use crate::hashtags::is_tag_name;
 use flatmarkdown_ast::Node;
 
 /// Strips a matching prefix from `url` and removes the `.md` suffix, returning the wikilink URL.
 /// Returns `None` if no prefix matches or the URL does not end with `.md`.
 ///
-/// Also returns `None` if the file has no name: `.md` alone, at the top or in a folder. The
-/// name of a `.md` file can come from outside, so such a link must not make a wikilink or a
-/// hashtag with an empty name.
+/// Also returns `None` if the file has no name: `.md` alone or after only whitespace, at the
+/// top or in a folder. The name of a `.md` file can come from outside, so such a link must
+/// not make a wikilink or a hashtag with an empty name.
 fn markdown_link_to_wikilink_url(url: &str, prefixes: &[String]) -> Option<String> {
     let without_prefix = prefixes.iter().find_map(|p| url.strip_prefix(p.as_str()))?;
     let (path_part, fragment) = match without_prefix.find('#') {
@@ -15,7 +16,9 @@ fn markdown_link_to_wikilink_url(url: &str, prefixes: &[String]) -> Option<Strin
         None => (without_prefix, ""),
     };
     let page_path = path_part.strip_suffix(".md")?;
-    if page_path.is_empty() || page_path.ends_with('/') {
+    // The file name is what stands after the last `/`. Whitespace alone is no name.
+    let file_name = page_path.rsplit('/').next().unwrap_or(page_path);
+    if file_name.trim().is_empty() {
         return None;
     }
     Some(format!("{}{}", page_path, fragment))
@@ -23,9 +26,14 @@ fn markdown_link_to_wikilink_url(url: &str, prefixes: &[String]) -> Option<Strin
 
 /// Returns `true` if the children of a `link` node represent a serialised tag:
 /// the only child is a text node whose value is `#` + `wikilink_url`.
+///
+/// The name must also follow the rules of a tag name. A link is the only way to a hashtag
+/// that does not go through those rules, and the name of a `.md` file can come from outside.
 fn is_tag_link(children: &[Node], wikilink_url: &str) -> bool {
     match children {
-        [Node::Text { value }] => value.strip_prefix('#') == Some(wikilink_url),
+        [Node::Text { value }] => {
+            value.strip_prefix('#') == Some(wikilink_url) && is_tag_name(wikilink_url)
+        }
         _ => false,
     }
 }

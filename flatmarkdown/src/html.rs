@@ -242,10 +242,10 @@ fn node_to_html(node: &Node) -> String {
             render_all(children)
         ),
 
-        Node::Hashtag { value } => format!(
-            "<a href=\"{}\" class=\"hashtag\">#{value}</a>",
-            escape_html(value)
-        ),
+        Node::Hashtag { value } => {
+            let name = escape_html(value);
+            format!("<a href=\"{name}\" class=\"hashtag\">#{name}</a>")
+        }
 
         // The label is shown instead of comrak's index: a body is parsed alone, so the
         // index would restart at 1 in every item.
@@ -408,6 +408,18 @@ mod tests {
         assert_eq!(
             body_to_html("a <img src=x onerror=alert(1)> b"),
             "<p>a <img src=x onerror=alert(1)> b</p>\n"
+        );
+    }
+
+    // ハッシュタグの名前は、hrefでも表示する文字でもエスケープされる。
+    #[test]
+    fn html_hashtag_name_is_escaped_in_the_href_and_in_the_text() {
+        let node = Node::Hashtag {
+            value: "a<b>&\"c".to_string(),
+        };
+        assert_eq!(
+            node_to_html(&node),
+            "<a href=\"a&lt;b&gt;&amp;&quot;c\" class=\"hashtag\">#a&lt;b&gt;&amp;&quot;c</a>"
         );
     }
 

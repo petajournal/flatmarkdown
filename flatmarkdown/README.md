@@ -54,7 +54,7 @@ This is on purpose. Flat Markdown lets you write HTML in a note.
 
 Do not show the HTML of Markdown that you do not trust without a sanitizer.
 
-Values that are text are escaped: the text itself, the info of a code fence, the title of an alert, and the `alt` of an image.
+Values that are text are escaped: the text itself, the info of a code fence, the title of an alert, the name of a hashtag, and the `alt` of an image.
 The `alt` of an image holds only the text of the image description, without tags.
 
 ### Examples

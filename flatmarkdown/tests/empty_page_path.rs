@@ -71,3 +71,19 @@ fn a_link_to_a_md_file_without_a_name_in_a_folder_stays_a_link() {
     let root = ast("[x](../a/.md)");
     assert_eq!(inlines(&root), [link("../a/.md", "x")]);
 }
+
+// 空白だけの名前は、名前ではない。空白だけの名前の.mdへのリンクも、linkのままである。
+#[test]
+fn a_link_to_a_md_file_with_only_whitespace_as_its_name_stays_a_link() {
+    for (md, url) in [
+        ("[x](<../ .md>)", "../ .md"),
+        ("[x](<../a/  .md>)", "../a/  .md"),
+        ("[# ](<../ .md>)", "../ .md"),
+    ] {
+        let root = ast(md);
+        match inlines(&root) {
+            [Node::Link { url: actual, .. }] => assert_eq!(actual, url, "{md:?}"),
+            other => panic!("expected one link for {md:?}, got {other:?}"),
+        }
+    }
+}
