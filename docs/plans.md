@@ -35,10 +35,15 @@
     - [x] `list`の`start`を、仕様どおり整数にする
     - [x] ページと項目の型（`Page`、`Item`）と、`parse_page`を足す
     - [x] 仕様の`math`の節から、解析されない書き方（`` $$`formula`$$ ``）の記述を消す
-  - [ ] パーサーと後処理を型で書く
-    - [ ] comrakの木から`Node`を直接作る。仕様にないcomrakのノードは`Node::Unknown`にする
-    - [ ] 脚注、ハッシュタグ、リンクの後処理を`Node`の上で行う。`flatmarkdown-ast`に`children_mut`を足す
-    - [ ] `page_to_ast`が、`Page`と`Item`を書き出す
-    - [ ] 往復のテストのうち、パーサーの出力を読むものを消す。開発時の依存を消す
-    - [ ] READMEのリリースの手順を、`flatmarkdown-ast`、`flatmarkdown`の順に直す
+  - [x] パーサーと後処理を型で書く
+    - [x] comrakの木から`Node`を直接作る。仕様にないcomrakのノードは`Node::Unknown`にする
+    - [x] 脚注、ハッシュタグ、リンクの後処理を`Node`の上で行う。`flatmarkdown-ast`に`children_mut`を足す
+    - [x] `page_to_ast`が、`Page`と`Item`を書き出す
+    - [x] 往復のテストのうち、パーサーの出力を読んで書き戻すものを消す。開発時の依存を消す
+    - [x] READMEのリリースの手順を、`flatmarkdown-ast`、`flatmarkdown`の順に直す
+    - 2026-11-09に確かめた。実際のMarkdown 36ファイルで、変更の前後の出力がJSONの値として一致した
+    - パーサーが作るノードの中身を確かめるテスト（14件）は、消さずに`flatmarkdown/tests/typed_ast.rs`へ移した。属性の値を確かめており、型が保証する範囲の外だからである
   - [ ] HTMLを作るコードを型で書く。`body_to_html`は、JSONの文字列を経由しない
+- [ ] `\#`が、コードとリンクのURLの中で元に戻らない不具合を直す
+  - 2026-11-09に見つけた。`\#`は解析の前に`U+FDD0`に置き換わる。元に戻すのは`value`を持つノードだけなので、`code`と`code_block`の`literal`、`link`の`url`には`U+FDD0`が残る
+  - 型で書く前からある動きで、型で書くときはそのまま保った
