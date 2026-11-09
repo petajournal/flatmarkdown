@@ -2432,4 +2432,14 @@ mod tests {
             vec!["1"]
         );
     }
+
+    // コードフェンスの言語名は、class属性の中でエスケープされる。
+    #[test]
+    fn html_code_fence_info_is_escaped_in_the_class_attribute() {
+        let result = body_to_html("```a\"><b>\ncode\n```");
+        assert_eq!(
+            result,
+            "<pre><code class=\"language-a&quot;&gt;&lt;b&gt;\">code\n</code></pre>\n"
+        );
+    }
 }
