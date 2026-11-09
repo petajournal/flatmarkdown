@@ -9,6 +9,9 @@ readme = "README.md"
 keywords = ["markdown", "html", "ast", "comrak"]
 categories = ["text-processing", "parsing"]
 
+[lints]
+workspace = true
+
 [dependencies]
 comrak = { version = "0.51", features = ["shortcodes"] }
 serde_json = "1"
