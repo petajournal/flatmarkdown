@@ -138,7 +138,8 @@ A list item.
 |-------------|---------|-------------------------------------|
 | `list_type` | string  | `"bullet"` or `"ordered"`           |
 | `start`     | integer | Ordinal of this item                |
-| `tight`     | boolean | `true` if parent list is tight      |
+
+Note: an item has no `tight`. Tight or loose is a property of the whole list, so a renderer reads `tight` of the parent `list`. An AST written before this change has `tight` on each item, and its value is always `false`; a reader ignores it.
 
 #### `task_item`
 
