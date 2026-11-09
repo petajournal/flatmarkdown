@@ -161,7 +161,13 @@ pub(crate) fn restore_escaped_hashes(node: &mut Node) {
 }
 
 /// Post-processes the AST to extract hashtags from text nodes.
+///
+/// The label of a link is left as it is. A renderer draws a hashtag as a link, so a hashtag in
+/// a label would be a link inside a link.
 pub(crate) fn process_hashtags(node: &mut Node) {
+    if matches!(node, Node::Link { .. }) {
+        return;
+    }
     let Some(children) = node.children_mut() else {
         return;
     };
