@@ -1,0 +1,59 @@
+# flatmarkdown-ast
+
+The Flat Markdown AST as Rust types.
+
+The [flatmarkdown](https://crates.io/crates/flatmarkdown) crate parses the body of an item into a JSON AST.
+This crate reads that JSON into a tree of `Node` values with serde.
+It has no Markdown parser, so a program that only reads the AST stays small.
+
+The AST is defined in [SPEC_AST.md](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md).
+The same AST as TypeScript types is the npm package [flatmarkdown-ast](https://www.npmjs.com/package/flatmarkdown-ast).
+
+## Usage
+
+```rust
+use flatmarkdown_ast::{Node, extract_text, parse};
+
+let json = r#"{"type":"document","children":[
+    {"type":"paragraph","children":[{"type":"text","value":"Hello"}]}
+]}"#;
+
+let root = parse(json).unwrap();
+assert_eq!(extract_text(&root), "Hello");
+
+for child in root.children() {
+    if let Node::Paragraph { children } = child {
+        assert_eq!(children.len(), 1);
+    }
+}
+```
+
+- `parse` reads the JSON of one item body. The root is normally `Node::Document`.
+- `Node::children` gives the child nodes of any node. A leaf has none.
+- `Node::walk` visits a node and all its descendants.
+- `extract_text` joins the text of a node and its descendants.
+
+## Unknown Nodes
+
+Reading is tolerant.
+
+- Unknown fields are ignored.
+- A missing scalar field gets its default value.
+- A node with an unknown `type` becomes `Node::Unknown`, and it keeps its children.
+
+So an old version of this crate can still read the AST of a newer parser.
+
+## Versions
+
+This crate and `flatmarkdown` always have the same version.
+The AST made by `flatmarkdown` x.y.z can be read by `flatmarkdown-ast` x.y.z.
+Use the same version of both.
+
+`Node` is not `#[non_exhaustive]`.
+A `match` that lists every kind of node stops compiling when a new kind is added.
+This is on purpose: the compiler tells you about a node that you do not handle yet.
+A new kind of node is therefore a breaking change, and the version goes up, for example from 0.4 to 0.5.
+
+## License
+
+MIT

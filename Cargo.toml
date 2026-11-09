@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["flatmarkdown"]
+members = ["flatmarkdown", "flatmarkdown-ast"]
 
 # Both crates always have the same version (ADR 012 of peta-journal), so it is written only here.
 [workspace.package]
