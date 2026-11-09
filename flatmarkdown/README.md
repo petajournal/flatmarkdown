@@ -36,9 +36,9 @@ Relative links are matched when the URL starts with one of `prefixes` (for examp
 
 | Function | Description |
 |---|---|
-| `page_to_ast(input)` | Split a page into items with metadata ([spec](SPEC_AST.md)) |
+| `page_to_ast(input)` | Split a page into items with metadata ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
 | `page_to_ast_with(input, opts)` | Same, with explicit `BodyOptions` |
-| `body_to_ast(input)` | Parse an item body to JSON AST ([spec](SPEC_AST.md)) |
+| `body_to_ast(input)` | Parse an item body to JSON AST ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
 | `body_to_ast_with(input, opts)` | Same, with explicit `BodyOptions` |
 | `body_to_html(input)` | Render an item body to HTML |
 | `body_to_html_with(input, opts)` | Same, with explicit `BodyOptions` |
