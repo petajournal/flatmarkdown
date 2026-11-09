@@ -34,14 +34,14 @@ Each item has:
 | Field        | Type           | Description |
 |--------------|----------------|-------------|
 | `level`      | integer        | Indent level. `1` is the shallowest level. The number of `@` characters in the metadata line. `1` when the metadata line is omitted. |
-| `id`         | string \| null | The HMTID from the metadata line. `null` when absent. |
+| `id`         | string \| null | The HMTID from the metadata line. `null` when absent. It has the form `YYYY-MM-DD-hh-mm-ss-XXXXXXX` (27 characters). The date part is digits. The tail is 7 characters of Crockford's Base32 (`0123456789ABCDEFGHJKMNPQRSTVWXYZ`): no lower case, and no `I`, `L`, `O`, or `U`. A line whose ID does not have this form is not a metadata line. |
 | `properties` | object         | `key: value` pairs from the metadata line. Values are always strings. Empty when absent. |
 | `body`       | string         | The item's Markdown source. Leading and trailing blank lines are removed. |
 | `ast`        | object         | The result of parsing `body` with `body_to_ast`. |
 
 **Item delimiters**: every block at the shallowest level of the Markdown document is one item. Nested blocks belong to the body of the outer block. Block boundaries are decided by the Markdown parser, not by blank lines.
 
-**Metadata line**: a single-line HTML comment of the form `<!-- @@ ID key1="value1" key2="value2" -->` at the shallowest level is the metadata of the next block. It starts at column 1 with `<!-- @` and ends with `-->`. Whitespace after `-->` is allowed, because it cannot be seen in an editor. Whitespace before `<!-- @` is not allowed. When the same key is written twice in one metadata line, only the last value is kept. Blank lines between the metadata line and its block are ignored. A metadata line that is followed only by blank lines (until the next metadata line or the end of the page) is an item with an empty `body`. Comments that do not follow this syntax exactly are ordinary body text.
+**Metadata line**: a single-line HTML comment of the form `<!-- @@ ID key1="value1" key2="value2" -->` at the shallowest level is the metadata of the next block. It starts at column 1 with `<!-- @` and ends with `-->`. The elements (`@`, the ID, and each property) are separated by one or more half-width spaces. One or more half-width spaces stand before `-->`; without a space there, the line is not a metadata line. Whitespace after `-->` is allowed, because it cannot be seen in an editor. Whitespace before `<!-- @` is not allowed. When the same key is written twice in one metadata line, only the last value is kept. Blank lines between the metadata line and its block are ignored. A metadata line that is followed only by blank lines (until the next metadata line or the end of the page) is an item with an empty `body`. Comments that do not follow this syntax exactly are ordinary body text.
 
 **Lines without a node**: lines that the Markdown parser consumes without producing a block (link reference definitions) and footnote definitions are kept. They are appended to the body of the previous item, because such definitions are normally written after the paragraph that uses them. A referenced footnote definition is a block for the Markdown parser, but it is treated like these lines so that every footnote definition is handled the same way. Lines between a metadata line and its block are prepended to that item's body. Lines at the start of the page are prepended to the first block, or form their own item when a metadata line follows them.
 
@@ -299,6 +299,8 @@ A wikilink. Children are the label (inline nodes); when no label is given, the c
 | Attribute | Type   | Description     |
 |-----------|--------|-----------------|
 | `url`     | string | Link destination. May contain a `#id` fragment for block links. |
+
+A wikilink without a page name is not a wikilink. `[[]]` and `[[|label]]` stay text, so a `wikilink` node never has an empty `url`. Whitespace alone is no name: `[[ ]]` becomes the text `[[]]`.
 
 #### `footnote_reference`
 

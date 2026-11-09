@@ -14,8 +14,12 @@ struct ItemMetadata {
     properties: Vec<(String, String)>,
 }
 
+/// The characters of the random tail of an HMTID: Crockford's Base32. It has no lower case
+/// and no `I`, `L`, `O`, or `U`. See https://github.com/sosuisen/hmtid.
+const HMTID_TAIL: &[u8] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
 /// Returns `true` if `s` has the HMTID shape: `YYYY-MM-DD-hh-mm-ss-XXXXXXX`
-/// (27 characters, ASCII digits in the date part and ASCII alphanumerics in the tail).
+/// (27 characters, ASCII digits in the date part and Crockford's Base32 in the tail).
 fn is_hmtid(s: &str) -> bool {
     let b = s.as_bytes();
     if b.len() != 27 {
@@ -24,7 +28,7 @@ fn is_hmtid(s: &str) -> bool {
     b.iter().enumerate().all(|(i, &c)| match i {
         4 | 7 | 10 | 13 | 16 | 19 => c == b'-',
         0..=18 => c.is_ascii_digit(),
-        _ => c.is_ascii_alphanumeric(),
+        _ => HMTID_TAIL.contains(&c),
     })
 }
 
@@ -75,7 +79,9 @@ fn parse_metadata_line(line: &str) -> Option<ItemMetadata> {
     let inner = line
         .trim_end()
         .strip_prefix("<!-- @")?
-        .strip_suffix(" -->")?;
+        .strip_suffix("-->")?;
+    // One or more spaces stand before `-->`. How many does not matter, as between the elements.
+    let inner = inner.strip_suffix(' ')?.trim_end_matches(' ');
     let chars: Vec<char> = inner.chars().collect();
     let extra_ats = chars.iter().take_while(|&&c| c == '@').count();
     let level = 1 + extra_ats;
@@ -87,11 +93,9 @@ fn parse_metadata_line(line: &str) -> Option<ItemMetadata> {
         if chars[i] != ' ' {
             return None;
         }
-        while i < chars.len() && chars[i] == ' ' {
+        // The spaces at the end are already gone, so an element always follows these.
+        while chars[i] == ' ' {
             i += 1;
-        }
-        if i >= chars.len() {
-            return None;
         }
         let token_end = chars[i..]
             .iter()
@@ -370,11 +374,35 @@ mod tests {
         assert!(parse_metadata_line("<!-- @@k=\"v\" -->").is_none());
     }
 
-    // -->の前の空白は1つでなければならない。
+    // -->の前の空白は、2つ以上あってもよい。1つのときと同じ結果になる。
     #[test]
-    fn metadata_with_two_spaces_before_the_end_is_invalid() {
-        assert!(parse_metadata_line("<!-- @  -->").is_none());
-        assert!(parse_metadata_line("<!-- @ k=\"v\"  -->").is_none());
+    fn metadata_may_have_several_spaces_before_the_end() {
+        assert_eq!(
+            parse_metadata_line("<!-- @@   -->"),
+            parse_metadata_line("<!-- @@ -->")
+        );
+        assert_eq!(
+            parse_metadata_line("<!-- @ k=\"v\"  -->"),
+            parse_metadata_line("<!-- @ k=\"v\" -->")
+        );
+        assert!(parse_metadata_line("<!-- @ k=\"v\"  -->").is_some());
+    }
+
+    // 要素の間の空白は、2つ以上あってもよい。1つのときと同じ結果になる。
+    #[test]
+    fn metadata_may_have_several_spaces_between_its_elements() {
+        assert_eq!(
+            parse_metadata_line(&format!("<!-- @@   {ID1}  a=\"1\"   b=\"2\" -->")),
+            parse_metadata_line(&format!("<!-- @@ {ID1} a=\"1\" b=\"2\" -->"))
+        );
+        assert!(parse_metadata_line("<!-- @  k=\"v\" -->").is_some());
+    }
+
+    // -->の前の空白が1つもなければ、メタデータ行ではない。
+    #[test]
+    fn metadata_without_a_space_before_the_end_is_invalid() {
+        assert!(parse_metadata_line("<!-- @@-->").is_none());
+        assert!(parse_metadata_line("<!-- @ k=\"v\"-->").is_none());
     }
 
     // =で終わるプロパティは、値がないのでメタデータ行ではない。
@@ -404,6 +432,16 @@ mod tests {
     #[test]
     fn metadata_line_with_text_after_its_end_is_invalid() {
         assert!(parse_metadata_line("<!-- @ --> x").is_none());
+    }
+
+    // IDの末尾の7文字は、CrockfordのBase32である。小文字と、I、L、O、Uは使えない。
+    #[test]
+    fn metadata_id_with_a_tail_outside_crockford_base32_is_invalid() {
+        assert!(parse_metadata_line("<!-- @ 2026-09-26-18-14-47-0189ABZ -->").is_some());
+        for tail in ["32w15wt", "32W15WI", "32W15WL", "32W15WO", "32W15WU"] {
+            let line = format!("<!-- @ 2026-09-26-18-14-47-{tail} -->");
+            assert!(parse_metadata_line(&line).is_none(), "{tail}");
+        }
     }
 
     // ---- Page parsing ----
