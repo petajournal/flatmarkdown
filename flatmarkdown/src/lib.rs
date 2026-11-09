@@ -56,15 +56,19 @@ fn escape_html(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
+/// A string field of a node, or an empty string when the node has none.
+fn str_field<'a>(node: &'a Value, key: &str) -> &'a str {
+    node.get(key).and_then(|v| v.as_str()).unwrap_or("")
+}
+
 /// The text of a node and its descendants, without any markup: what the `alt` of an image holds.
 /// Raw inline HTML counts as text, as in the CommonMark reference renderer.
 fn plain_text(node: &Value) -> String {
     match node.get("type").and_then(|t| t.as_str()) {
-        Some("text" | "html_inline") => node
-            .get("value")
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .to_string(),
+        Some("text" | "html_inline") => str_field(node, "value").to_string(),
+        Some("code") => str_field(node, "literal").to_string(),
+        Some("hashtag") => format!("#{}", str_field(node, "value")),
+        Some("softbreak" | "linebreak") => " ".to_string(),
         _ => node
             .get("children")
             .and_then(|c| c.as_array())
