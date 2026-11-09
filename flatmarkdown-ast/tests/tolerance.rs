@@ -50,14 +50,14 @@ fn malformed_known_node_is_an_error() {
     assert!(parse("not json").is_err());
 }
 
-// 省略された任意フィールドは既定値になる。children は空、info と literal は空文字列、header は false である。
+// 省略された任意フィールドは既定値になる。children は空、info と literal は空文字列、fenced は true、header は false である。
 #[test]
 fn missing_optional_fields_default() {
     let root = parse(r#"{"type":"document"}"#).unwrap();
     assert!(root.children().is_empty());
     let cb = parse(r#"{"type":"code_block"}"#).unwrap();
     assert!(
-        matches!(cb, Node::CodeBlock { info, literal } if info.is_empty() && literal.is_empty())
+        matches!(cb, Node::CodeBlock { fenced: true, info, literal } if info.is_empty() && literal.is_empty())
     );
     let row = parse(r#"{"type":"table_row"}"#).unwrap();
     assert!(matches!(row, Node::TableRow { header: false, .. }));

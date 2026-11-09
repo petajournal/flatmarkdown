@@ -38,6 +38,12 @@ pub enum Node {
         children: Vec<Node>,
     },
     CodeBlock {
+        /// True for a block written with fences, false for one written with an indent.
+        ///
+        /// An AST written before this attribute existed has no `fenced`. It reads as true: the
+        /// earlier specification allowed only fenced blocks.
+        #[serde(default = "default_fenced")]
+        fenced: bool,
         #[serde(default)]
         info: String,
         #[serde(default)]
@@ -246,6 +252,11 @@ pub enum Node {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
+}
+
+/// The value of `fenced` for a code block that does not have the attribute.
+fn default_fenced() -> bool {
+    true
 }
 
 impl Serialize for Node {

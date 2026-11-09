@@ -46,7 +46,8 @@ fn heading_code_block_and_math_are_written_with_only_the_attributes_of_the_spec(
         json!({"type": "heading", "level": 2, "children": [{"type": "text", "value": "T"}]});
     assert_eq!(rewritten(&heading), heading);
 
-    let code_block = json!({"type": "code_block", "info": "rust", "literal": "x\n"});
+    let code_block =
+        json!({"type": "code_block", "fenced": true, "info": "rust", "literal": "x\n"});
     assert_eq!(rewritten(&code_block), code_block);
 
     let math = json!({"type": "math", "literal": "x^2"});

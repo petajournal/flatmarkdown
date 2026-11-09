@@ -144,7 +144,7 @@ fn node_to_html(node: &Node) -> String {
             format!("<h{level}>{}</h{level}>\n", render_all(children))
         }
 
-        Node::CodeBlock { info, literal } => {
+        Node::CodeBlock { info, literal, .. } => {
             let class = if info.is_empty() || info == "text" {
                 String::new()
             } else {
