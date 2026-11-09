@@ -62,10 +62,3 @@ let opts = BodyOptions {
 let html = body_to_html_with("#tag text", &opts);
 ```
 
-## Build
-
-```sh
-cargo clean
-cargo build
-cargo test
-```
