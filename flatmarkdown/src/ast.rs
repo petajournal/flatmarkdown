@@ -76,8 +76,8 @@ fn children_to_ast<'a>(
             NodeValue::EscapedTag(delimiter) => {
                 Some((delimiter.to_string(), delimiter.to_string()))
             }
-            NodeValue::WikiLink(link) if names_no_page(&link.url) => {
-                Some((wikilink_opening(&link.url, child), "]]".to_string()))
+            NodeValue::WikiLink(link) if names_no_page(link.url.trim()) => {
+                Some((wikilink_opening(link.url.trim(), child), "]]".to_string()))
             }
             _ => None,
         };
@@ -309,16 +309,23 @@ fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
         NodeValue::Math(m) => Node::Math {
             literal: m.literal.clone(),
         },
-        NodeValue::WikiLink(wl) => Node::Wikilink {
-            url: wl.url.clone(),
+        NodeValue::WikiLink(wl) => {
+            // comrak drops ASCII whitespace around the page name. Other whitespace is dropped
+            // here, such as the full-width space, so that a name never starts or ends with one.
+            let url = wl.url.trim();
             // An empty label (`[[page|]]`) is no label. The page name is shown, as for
-            // `[[page]]`, so that the link is never drawn without any text.
-            children: if children.is_empty() {
-                vec![text(&wl.url)]
-            } else {
-                children
-            },
-        },
+            // `[[page]]`, so that the link is never drawn without any text. A label that
+            // comrak copied from the URL is replaced too, because it still has the whitespace.
+            let shows_url = match children.as_slice() {
+                [] => true,
+                [Node::Text { value }] => *value == wl.url,
+                _ => false,
+            };
+            Node::Wikilink {
+                url: url.to_string(),
+                children: if shows_url { vec![text(url)] } else { children },
+            }
+        }
         NodeValue::Underline => Node::Underline { children },
         NodeValue::Subscript => Node::Subscript { children },
         NodeValue::SpoileredText => Node::SpoileredText { children },
