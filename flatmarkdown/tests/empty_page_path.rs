@@ -35,3 +35,32 @@ fn a_link_to_a_md_file_without_a_name_stays_a_link() {
     let root = ast("[x](../.md)");
     assert_eq!(inlines(&root), [link("../.md", "x")]);
 }
+
+// 文字が#だけで、ページ名が空のリンクは、hashtagにならない。linkのままである。
+#[test]
+fn a_tag_link_to_a_md_file_without_a_name_stays_a_link() {
+    let root = ast("[#](../.md)");
+    assert_eq!(inlines(&root), [link("../.md", "#")]);
+}
+
+// ページ名が空で#idだけがあるリンクも、linkのままである。
+#[test]
+fn a_link_with_only_a_fragment_after_the_prefix_stays_a_link() {
+    let root = ast("[x](./.md#id)");
+    assert_eq!(inlines(&root), [link("./.md#id", "x")]);
+}
+
+// フォルダの中の、名前のある.mdへのリンクは、今までどおりwikilinkになる。
+#[test]
+fn a_link_to_a_named_md_file_in_a_folder_is_still_a_wikilink() {
+    let root = ast("[x](../a/b.md)");
+    assert_eq!(
+        inlines(&root),
+        [Node::Wikilink {
+            url: "a/b".to_string(),
+            children: vec![Node::Text {
+                value: "x".to_string()
+            }],
+        }]
+    );
+}
