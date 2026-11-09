@@ -51,3 +51,53 @@ fn a_hashtag_is_not_made_in_the_label_of_a_wikilink() {
         }]
     );
 }
+
+// ラベルの中の書式の、さらに中にある#tagも、ハッシュタグにならない。
+#[test]
+fn a_hashtag_is_not_made_inside_markup_in_a_label() {
+    let root = ast("[**#tag**](https://example.com)");
+    assert_eq!(
+        inlines(&root),
+        [Node::Link {
+            url: "https://example.com".to_string(),
+            title: String::new(),
+            children: vec![Node::Strong {
+                children: vec![text("#tag")]
+            }],
+        }]
+    );
+}
+
+// .mdへのリンクから作ったwikilinkでも、ラベルの中の#tagはハッシュタグにならない。
+#[test]
+fn a_hashtag_is_not_made_in_the_label_of_a_wikilink_made_from_a_link() {
+    let root = ast("[#a](../b.md)");
+    assert_eq!(
+        inlines(&root),
+        [Node::Wikilink {
+            url: "b".to_string(),
+            children: vec![text("#a")],
+        }]
+    );
+}
+
+// #idのついたタグのリンクは、タグのリンクではない。wikilinkになり、ラベルは文字のままである。
+#[test]
+fn a_tag_link_with_a_fragment_is_a_wikilink_with_a_text_label() {
+    let root = ast("[#tag](./tag.md#id)");
+    assert_eq!(
+        inlines(&root),
+        [Node::Wikilink {
+            url: "tag#id".to_string(),
+            children: vec![text("#tag")],
+        }]
+    );
+}
+
+// リンクの前後の#tagは、今までどおりハッシュタグになる。
+#[test]
+fn hashtags_before_and_after_a_link_are_still_hashtags() {
+    let root = ast("#a [x](https://example.com) #b");
+    let types: Vec<&str> = inlines(&root).iter().map(Node::type_name).collect();
+    assert_eq!(types, ["hashtag", "text", "link", "text", "hashtag"]);
+}
