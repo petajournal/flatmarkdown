@@ -6,6 +6,9 @@ members = ["flatmarkdown", "flatmarkdown-ast"]
 [workspace.package]
 version = "0.4.3"
 edition = "2024"
+# The oldest Rust that builds the workspace. The code uses let chains, and the dependencies
+# `time` and `darling` ask for 1.88 too. The `msrv` job of the CI builds with this version.
+rust-version = "1.88"
 license = "MIT"
 repository = "https://github.com/petajournal/flatmarkdown"
 
