@@ -6,7 +6,7 @@ license.workspace = true
 repository.workspace = true
 description = "Typed Flat Markdown AST (serde) for the JSON that the flatmarkdown crate produces"
 readme = "README.md"
-license-file = "../COPYING"
+exclude = ["tests"]
 keywords = ["markdown", "ast", "serde", "flatmarkdown"]
 categories = ["text-processing", "data-structures"]
 
@@ -15,6 +15,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # The round-trip tests read the AST that the flatmarkdown crate of this workspace makes.
-# A path without a version: cargo leaves it out of the published manifest.
+# A path without a version: cargo leaves it out of the published manifest. The tests cannot
+# run from the published package then, so the package leaves them out too (`exclude`).
 [dev-dependencies]
 flatmarkdown = { path = "../flatmarkdown" }

@@ -6,7 +6,6 @@ license.workspace = true
 repository.workspace = true
 description = "Flat Markdown parser — outline format with block-delimited items"
 readme = "README.md"
-license-file = "../COPYING"
 keywords = ["markdown", "html", "ast", "comrak"]
 categories = ["text-processing", "parsing"]
 
