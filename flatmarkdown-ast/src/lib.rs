@@ -218,15 +218,6 @@ pub enum Node {
         #[serde(default)]
         value: String,
     },
-    Raw {
-        #[serde(default)]
-        value: String,
-    },
-    Escaped,
-    EscapedTag {
-        #[serde(default)]
-        value: String,
-    },
     Wikilink {
         #[serde(default)]
         url: String,
@@ -335,9 +326,6 @@ impl Node {
             | Node::Shortcode { .. }
             | Node::Math { .. }
             | Node::HtmlInline { .. }
-            | Node::Raw { .. }
-            | Node::Escaped
-            | Node::EscapedTag { .. }
             | Node::Hashtag { .. } => &[],
         }
     }
@@ -382,9 +370,6 @@ impl Node {
             | Node::Shortcode { .. }
             | Node::Math { .. }
             | Node::HtmlInline { .. }
-            | Node::Raw { .. }
-            | Node::Escaped
-            | Node::EscapedTag { .. }
             | Node::Hashtag { .. } => None,
         }
     }
@@ -427,9 +412,6 @@ impl Node {
             Node::Shortcode { .. } => "shortcode",
             Node::Math { .. } => "math",
             Node::HtmlInline { .. } => "html_inline",
-            Node::Raw { .. } => "raw",
-            Node::Escaped => "escaped",
-            Node::EscapedTag { .. } => "escaped_tag",
             Node::Wikilink { .. } => "wikilink",
             Node::Hashtag { .. } => "hashtag",
             Node::Unknown { node_type, .. } => node_type,

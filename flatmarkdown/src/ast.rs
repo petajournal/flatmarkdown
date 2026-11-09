@@ -177,7 +177,6 @@ fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
             literal: c.literal.clone(),
         },
         NodeValue::HtmlInline(s) => Node::HtmlInline { value: s.clone() },
-        NodeValue::Raw(s) => Node::Raw { value: s.clone() },
         NodeValue::Emph => Node::Emph { children },
         NodeValue::Strong => Node::Strong { children },
         NodeValue::Strikethrough => Node::Strikethrough { children },
@@ -209,7 +208,6 @@ fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
         NodeValue::Math(m) => Node::Math {
             literal: m.literal.clone(),
         },
-        NodeValue::Escaped => Node::Escaped,
         NodeValue::WikiLink(wl) => Node::Wikilink {
             url: wl.url.clone(),
             children,
@@ -217,9 +215,6 @@ fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
         NodeValue::Underline => Node::Underline { children },
         NodeValue::Subscript => Node::Subscript { children },
         NodeValue::SpoileredText => Node::SpoileredText { children },
-        NodeValue::EscapedTag(s) => Node::EscapedTag {
-            value: s.to_string(),
-        },
         NodeValue::Alert(a) => Node::Alert {
             alert_type: format!("{:?}", a.alert_type).to_lowercase(),
             title: a.title.clone(),
@@ -234,6 +229,11 @@ fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
         NodeValue::HeexBlock(_) => unknown("heex_block", children),
         NodeValue::HeexInline(_) => unknown("heex_inline", children),
         NodeValue::Insert => unknown("insert", children),
+        // `raw` is only put into a tree by a program, `escaped` needs `escaped_char_spans`, and
+        // `escaped_tag` belongs to the tagfilter extension. This crate does none of these.
+        NodeValue::Raw(_) => unknown("raw", children),
+        NodeValue::Escaped => unknown("escaped", children),
+        NodeValue::EscapedTag(_) => unknown("escaped_tag", children),
         // Only the page parser turns front matter on. It takes the front matter out as a string
         // before any node is built, so this is not reached either.
         NodeValue::FrontMatter(_) => unknown("front_matter", children),

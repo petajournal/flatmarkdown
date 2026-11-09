@@ -76,3 +76,19 @@ fn a_front_matter_node_of_an_old_ast_is_read_as_unknown() {
     let node = parse(r#"{"type":"front_matter","value":"---\nkey: value\n---\n"}"#).unwrap();
     assert!(matches!(node, Node::Unknown { node_type, .. } if node_type == "front_matter"));
 }
+
+// 古いASTの raw、escaped、escaped_tag は、未知のノードとして読める。パーサーが出力しないので、仕様にない。
+#[test]
+fn raw_escaped_and_escaped_tag_of_an_old_ast_are_read_as_unknown() {
+    for (json, name) in [
+        (r#"{"type":"raw","value":"x"}"#, "raw"),
+        (r#"{"type":"escaped"}"#, "escaped"),
+        (r#"{"type":"escaped_tag","value":"script"}"#, "escaped_tag"),
+    ] {
+        let node = parse(json).unwrap();
+        assert!(
+            matches!(&node, Node::Unknown { node_type, .. } if node_type == name),
+            "{name}: {node:?}"
+        );
+    }
+}
