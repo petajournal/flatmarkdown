@@ -22,3 +22,7 @@
   - [x] GitHub Actionsのワークフローを足す。Markdownと`docs/`だけの変更では走らせない
 - [x] `rust-version`を1.88と宣言し、CIでその版でもビルドする
   - 2026-11-09に確かめた。1.88では通り、1.87では依存（`time`、`darling`）の宣言で止まる
+- [x] `flatmarkdown/src/lib.rs`（2524行）を、モジュールに分ける
+  - 公開APIは変えない。`lib.rs`は、モジュールの宣言と再公開だけにする
+  - [x] コードを`ast`、`body`、`footnotes`、`hashtags`、`html`、`links`、`page`に分ける
+  - [x] テストを、確かめている入口のモジュールへ移す（`html`、`body`、`page`、`footnotes`）
