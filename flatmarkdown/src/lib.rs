@@ -102,7 +102,7 @@ fn ast_to_html(node: &Value) -> String {
             let class = if info.is_empty() || info == "text" {
                 String::new()
             } else {
-                format!(" class=\"language-{info}\"")
+                format!(" class=\"language-{}\"", escape_html(info))
             };
             format!("<pre><code{class}>{}</code></pre>\n", escape_html(literal))
         }
