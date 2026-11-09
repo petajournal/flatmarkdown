@@ -14,8 +14,12 @@ struct ItemMetadata {
     properties: Vec<(String, String)>,
 }
 
+/// The characters of the random tail of an HMTID: Crockford's Base32. It has no lower case
+/// and no `I`, `L`, `O`, or `U`. See https://github.com/sosuisen/hmtid.
+const HMTID_TAIL: &[u8] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
 /// Returns `true` if `s` has the HMTID shape: `YYYY-MM-DD-hh-mm-ss-XXXXXXX`
-/// (27 characters, ASCII digits in the date part and ASCII alphanumerics in the tail).
+/// (27 characters, ASCII digits in the date part and Crockford's Base32 in the tail).
 fn is_hmtid(s: &str) -> bool {
     let b = s.as_bytes();
     if b.len() != 27 {
@@ -24,7 +28,7 @@ fn is_hmtid(s: &str) -> bool {
     b.iter().enumerate().all(|(i, &c)| match i {
         4 | 7 | 10 | 13 | 16 | 19 => c == b'-',
         0..=18 => c.is_ascii_digit(),
-        _ => c.is_ascii_alphanumeric(),
+        _ => HMTID_TAIL.contains(&c),
     })
 }
 
