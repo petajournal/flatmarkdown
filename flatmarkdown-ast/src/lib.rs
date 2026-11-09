@@ -338,6 +338,54 @@ impl Node {
         }
     }
 
+    /// The child nodes, to change them. `None` for a leaf node, which cannot have children.
+    pub fn children_mut(&mut self) -> Option<&mut Vec<Node>> {
+        match self {
+            Node::Document { children }
+            | Node::Paragraph { children }
+            | Node::Heading { children, .. }
+            | Node::BlockQuote { children }
+            | Node::MultilineBlockQuote { children }
+            | Node::List { children, .. }
+            | Node::Item { children, .. }
+            | Node::TaskItem { children, .. }
+            | Node::Table { children, .. }
+            | Node::TableRow { children, .. }
+            | Node::TableCell { children }
+            | Node::FootnoteDefinition { children, .. }
+            | Node::Alert { children, .. }
+            | Node::Subtext { children }
+            | Node::Emph { children }
+            | Node::Strong { children }
+            | Node::Strikethrough { children }
+            | Node::Underline { children }
+            | Node::Highlight { children }
+            | Node::Superscript { children }
+            | Node::Subscript { children }
+            | Node::SpoileredText { children }
+            | Node::Link { children, .. }
+            | Node::Embed { children, .. }
+            | Node::Wikilink { children, .. }
+            | Node::Unknown { children, .. } => Some(children),
+            Node::CodeBlock { .. }
+            | Node::ThematicBreak
+            | Node::HtmlBlock { .. }
+            | Node::FrontMatter { .. }
+            | Node::Text { .. }
+            | Node::Softbreak
+            | Node::Linebreak
+            | Node::Code { .. }
+            | Node::FootnoteReference { .. }
+            | Node::Shortcode { .. }
+            | Node::Math { .. }
+            | Node::HtmlInline { .. }
+            | Node::Raw { .. }
+            | Node::Escaped
+            | Node::EscapedTag { .. }
+            | Node::Hashtag { .. } => None,
+        }
+    }
+
     /// The `type` tag as it appears in the JSON (`"code_block"`, `"task_item"`, ...).
     pub fn type_name(&self) -> &str {
         match self {
