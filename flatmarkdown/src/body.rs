@@ -2,7 +2,7 @@
 
 use crate::ast::{node_to_ast, options};
 use crate::footnotes::{complete_footnotes, strip_footnote_placeholders};
-use crate::hashtags::{ESCAPED_HASH_PLACEHOLDER, process_hashtags, restore_escaped_hashes};
+use crate::hashtags::{mark_escaped_hashes, process_hashtags, restore_escaped_hashes};
 use crate::links::convert_markdown_links_to_wikilinks;
 use comrak::{Arena, parse_document};
 use flatmarkdown_ast::Node;
@@ -29,7 +29,7 @@ pub struct BodyOptions {
 pub(crate) fn body_to_node(input: &str, opts: &BodyOptions) -> Node {
     // `\#` is replaced before comrak sees it so that the hashtag pass cannot
     // mistake the escaped `#` for a tag start.
-    let preprocessed = input.replace("\\#", &ESCAPED_HASH_PLACEHOLDER.to_string());
+    let preprocessed = mark_escaped_hashes(input);
     let arena = Arena::new();
     let root = parse_document(&arena, &preprocessed, &options(false));
     let mut ast = node_to_ast(root);

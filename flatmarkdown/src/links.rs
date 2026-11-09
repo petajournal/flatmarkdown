@@ -27,7 +27,8 @@ fn markdown_link_to_wikilink_url(url: &str, prefixes: &[String]) -> Option<Strin
     if file_name.trim().is_empty() {
         return None;
     }
-    Some(format!("{}{}", page_path, fragment))
+    // The whitespace around the page path is dropped, as it is for `[[ page ]]`.
+    Some(format!("{}{}", page_path.trim(), fragment))
 }
 
 /// Returns `true` if the children of a `link` node represent a serialised tag:

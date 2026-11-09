@@ -1,11 +1,8 @@
 //! Keeps footnote references and definitions that have no partner in the same item.
 
+use crate::hashtags::FOOTNOTE_PLACEHOLDER;
 use flatmarkdown_ast::Node;
 use std::collections::HashSet;
-
-/// Marks the placeholder text that completes unpaired footnotes before parsing.
-/// A noncharacter is used because it cannot occur in valid text.
-const FOOTNOTE_PLACEHOLDER: char = '\u{FDD1}';
 
 /// Footnote labels found by a raw scan of a body: `[^label]` occurrences and
 /// `[^label]:` definition lines. The scan does not know about code spans or
@@ -126,7 +123,7 @@ pub(crate) fn complete_footnotes(input: &str, ast: &Node) -> Option<(String, Has
     for label in &missing_defs {
         completed.push_str(&format!("[^{label}]: {FOOTNOTE_PLACEHOLDER}\n\n"));
     }
-    completed.push(FOOTNOTE_PLACEHOLDER);
+    completed.push_str(FOOTNOTE_PLACEHOLDER);
     for label in &missing_refs {
         completed.push_str(&format!("[^{label}]"));
     }
