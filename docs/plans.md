@@ -26,7 +26,7 @@
   - 公開APIは変えない。`lib.rs`は、モジュールの宣言と再公開だけにする
   - [x] コードを`ast`、`body`、`footnotes`、`hashtags`、`html`、`links`、`page`に分ける
   - [x] テストを、確かめている入口のモジュールへ移す（`html`、`body`、`page`、`footnotes`）
-- [ ] `flatmarkdown`が、ASTを`flatmarkdown-ast`の型で作る（peta-journalのADR 014）
+- [x] `flatmarkdown`が、ASTを`flatmarkdown-ast`の型で作る（peta-journalのADR 014）
   - `SPEC_AST.md`が正本である。公開の前に、3つのPRで行う
   - [x] 型を仕様に合わせる
     - [x] 仕様にない4つの項目（`setext`、`fenced`、`dollar_math`、`display_math`）を消す
@@ -43,7 +43,9 @@
     - [x] READMEのリリースの手順を、`flatmarkdown-ast`、`flatmarkdown`の順に直す
     - 2026-11-09に確かめた。実際のMarkdown 36ファイルで、変更の前後の出力がJSONの値として一致した
     - パーサーが作るノードの中身を確かめるテスト（14件）は、消さずに`flatmarkdown/tests/typed_ast.rs`へ移した。属性の値を確かめており、型が保証する範囲の外だからである
-  - [ ] HTMLを作るコードを型で書く。`body_to_html`は、JSONの文字列を経由しない
+  - [x] HTMLを作るコードを型で書く。`body_to_html`は、JSONの文字列を経由しない
+    - リスト、表、脚注の定義、アラートは、それぞれの関数に分けた
+    - 2026-11-09に確かめた。実際のMarkdown 36ファイルで、変更の前後のHTMLが一致した
 - [ ] `\#`が、コードとリンクのURLの中で元に戻らない不具合を直す
   - 2026-11-09に見つけた。`\#`は解析の前に`U+FDD0`に置き換わる。元に戻すのは`value`を持つノードだけなので、`code`と`code_block`の`literal`、`link`の`url`には`U+FDD0`が残る
   - 型で書く前からある動きで、型で書くときはそのまま保った
