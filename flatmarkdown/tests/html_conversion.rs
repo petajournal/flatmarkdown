@@ -1,5 +1,6 @@
 use flatmarkdown::{BodyOptions, LinkResolution, body_to_html, body_to_html_with, page_to_ast};
 
+// 太字、斜体、コードを含む段落は、<strong>、<em>、<code>になる。
 #[test]
 fn paragraph_with_bold_italic_code() {
     let input = "Hello **world** and _italic_ with `code`";
@@ -10,6 +11,7 @@ fn paragraph_with_bold_italic_code() {
     );
 }
 
+// コードブロックの中の空行は残る。あとの段落は別のブロックになる。
 #[test]
 fn handle_empty_lines() {
     let input = "```rust\nlet x = 1;\n\nlet y = 2;\n```\n\nAfter the block.";
@@ -20,6 +22,7 @@ fn handle_empty_lines() {
     );
 }
 
+// 接頭辞に合う.mdへのリンクだけがwikilinkになる。合わないリンクは、そのままである。
 #[test]
 fn resolve_links_with_prefix() {
     let input = "See [page](../docs/page.md) and [journal](../journals/2024-01-01.md) and [other](../other/page.md).";
@@ -35,6 +38,7 @@ fn resolve_links_with_prefix() {
     );
 }
 
+// メタデータ行は、次のブロックにレベル、ID、プロパティを与える。メタデータ行のないブロックはレベル1である。
 #[test]
 fn page_items_with_metadata() {
     let input = "<!-- @@ 2026-09-27-15-00-16-W3N8ASY plan=\"2026-09-28\" -->\n- [ ] Task1\n\nPlain paragraph\n";
@@ -49,6 +53,7 @@ fn page_items_with_metadata() {
     assert_eq!(items[1]["body"], "Plain paragraph");
 }
 
+// 脚注の参照と定義は、別々の本文にあっても、互いを指すリンクになる。
 #[test]
 fn footnote_reference_and_definition_in_separate_bodies() {
     assert_eq!(
@@ -61,6 +66,7 @@ fn footnote_reference_and_definition_in_separate_bodies() {
     );
 }
 
+// リストで始まる脚注の定義では、ラベルはリストの前に出る。
 #[test]
 fn footnote_definition_starting_with_a_list_keeps_the_label_in_front() {
     assert_eq!(
