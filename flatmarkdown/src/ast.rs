@@ -63,8 +63,8 @@ pub(crate) fn node_to_ast<'a>(
 /// - comrak wraps text in `EscapedTag` when delimiters look like markup but are not. With the
 ///   options of this crate that is a single `|` on each side: `|text|` is not a spoiler, which
 ///   needs `||`.
-/// - A wikilink without a page name: `[[]]` or `[[|label]]`. A `wikilink` node never has an
-///   empty `url`, because nothing can be opened with it.
+/// - A wikilink that names no page: `[[]]`, `[[|label]]`, or `[[#]]`. A `wikilink` node never
+///   has such a `url`, because nothing can be opened with it.
 fn children_to_ast<'a>(
     node: &'a comrak::arena_tree::Node<'a, std::cell::RefCell<comrak::nodes::Ast>>,
 ) -> Vec<Node> {
@@ -72,24 +72,22 @@ fn children_to_ast<'a>(
     let mut unwrapped = false;
     for child in node.children() {
         let delimiters = match &child.data.borrow().value {
-            NodeValue::EscapedTag(delimiter) => Some((*delimiter, *delimiter)),
-            NodeValue::WikiLink(link) if link.url.is_empty() => {
-                // A label stands after a `|`. Without the `|` the label would read as a name.
-                let open = if child.first_child().is_some() {
-                    "[[|"
-                } else {
-                    "[["
-                };
-                Some((open, "]]"))
+            NodeValue::EscapedTag(delimiter) => {
+                Some((delimiter.to_string(), delimiter.to_string()))
+            }
+            NodeValue::WikiLink(link) if names_no_page(&link.url) => {
+                Some((wikilink_opening(&link.url, child), "]]".to_string()))
             }
             _ => None,
         };
         match delimiters {
             Some((open, close)) => {
                 unwrapped = true;
-                children.push(text(open));
-                children.extend(children_to_ast(child));
-                children.push(text(close));
+                children.push(text(&open));
+                if !shows_only_its_url(child) {
+                    children.extend(children_to_ast(child));
+                }
+                children.push(text(&close));
             }
             None => children.push(node_to_ast(child)),
         }
@@ -98,6 +96,42 @@ fn children_to_ast<'a>(
         merge_adjacent_texts(children)
     } else {
         children
+    }
+}
+
+/// True if the URL of a wikilink names no page and no item: it is empty, or only `#`.
+fn names_no_page(url: &str) -> bool {
+    url.is_empty() || url == "#"
+}
+
+/// True if a comrak wikilink has no label of its own. comrak then gives it one text child that
+/// repeats the URL, or no child at all when the URL is empty.
+fn shows_only_its_url<'a>(
+    node: &'a comrak::arena_tree::Node<'a, std::cell::RefCell<comrak::nodes::Ast>>,
+) -> bool {
+    let NodeValue::WikiLink(link) = &node.data.borrow().value else {
+        return false;
+    };
+    let mut children = node.children();
+    match (children.next(), children.next()) {
+        (None, _) => true,
+        (Some(only), None) => {
+            matches!(&only.data.borrow().value, NodeValue::Text(label) if *label == link.url)
+        }
+        _ => false,
+    }
+}
+
+/// The text that opens a wikilink which goes back to text: `[[`, its URL, and a `|` when a
+/// label follows. Without the `|` the label would read as a name.
+fn wikilink_opening<'a>(
+    url: &str,
+    node: &'a comrak::arena_tree::Node<'a, std::cell::RefCell<comrak::nodes::Ast>>,
+) -> String {
+    if shows_only_its_url(node) {
+        format!("[[{url}")
+    } else {
+        format!("[[{url}|")
     }
 }
 
