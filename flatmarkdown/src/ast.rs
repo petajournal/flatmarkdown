@@ -105,7 +105,6 @@ fn unknown(node_type: &str, children: Vec<Node>) -> Node {
 fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
     match value {
         NodeValue::Document => Node::Document { children },
-        NodeValue::FrontMatter(s) => Node::FrontMatter { value: s.clone() },
         NodeValue::BlockQuote => Node::BlockQuote { children },
         NodeValue::List(nl) => Node::List {
             list_type: list_type(nl.list_type),
@@ -235,5 +234,8 @@ fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
         NodeValue::HeexBlock(_) => unknown("heex_block", children),
         NodeValue::HeexInline(_) => unknown("heex_inline", children),
         NodeValue::Insert => unknown("insert", children),
+        // Only the page parser turns front matter on. It takes the front matter out as a string
+        // before any node is built, so this is not reached either.
+        NodeValue::FrontMatter(_) => unknown("front_matter", children),
     }
 }

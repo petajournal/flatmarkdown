@@ -128,10 +128,6 @@ pub enum Node {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
-    FrontMatter {
-        #[serde(default)]
-        value: String,
-    },
     Subtext {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
@@ -331,7 +327,6 @@ impl Node {
             Node::CodeBlock { .. }
             | Node::ThematicBreak
             | Node::HtmlBlock { .. }
-            | Node::FrontMatter { .. }
             | Node::Text { .. }
             | Node::Softbreak
             | Node::Linebreak
@@ -379,7 +374,6 @@ impl Node {
             Node::CodeBlock { .. }
             | Node::ThematicBreak
             | Node::HtmlBlock { .. }
-            | Node::FrontMatter { .. }
             | Node::Text { .. }
             | Node::Softbreak
             | Node::Linebreak
@@ -414,7 +408,6 @@ impl Node {
             Node::HtmlBlock { .. } => "html_block",
             Node::FootnoteDefinition { .. } => "footnote_definition",
             Node::Alert { .. } => "alert",
-            Node::FrontMatter { .. } => "front_matter",
             Node::Subtext { .. } => "subtext",
             Node::Text { .. } => "text",
             Node::Softbreak => "softbreak",

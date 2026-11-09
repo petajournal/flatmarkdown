@@ -69,3 +69,10 @@ fn tight_on_an_item_of_an_old_ast_is_ignored() {
     let item = parse(r#"{"type":"item","list_type":"bullet","start":1,"tight":false}"#).unwrap();
     assert!(matches!(item, Node::Item { start: 1, .. }));
 }
+
+// 古いASTの front_matter ノードは、未知のノードとして読める。front matter はページの文字列の項目であり、ノードではない。
+#[test]
+fn a_front_matter_node_of_an_old_ast_is_read_as_unknown() {
+    let node = parse(r#"{"type":"front_matter","value":"---\nkey: value\n---\n"}"#).unwrap();
+    assert!(matches!(node, Node::Unknown { node_type, .. } if node_type == "front_matter"));
+}
