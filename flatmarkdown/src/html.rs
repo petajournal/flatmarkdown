@@ -158,8 +158,6 @@ fn node_to_html(node: &Node) -> String {
         }
 
         // Page metadata is not part of the rendered content.
-        Node::FrontMatter { .. } => String::new(),
-
         Node::List {
             list_type,
             start,

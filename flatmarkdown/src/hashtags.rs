@@ -88,10 +88,9 @@ fn restore_as_written(text: &mut String) {
 /// someone decides how its text is restored, so a placeholder cannot be left in the output.
 pub(crate) fn restore_escaped_hashes(node: &mut Node) {
     match node {
-        Node::Text { value }
-        | Node::FrontMatter { value }
-        | Node::EscapedTag { value }
-        | Node::Hashtag { value } => restore_as_hash(value),
+        Node::Text { value } | Node::EscapedTag { value } | Node::Hashtag { value } => {
+            restore_as_hash(value)
+        }
         Node::FootnoteDefinition { name, .. } | Node::FootnoteReference { name, .. } => {
             restore_as_hash(name)
         }
