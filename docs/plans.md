@@ -110,3 +110,7 @@
   - 2026-11-10に、ユーザーが決めた。前は`[#tag x](url)`や`[[page|#tag]]`のラベルの中に`hashtag`ができ、リンクの中のリンクになっていた
   - `process_hashtags`が、`link`と`wikilink`の中に入らないようにした。テストは`flatmarkdown/tests/hashtag_in_label.rs`
   - `embed`の代替テキストの中では、今までどおりハッシュタグを作る
+- [x] 名前のない`.md`へのリンクは、変換せずに`link`のまま残す
+  - 2026-11-10に、ユーザーが決めた。`.md`のファイル名は外部からもやってくるので、空の名前のwikilinkやハッシュタグを作るのは危ない
+  - 前は`[x](../.md)`が`url`の空の`wikilink`に、`[#](../.md)`が`value`の空の`hashtag`になっていた
+  - フォルダの中の`.md`（`../a/.md`）も同じ扱いにした。テストは`flatmarkdown/tests/empty_page_path.rs`

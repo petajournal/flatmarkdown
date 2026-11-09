@@ -54,6 +54,8 @@ Each item has:
 
 Links that do not match any prefix (external URLs, non-`.md` paths, or paths with non-matching prefixes) are kept as `link` nodes.
 
+A link to a `.md` file without a name is also kept as a `link` node: `[x](<prefix>.md)` and `[x](<prefix>folder/.md)`, with or without a `#id` fragment. The name of a `.md` file can come from outside. A `wikilink` or a `hashtag` therefore never has an empty page name.
+
 When *LinkResolution::Off* (the default), this conversion is skipped entirely, as is the `#tag` text-node extraction described below.
 
 **Footnote completion**: the Markdown parser keeps a footnote only when its reference and its definition are in the same document. A body is parsed alone, so a body that holds only `[^label]` references or only `[^label]:` definitions would lose them. Such a body is parsed again with a placeholder for the missing side, and the placeholder nodes are removed afterwards. A `footnote_reference` therefore always appears for `[^label]` outside code, and a `footnote_definition` always appears for a definition line, even when the other side is in another item. Both sides keep `name`, so a renderer can link them by label across items.
