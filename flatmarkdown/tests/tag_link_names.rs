@@ -39,3 +39,31 @@ fn a_tag_link_with_a_space_in_its_name_is_a_wikilink() {
     let root = ast("[#a b](<../a b.md>)");
     assert_eq!(inlines(&root), [wikilink("a b", "#a b")]);
 }
+
+// タグ名に使えない文字のある名前、/で始まる名前のタグのリンクも、wikilinkになる。
+#[test]
+fn a_tag_link_with_a_name_outside_the_rules_is_a_wikilink() {
+    for (md, url) in [
+        ("[#a.b](../a.b.md)", "a.b"),
+        ("[#/a](..//a.md)", "/a"),
+        ("[#タグ。](../タグ。.md)", "タグ。"),
+    ] {
+        let label = format!("#{url}");
+        assert_eq!(inlines(&ast(md)), [wikilink(url, &label)], "{md:?}");
+    }
+}
+
+// タグ名の規則に合う名前のタグのリンクは、今までどおりhashtagになる。
+#[test]
+fn a_tag_link_with_a_valid_name_is_still_a_hashtag() {
+    for name in ["tag", "日記", "a/b", "my_tag-1"] {
+        let md = format!("[#{name}](../{name}.md)");
+        assert_eq!(
+            inlines(&ast(&md)),
+            [Node::Hashtag {
+                value: name.to_string()
+            }],
+            "{md:?}"
+        );
+    }
+}
