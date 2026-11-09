@@ -388,6 +388,16 @@ mod tests {
         assert!(parse_metadata_line("<!-- @ k=\"v\"  -->").is_some());
     }
 
+    // 要素の間の空白は、2つ以上あってもよい。1つのときと同じ結果になる。
+    #[test]
+    fn metadata_may_have_several_spaces_between_its_elements() {
+        assert_eq!(
+            parse_metadata_line(&format!("<!-- @@   {ID1}  a=\"1\"   b=\"2\" -->")),
+            parse_metadata_line(&format!("<!-- @@ {ID1} a=\"1\" b=\"2\" -->"))
+        );
+        assert!(parse_metadata_line("<!-- @  k=\"v\" -->").is_some());
+    }
+
     // -->の前の空白が1つもなければ、メタデータ行ではない。
     #[test]
     fn metadata_without_a_space_before_the_end_is_invalid() {
