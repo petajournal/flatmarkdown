@@ -12,11 +12,8 @@ use std::collections::BTreeMap;
 pub(crate) fn options(front_matter: bool) -> Options<'static> {
     let mut options = Options::default();
 
-    // Render options
-    options.render.full_info_string = true;
-    options.render.gfm_quirks = true;
-    options.render.r#unsafe = true;
-    options.render.tasklist_classes = true;
+    // No render options are set. comrak reads them only when it writes HTML, and this crate
+    // writes its HTML from the typed AST (see `html.rs`).
 
     // Parse options
     options.parse.relaxed_tasklist_matching = true;

@@ -86,4 +86,4 @@
 - [x] comrakの`tagfilter`の設定を消す
   - 2026-11-10に決めた。`tagfilter`は、comrakがHTMLを書くときだけ働く。このクレートは自分でHTMLを書くので、効果がなかった
   - READMEのとおり、`<script>`は取り除かない。動きは変わらない
-  - `render`の4つの設定（`full_info_string`、`gfm_quirks`、`unsafe`、`tasklist_classes`）も、同じ理由で効果がない。2026-11-10にcomrak 0.51.0のソースで確かめた。4つとも、comrakがHTMLを書く`html.rs`の中でだけ読まれる。消すかどうかは決めていないので、残してある
+  - `render`の4つの設定（`full_info_string`、`gfm_quirks`、`unsafe`、`tasklist_classes`）も、同じ理由で効果がない。2026-11-10にcomrak 0.51.0のソースで確かめた。4つとも、comrakがHTMLを書く`html.rs`の中でだけ読まれる。同じ日に、4つとも消した。実際のMarkdownで、消す前後の出力が同じことを確かめた
