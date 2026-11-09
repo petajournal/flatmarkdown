@@ -2,6 +2,7 @@
 name = "flatmarkdown"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Flat Markdown parser — outline format with block-delimited items"
