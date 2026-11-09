@@ -2,9 +2,48 @@
 
 use flatmarkdown_ast::Node;
 
-/// Placeholder for escaped `\#` – Unicode Private Use Area character
-/// unlikely to appear in normal text.
-pub(crate) const ESCAPED_HASH_PLACEHOLDER: char = '\u{FDD0}';
+/// Opens every mark that the parser puts into a body before comrak reads it.
+///
+/// A body can hold this character itself, because a body can come from outside. Such a
+/// character is written twice while the parser works. A mark is therefore never mistaken for
+/// text of the body, and the text of the body is never mistaken for a mark.
+pub(crate) const MARK: char = '\u{FDD0}';
+
+/// After `MARK`: an escaped `\#` stood here.
+const ESCAPED_HASH: char = '\u{FDD1}';
+
+/// After `MARK`: a placeholder of the footnote completion.
+pub(crate) const FOOTNOTE: char = '\u{FDD2}';
+
+/// Puts a mark where `\#` is, so that the hashtag pass cannot mistake the escaped `#` for the
+/// start of a tag. A `MARK` of the body itself is written twice.
+pub(crate) fn mark_escaped_hashes(input: &str) -> String {
+    input
+        .replace(MARK, &format!("{MARK}{MARK}"))
+        .replace("\\#", &format!("{MARK}{ESCAPED_HASH}"))
+}
+
+/// Takes the marks out of `text`. `hash` is written where an escaped `\#` stood. A `MARK`
+/// that was written twice becomes one again.
+fn restore(text: &mut String, hash: &str) {
+    if !text.contains(MARK) {
+        return;
+    }
+    let mut restored = String::with_capacity(text.len());
+    let mut chars = text.chars();
+    while let Some(c) = chars.next() {
+        if c != MARK {
+            restored.push(c);
+            continue;
+        }
+        match chars.next() {
+            Some(ESCAPED_HASH) => restored.push_str(hash),
+            Some(other) => restored.push(other),
+            None => {}
+        }
+    }
+    *text = restored;
+}
 
 /// Returns true if `c` is a valid hashtag character:
 /// Unicode alphanumeric, `_`, `-`, or `/`.
@@ -75,26 +114,22 @@ fn split_hashtags(text: &str) -> Vec<Node> {
     result
 }
 
-/// Puts a `#` where the placeholder is. For text in which Markdown reads backslash escapes:
+/// Puts a `#` where the mark is. For text in which Markdown reads backslash escapes:
 /// there `\#` means a plain `#`.
 fn restore_as_hash(text: &mut String) {
-    if text.contains(ESCAPED_HASH_PLACEHOLDER) {
-        *text = text.replace(ESCAPED_HASH_PLACEHOLDER, "#");
-    }
+    restore(text, "#");
 }
 
-/// Puts `\#` back where the placeholder is. For text that Markdown keeps raw (code, math, and
+/// Puts `\#` back where the mark is. For text that Markdown keeps raw (code, math, and
 /// raw HTML): there a backslash is an ordinary character, so the text stays as it was written.
 fn restore_as_written(text: &mut String) {
-    if text.contains(ESCAPED_HASH_PLACEHOLDER) {
-        *text = text.replace(ESCAPED_HASH_PLACEHOLDER, "\\#");
-    }
+    restore(text, "\\#");
 }
 
-/// Restores the escaped-hash placeholder in every text that a node holds, and in its descendants.
+/// Takes the marks out of every text that a node holds, and out of its descendants.
 ///
 /// The `match` names every kind of node on purpose. A new kind of node does not compile until
-/// someone decides how its text is restored, so a placeholder cannot be left in the output.
+/// someone decides how its text is restored, so a mark cannot be left in the output.
 pub(crate) fn restore_escaped_hashes(node: &mut Node) {
     match node {
         Node::Text { value } | Node::Hashtag { value } => restore_as_hash(value),
