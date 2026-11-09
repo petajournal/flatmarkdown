@@ -2499,4 +2499,26 @@ mod tests {
         let result = body_to_html_with("![a `b`\nc #t](u.png)", &opts);
         assert_eq!(result, "<p><img src=\"u.png\" alt=\"a b c #t\" /></p>\n");
     }
+
+    // 本文の生のHTMLは、そのまま出る。自分のノートを描くためのものなので、取り除かない。
+    #[test]
+    fn html_raw_html_in_the_body_is_written_as_it_is() {
+        assert_eq!(
+            body_to_html("<script>alert(1)</script>"),
+            "<script>alert(1)</script>"
+        );
+        assert_eq!(
+            body_to_html("a <img src=x onerror=alert(1)> b"),
+            "<p>a <img src=x onerror=alert(1)> b</p>\n"
+        );
+    }
+
+    // リンクのURLは調べない。javascript:のリンクも、リンクのまま出る。
+    #[test]
+    fn html_link_url_is_not_checked() {
+        assert_eq!(
+            body_to_html("[a](javascript:alert(1))"),
+            "<p><a href=\"javascript:alert(1)\">a</a></p>\n"
+        );
+    }
 }
