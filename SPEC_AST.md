@@ -241,6 +241,8 @@ Subscript (`~text~`). Children are inline nodes.
 
 Spoiler (`||text||`). Children are inline nodes.
 
+A single `|` on each side is not a spoiler. `|text|` is plain text, and both `|` characters stay in the `text` node.
+
 #### `code`
 
 Inline code span.
