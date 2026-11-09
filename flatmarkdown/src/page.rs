@@ -390,6 +390,22 @@ mod tests {
         assert!(parse_metadata_line(r#"<!-- @ k="a-->b" -->"#).is_none());
     }
 
+    // -->のあとの空白は許される。半角の空白、タブ、全角の空白のどれでも、メタデータ行である。
+    #[test]
+    fn metadata_line_may_have_whitespace_after_its_end() {
+        let plain = parse_metadata_line(&format!("<!-- @@ {ID1} k=\"v\" -->")).unwrap();
+        for tail in ["  ", "\t", "\u{3000}", " \t "] {
+            let line = format!("<!-- @@ {ID1} k=\"v\" -->{tail}");
+            assert_eq!(parse_metadata_line(&line), Some(plain.clone()), "{tail:?}");
+        }
+    }
+
+    // -->のあとに空白でない文字があれば、メタデータ行ではない。
+    #[test]
+    fn metadata_line_with_text_after_its_end_is_invalid() {
+        assert!(parse_metadata_line("<!-- @ --> x").is_none());
+    }
+
     // ---- Page parsing ----
 
     // 仕様書の例のページは4つの項目になる。メタデータ行のないブロックはレベル1の項目に、本文のないメタデータ行は空の項目になる。
@@ -570,6 +586,13 @@ mod tests {
         assert_eq!(items[0]["id"], Value::Null);
         assert_eq!(items[0]["body"], "[ref]: /url");
         assert_eq!(items[1]["body"], "P");
+    }
+
+    // 1つのメタデータ行に同じキーを2回書くと、後の値だけが残る。ほかのキーは変わらない。
+    #[test]
+    fn page_keeps_the_last_value_of_a_key_written_twice() {
+        let v = page("<!-- @ a=\"1\" b=\"x\" a=\"2\" -->\nP\n");
+        assert_eq!(v["items"][0]["properties"], json!({"a": "2", "b": "x"}));
     }
 
     // 空のページは、項目がなく、front_matterはnullである。
