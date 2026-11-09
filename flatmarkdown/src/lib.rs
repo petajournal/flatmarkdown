@@ -56,6 +56,23 @@ fn escape_html(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
+/// The text of a node and its descendants, without any markup: what the `alt` of an image holds.
+/// Raw inline HTML counts as text, as in the CommonMark reference renderer.
+fn plain_text(node: &Value) -> String {
+    match node.get("type").and_then(|t| t.as_str()) {
+        Some("text" | "html_inline") => node
+            .get("value")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
+        _ => node
+            .get("children")
+            .and_then(|c| c.as_array())
+            .map(|children| children.iter().map(plain_text).collect())
+            .unwrap_or_default(),
+    }
+}
+
 fn render_children(node: &Value) -> String {
     node.get("children")
         .and_then(|c| c.as_array())
@@ -300,8 +317,11 @@ fn ast_to_html(node: &Value) -> String {
 
         "embed" => {
             let url = node.get("url").and_then(|u| u.as_str()).unwrap_or("");
-            let alt = render_children(node);
-            format!("<img src=\"{}\" alt=\"{}\" />", escape_html(url), alt)
+            format!(
+                "<img src=\"{}\" alt=\"{}\" />",
+                escape_html(url),
+                escape_html(&plain_text(node))
+            )
         }
 
         "wikilink" => {
