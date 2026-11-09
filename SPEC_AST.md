@@ -26,7 +26,7 @@ The basic specification is based on the Flat Markdown specification v0.2: https:
 
 | Field          | Type           | Description |
 |----------------|----------------|-------------|
-| `front_matter` | string \| null | The raw YAML front matter at the top of the page, including the `---` delimiters. `null` when absent. |
+| `front_matter` | string \| null | The raw YAML front matter at the top of the page, including the `---` delimiters. `null` when absent. The front matter is only here: no node holds it. In the body of an item, `---` is a thematic break. |
 | `items`        | array          | The outline items in source order. |
 
 Each item has:
@@ -112,14 +112,6 @@ A `>` blockquote. Children are block nodes.
 #### `multiline_block_quote`
 
 A blockquote fenced by `>>>` lines. Children are block nodes.
-
-#### `front_matter`
-
-YAML front matter. Only produced when parsing a whole page with `page_to_ast`. A body that starts with `---` is a thematic break, not front matter.
-
-| Attribute | Type   | Description |
-|-----------|--------|-------------|
-| `value`   | string | The raw front matter including the `---` delimiters |
 
 #### `list`
 

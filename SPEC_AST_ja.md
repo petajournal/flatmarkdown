@@ -26,7 +26,7 @@
 
 | フィールド     | 型             | 説明 |
 |----------------|----------------|------|
-| `front_matter` | string \| null | ページ冒頭のYAML front matterの生テキスト。`---`の区切り行を含む。存在しない場合は`null`。 |
+| `front_matter` | string \| null | ページ冒頭のYAML front matterの生テキスト。`---`の区切り行を含む。存在しない場合は`null`。front matterはここだけにあり、ノードにはならない。項目の本文の`---`は水平線である。 |
 | `items`        | array          | アウトラインの項目。文書中の順序を保つ。 |
 
 各項目は次のフィールドを持つ。
@@ -114,14 +114,6 @@
 #### `multiline_block_quote`
 
 `>>>` の行で囲まれた引用ブロック。子要素はブロックノード。
-
-#### `front_matter`
-
-YAML front matter。`page_to_ast` でページ全体を解析した場合にのみ生成される。`---` で始まる本文は水平線であり、front matterではない。
-
-| 属性    | 型     | 説明 |
-|---------|--------|------|
-| `value` | string | `---` の区切り行を含むfront matterの生テキスト |
 
 #### `list`
 

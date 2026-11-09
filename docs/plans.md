@@ -64,3 +64,6 @@
   - 古いASTの`item.tight`は、無視して読める
   - `body_to_html`は、前から`list.tight`を読んでいる。出力は変わらない
   - レンダラー（peta-journalの`fm-leptos`と、TSの3つ）は`item.tight`を読んでいて、タイトなリストでも`<p>`を出している。`list.tight`を読むように直す（それぞれのリポジトリで行う）
+- [x] `front_matter`ノードを消す
+  - 2026-11-09に決めた。仕様は「`page_to_ast`が出力する」と書いていたが、ノードとしては一度も出ていなかった。front matterは、ページの`front_matter`という文字列の項目に入る
+  - 古いASTに`front_matter`ノードがあれば、未知のノード（`Node::Unknown`）として読む
