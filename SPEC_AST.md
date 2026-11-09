@@ -49,7 +49,7 @@ Each item has:
 
 **Markdown link → wikilink / hashtag conversion** *(LinkResolution::On only)*: After parsing, `link` nodes whose URL starts with one of the configured prefixes and ends with `.md` are converted as follows. The matching prefix and `.md` suffix are stripped to form the page path.
 
-- If the link text is a single text node whose value equals `#page_path` (i.e. `[#tagname](<prefix>tagname.md)`), the node becomes a `hashtag` node with `value = tagname`. The `url`, `title`, and `children` fields are removed.
+- If the link text is a single text node whose value equals `#page_path` (i.e. `[#tagname](<prefix>tagname.md)`), the node becomes a `hashtag` node with `value = tagname`. The `url`, `title`, and `children` fields are removed. A link with a `#id` fragment is not such a link: `[#tagname](<prefix>tagname.md#id)` becomes a `wikilink`.
 - Otherwise, the node becomes a `wikilink` node. The `url` is the page path (prefix and `.md` suffix stripped); a `#id` fragment is preserved. The `title` field is removed; `children` (link text) are kept as the label.
 
 Links that do not match any prefix (external URLs, non-`.md` paths, or paths with non-matching prefixes) are kept as `link` nodes.
@@ -331,6 +331,8 @@ A hashtag (e.g. `#tag`, `#diary`). Extracted from `text` nodes in AST post-proce
 `#` must appear at the start of a `text` node or immediately after a half-width space (U+0020). A `#` preceded by any other character in the same `text` node is not recognized as a tag. The tag name consists of Unicode alphanumerics, `_`, `-`, and `/`; any other character (punctuation, whitespace, end of string, etc.) terminates the tag. `/` is not allowed as the first or last character of the tag name.
 
 The position is judged in the `text` node, not in the source. A `text` node starts after a line break and after inline markup. So `#tag` at the start of a line is a tag. `#tag` in `**b**#tag` is also a tag, without a space: the `text` node starts right after the `strong` node. In `foo#bar`, the `#` is in the middle of one `text` node, so it is not a tag.
+
+No hashtag is made inside the label of a `link` or a `wikilink`. `#tag` stays text there, also inside inline markup of the label. A renderer draws a hashtag as a link, so a hashtag in a label would be a link inside a link. The only hashtag that comes from a link is the tag link of *LinkResolution::On* (`[#tagname](<prefix>tagname.md)`), and there the whole link becomes the `hashtag` node. The alt text of an `embed` is not a label of a link: a hashtag is made there.
 
 `\#` is treated as a literal `#` and is never recognized as a hashtag. This holds wherever Markdown reads backslash escapes: in text, in the URL and title of a link or an embed, in the info string of a code block, and in the title of an alert. Where Markdown keeps the text raw, `\#` stays as written: in `code`, `code_block`, and `math` (`literal`), and in `html_inline` and `html_block`.
 

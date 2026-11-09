@@ -106,3 +106,7 @@
   - `list.delimiter`の`paren`、`item.start`、`html_block.block_type`、`footnote_reference.ref_num`の2、本文の先頭の`---`、ハッシュタグの位置（改行の直後、強調の直後）
   - ハッシュタグの位置の2つは、今の動作を固定するテストである。仕様書の「文字列の先頭」は、`text`ノードの先頭を指す
   - [x] 2026-11-10に、ユーザーが`**b**#tag`をハッシュタグにすると決めた。仕様書に「位置は`text`ノードの中で判定する」と書いた
+- [x] リンクとwikilinkのラベルの中では、ハッシュタグを作らない
+  - 2026-11-10に、ユーザーが決めた。前は`[#tag x](url)`や`[[page|#tag]]`のラベルの中に`hashtag`ができ、リンクの中のリンクになっていた
+  - `process_hashtags`が、`link`と`wikilink`の中に入らないようにした。テストは`flatmarkdown/tests/hashtag_in_label.rs`
+  - `embed`の代替テキストの中では、今までどおりハッシュタグを作る
