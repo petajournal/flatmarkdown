@@ -242,10 +242,10 @@ fn node_to_html(node: &Node) -> String {
             render_all(children)
         ),
 
-        Node::Hashtag { value } => format!(
-            "<a href=\"{}\" class=\"hashtag\">#{value}</a>",
-            escape_html(value)
-        ),
+        Node::Hashtag { value } => {
+            let name = escape_html(value);
+            format!("<a href=\"{name}\" class=\"hashtag\">#{name}</a>")
+        }
 
         // The label is shown instead of comrak's index: a body is parsed alone, so the
         // index would restart at 1 in every item.
