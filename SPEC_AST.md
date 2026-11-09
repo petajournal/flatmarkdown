@@ -49,12 +49,12 @@ Each item has:
 
 **Markdown link → wikilink / hashtag conversion** *(LinkResolution::On only)*: After parsing, `link` nodes whose URL starts with one of the configured prefixes and ends with `.md` are converted as follows. The matching prefix and `.md` suffix are stripped to form the page path.
 
-- If the link text is a single text node whose value equals `#page_path` (i.e. `[#tagname](<prefix>tagname.md)`), the node becomes a `hashtag` node with `value = tagname`. The `url`, `title`, and `children` fields are removed. A link with a `#id` fragment is not such a link: `[#tagname](<prefix>tagname.md#id)` becomes a `wikilink`.
+- If the link text is a single text node whose value equals `#page_path` (i.e. `[#tagname](<prefix>tagname.md)`), the node becomes a `hashtag` node with `value = tagname`. The `url`, `title`, and `children` fields are removed. A link with a `#id` fragment is not such a link: `[#tagname](<prefix>tagname.md#id)` becomes a `wikilink`. The page path must also follow the rules of a tag name (see `hashtag`). When it does not, as in `[#a b](<prefix>a b.md)`, the node becomes a `wikilink` and its label stays the text `#a b`. A `hashtag` therefore always has a name that could be written as `#name` in text.
 - Otherwise, the node becomes a `wikilink` node. The `url` is the page path (prefix and `.md` suffix stripped); a `#id` fragment is preserved. The `title` field is removed; `children` (link text) are kept as the label.
 
 Links that do not match any prefix (external URLs, non-`.md` paths, or paths with non-matching prefixes) are kept as `link` nodes.
 
-A link to a `.md` file without a name is also kept as a `link` node: `[x](<prefix>.md)` and `[x](<prefix>folder/.md)`, with or without a `#id` fragment. The name of a `.md` file can come from outside. A `wikilink` or a `hashtag` therefore never has an empty page name.
+A link to a `.md` file without a name is also kept as a `link` node: `[x](<prefix>.md)` and `[x](<prefix>folder/.md)`, with or without a `#id` fragment. Whitespace alone is no name, so `[x](<<prefix> .md>)` is kept too. The name of a `.md` file can come from outside. A `wikilink` or a `hashtag` therefore never has an empty page name.
 
 When *LinkResolution::Off* (the default), this conversion is skipped entirely, as is the `#tag` text-node extraction described below.
 
@@ -287,7 +287,7 @@ Children are the alt text (inline nodes).
 
 #### `wikilink`
 
-A wikilink. Children are the label (inline nodes); when no label is given, the children contain the URL as a `text` node.
+A wikilink. Children are the label (inline nodes); when no label is given, the children contain the URL as a `text` node. An empty label is no label: `[[page|]]` is the same as `[[page]]`.
 
 | Syntax | Description |
 |--------|-------------|
@@ -300,7 +300,7 @@ A wikilink. Children are the label (inline nodes); when no label is given, the c
 |-----------|--------|-----------------|
 | `url`     | string | Link destination. May contain a `#id` fragment for block links. |
 
-A wikilink without a page name is not a wikilink. `[[]]` and `[[|label]]` stay text, so a `wikilink` node never has an empty `url`. Whitespace alone is no name: `[[ ]]` becomes the text `[[]]`.
+A wikilink without a page name is not a wikilink. `[[]]` and `[[|label]]` stay text, so a `wikilink` node never has an empty `url`. Whitespace alone is no name: `[[ ]]` becomes the text `[[]]`. A `#` without a page name and without an ID is no name either: `[[#]]` and `[[#|label]]` stay text. `[[#id]]` is a wikilink, with the `url` `#id`.
 
 #### `footnote_reference`
 
