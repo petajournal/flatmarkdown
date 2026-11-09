@@ -73,7 +73,15 @@ fn children_to_ast<'a>(
     for child in node.children() {
         let delimiters = match &child.data.borrow().value {
             NodeValue::EscapedTag(delimiter) => Some((*delimiter, *delimiter)),
-            NodeValue::WikiLink(link) if link.url.is_empty() => Some(("[[", "]]")),
+            NodeValue::WikiLink(link) if link.url.is_empty() => {
+                // A label stands after a `|`. Without the `|` the label would read as a name.
+                let open = if child.first_child().is_some() {
+                    "[[|"
+                } else {
+                    "[["
+                };
+                Some((open, "]]"))
+            }
             _ => None,
         };
         match delimiters {
