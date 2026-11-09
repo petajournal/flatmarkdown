@@ -2,7 +2,7 @@
 
 use crate::hashtags::FOOTNOTE_PLACEHOLDER;
 use flatmarkdown_ast::Node;
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 
 /// Footnote labels found by a raw scan of a body: `[^label]` occurrences and
 /// `[^label]:` definition lines. The scan does not know about code spans or
@@ -145,6 +145,36 @@ pub(crate) fn strip_footnote_placeholders(ast: &mut Node, placeholder_defs: &Has
         ),
         _ => true,
     });
+}
+
+/// Numbers the footnotes again from 1, in the order that they had.
+///
+/// A placeholder reference takes a number while comrak parses. When it is removed, the
+/// numbers of the other footnotes have a gap. `ix` is the index of a footnote in its body, so
+/// the gap is closed.
+pub(crate) fn renumber_footnotes(ast: &mut Node) {
+    let mut used = BTreeSet::new();
+    ast.walk(&mut |node| {
+        if let Node::FootnoteReference { ix, .. } = node {
+            used.insert(*ix);
+        }
+    });
+    let numbers: Vec<u32> = used.into_iter().collect();
+    set_footnote_numbers(ast, &numbers);
+}
+
+/// Gives every footnote reference the place of its old number in `numbers`, counted from 1.
+fn set_footnote_numbers(node: &mut Node, numbers: &[u32]) {
+    if let Node::FootnoteReference { ix, .. } = node
+        && let Ok(place) = numbers.binary_search(ix)
+    {
+        *ix = place as u32 + 1;
+    }
+    if let Some(children) = node.children_mut() {
+        for child in children.iter_mut() {
+            set_footnote_numbers(child, numbers);
+        }
+    }
 }
 
 #[cfg(test)]
