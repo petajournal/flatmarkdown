@@ -68,6 +68,13 @@ fn a_hashtag_after_an_empty_wikilink_is_still_a_hashtag() {
     );
 }
 
+// ページ名もIDもない[[#]]は、wikilinkにならない。文字のままである。ラベルがあっても同じである。
+#[test]
+fn a_wikilink_with_only_a_hash_sign_stays_text() {
+    assert_eq!(inlines(&ast("[[#]]")), [text("[[#]]")]);
+    assert_eq!(inlines(&ast("[[#|label]]")), [text("[[#|label]]")]);
+}
+
 // ページ名のあるwikilinkは、今までどおりwikilinkである。#idだけの[[#id]]も、名前が空ではない。
 #[test]
 fn a_wikilink_with_a_name_is_still_a_wikilink() {
