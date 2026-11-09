@@ -28,3 +28,13 @@ jobs:
       # Builds each crate from its packaged files, as crates.io would. The tests above cannot
       # show a file that is missing from the package.
       - run: cargo package --workspace --locked
+
+  msrv:
+    name: build with the oldest supported Rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Keep this version the same as `rust-version` in Cargo.toml.
+      - uses: dtolnay/rust-toolchain@1.88
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --workspace --all-targets --locked
