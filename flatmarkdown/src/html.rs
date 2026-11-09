@@ -1,7 +1,7 @@
-//! Renders the JSON AST of an item body to HTML.
+//! Renders the AST of an item body to HTML.
 
-use crate::body::{BodyOptions, body_to_ast_with};
-use serde_json::Value;
+use crate::body::{BodyOptions, body_to_node};
+use flatmarkdown_ast::Node;
 
 fn escape_html(s: &str) -> String {
     s.replace('&', "&amp;")
@@ -10,70 +10,141 @@ fn escape_html(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
-/// A string field of a node, or an empty string when the node has none.
-fn str_field<'a>(node: &'a Value, key: &str) -> &'a str {
-    node.get(key).and_then(|v| v.as_str()).unwrap_or("")
-}
-
 /// The text of a node and its descendants, without any markup: what the `alt` of an image holds.
 /// Raw inline HTML counts as text, as in the CommonMark reference renderer.
-fn plain_text(node: &Value) -> String {
-    match node.get("type").and_then(|t| t.as_str()) {
-        Some("text" | "html_inline") => str_field(node, "value").to_string(),
-        Some("code") => str_field(node, "literal").to_string(),
-        Some("hashtag") => format!("#{}", str_field(node, "value")),
-        Some("softbreak" | "linebreak") => " ".to_string(),
-        _ => node
-            .get("children")
-            .and_then(|c| c.as_array())
-            .map(|children| children.iter().map(plain_text).collect())
-            .unwrap_or_default(),
+fn plain_text(node: &Node) -> String {
+    match node {
+        Node::Text { value } | Node::HtmlInline { value } => value.clone(),
+        Node::Code { literal } => literal.clone(),
+        Node::Hashtag { value } => format!("#{value}"),
+        Node::Softbreak | Node::Linebreak => " ".to_string(),
+        _ => node.children().iter().map(plain_text).collect(),
     }
 }
 
-fn render_children(node: &Value) -> String {
-    node.get("children")
-        .and_then(|c| c.as_array())
-        .map(|arr| arr.iter().map(ast_to_html).collect::<String>())
-        .unwrap_or_default()
+fn render_all(nodes: &[Node]) -> String {
+    nodes.iter().map(node_to_html).collect()
 }
 
-/// Renders an item's children in tight or non-tight mode.
+fn render_children(node: &Node) -> String {
+    render_all(node.children())
+}
+
+/// Renders the children of a list item in tight or non-tight mode.
 /// In tight mode, top-level paragraph children are rendered without `<p>` wrappers.
-fn render_item_content(item: &Value, tight: bool) -> String {
-    item.get("children")
-        .and_then(|c| c.as_array())
-        .map(|children| {
-            children
-                .iter()
-                .map(|child| {
-                    if tight && child.get("type").and_then(|t| t.as_str()) == Some("paragraph") {
-                        render_children(child)
-                    } else {
-                        ast_to_html(child)
-                    }
-                })
-                .collect::<String>()
+fn render_item_content(item: &Node, tight: bool) -> String {
+    item.children()
+        .iter()
+        .map(|child| match child {
+            Node::Paragraph { children } if tight => render_all(children),
+            _ => node_to_html(child),
         })
-        .unwrap_or_default()
+        .collect()
 }
 
-fn ast_to_html(node: &Value) -> String {
-    let node_type = node.get("type").and_then(|t| t.as_str()).unwrap_or("");
+/// The checkbox of a task item. Any symbol in the brackets counts as checked.
+fn checkbox(symbol: &Option<String>) -> &'static str {
+    if symbol.is_some() {
+        "<input type=\"checkbox\" checked disabled>"
+    } else {
+        "<input type=\"checkbox\" disabled>"
+    }
+}
 
-    match node_type {
-        "document" => render_children(node),
+fn list_to_html(list_type: &str, start: u32, tight: bool, items: &[Node]) -> String {
+    let items_html: String = items
+        .iter()
+        .map(|item| {
+            let content = render_item_content(item, tight);
+            match item {
+                Node::TaskItem { symbol, .. } => {
+                    format!("<li>{}{content}</li>\n", checkbox(symbol))
+                }
+                _ => format!("<li>{content}</li>\n"),
+            }
+        })
+        .collect();
+    if list_type == "ordered" {
+        if start == 1 {
+            format!("<ol>\n{items_html}</ol>\n")
+        } else {
+            format!("<ol start=\"{start}\">\n{items_html}</ol>\n")
+        }
+    } else {
+        format!("<ul>\n{items_html}</ul>\n")
+    }
+}
 
-        "paragraph" => format!("<p>{}</p>\n", render_children(node)),
+fn table_to_html(rows: &[Node]) -> String {
+    let mut thead = String::new();
+    let mut tbody = String::new();
+    for row in rows {
+        let is_header = matches!(row, Node::TableRow { header: true, .. });
+        let tag = if is_header { "th" } else { "td" };
+        let cells_html: String = row
+            .children()
+            .iter()
+            .map(|cell| format!("<{tag}>{}</{tag}>", render_children(cell)))
+            .collect();
+        let row_html = format!("<tr>{cells_html}</tr>\n");
+        if is_header {
+            thead.push_str(&row_html);
+        } else {
+            tbody.push_str(&row_html);
+        }
+    }
+    let mut result = "<table>\n".to_string();
+    if !thead.is_empty() {
+        result.push_str(&format!("<thead>\n{thead}</thead>\n"));
+    }
+    if !tbody.is_empty() {
+        result.push_str(&format!("<tbody>\n{tbody}</tbody>\n"));
+    }
+    result.push_str("</table>\n");
+    result
+}
 
-        "heading" => {
-            let level = node.get("level").and_then(|l| l.as_u64()).unwrap_or(1);
-            format!("<h{level}>{}</h{level}>\n", render_children(node))
+fn footnote_definition_to_html(name: &str, children: &[Node]) -> String {
+    let name = escape_html(name);
+    let label = format!("<a href=\"#fnref-{name}\" class=\"footnote-label\">[{name}]:</a>");
+    // The label goes inside the first paragraph so that the body continues on
+    // the same line without any CSS. A definition that starts with another
+    // block keeps the label in front of it.
+    let body = match children.split_first() {
+        Some((Node::Paragraph { children: first }, rest)) => {
+            format!("<p>{label} {}</p>\n{}", render_all(first), render_all(rest))
+        }
+        _ => format!("{label}\n{}", render_all(children)),
+    };
+    format!("<div id=\"fn-{name}\" class=\"footnote\">\n{body}</div>\n")
+}
+
+fn alert_to_html(alert_type: &str, title: &Option<String>, children: &[Node]) -> String {
+    let title = title.as_deref().unwrap_or(match alert_type {
+        "tip" => "Tip",
+        "important" => "Important",
+        "warning" => "Warning",
+        "caution" => "Caution",
+        _ => "Note",
+    });
+    format!(
+        "<blockquote class=\"alert alert-{alert_type}\">\n<p class=\"alert-title\">{}</p>\n{}</blockquote>\n",
+        escape_html(title),
+        render_all(children)
+    )
+}
+
+fn node_to_html(node: &Node) -> String {
+    match node {
+        Node::Document { children } => render_all(children),
+
+        Node::Paragraph { children } => format!("<p>{}</p>\n", render_all(children)),
+
+        Node::Heading { level, children } => {
+            format!("<h{level}>{}</h{level}>\n", render_all(children))
         }
 
-        "code_block" => {
-            let info = node.get("info").and_then(|i| i.as_str()).unwrap_or("text");
-            let literal = node.get("literal").and_then(|l| l.as_str()).unwrap_or("");
+        Node::CodeBlock { info, literal } => {
             let class = if info.is_empty() || info == "text" {
                 String::new()
             } else {
@@ -82,271 +153,128 @@ fn ast_to_html(node: &Value) -> String {
             format!("<pre><code{class}>{}</code></pre>\n", escape_html(literal))
         }
 
-        "block_quote" | "multiline_block_quote" => {
-            format!("<blockquote>\n{}</blockquote>\n", render_children(node))
+        Node::BlockQuote { children } | Node::MultilineBlockQuote { children } => {
+            format!("<blockquote>\n{}</blockquote>\n", render_all(children))
         }
 
         // Page metadata is not part of the rendered content.
-        "front_matter" => String::new(),
+        Node::FrontMatter { .. } => String::new(),
 
-        "list" => {
-            let list_type = node
-                .get("list_type")
-                .and_then(|t| t.as_str())
-                .unwrap_or("bullet");
-            let start = node.get("start").and_then(|s| s.as_u64()).unwrap_or(1);
-            let tight = node.get("tight").and_then(|t| t.as_bool()).unwrap_or(false);
-            let items_html = node
-                .get("children")
-                .and_then(|c| c.as_array())
-                .map(|items| {
-                    items
-                        .iter()
-                        .map(|item| {
-                            let item_type = item.get("type").and_then(|t| t.as_str()).unwrap_or("");
-                            let content = render_item_content(item, tight);
-                            match item_type {
-                                "task_item" => {
-                                    let checked =
-                                        item.get("symbol").and_then(|s| s.as_str()).is_some();
-                                    let checkbox = if checked {
-                                        "<input type=\"checkbox\" checked disabled>"
-                                    } else {
-                                        "<input type=\"checkbox\" disabled>"
-                                    };
-                                    format!("<li>{checkbox}{content}</li>\n")
-                                }
-                                _ => format!("<li>{content}</li>\n"),
-                            }
-                        })
-                        .collect::<String>()
-                })
-                .unwrap_or_default();
-            if list_type == "ordered" {
-                if start == 1 {
-                    format!("<ol>\n{items_html}</ol>\n")
-                } else {
-                    format!("<ol start=\"{start}\">\n{items_html}</ol>\n")
-                }
-            } else {
-                format!("<ul>\n{items_html}</ul>\n")
-            }
-        }
+        Node::List {
+            list_type,
+            start,
+            tight,
+            children,
+            ..
+        } => list_to_html(list_type, *start, *tight, children),
 
         // Fallback — normally rendered inside the list handler
-        "item" => format!("<li>{}</li>\n", render_children(node)),
-        "task_item" => {
-            let checked = node.get("symbol").and_then(|s| s.as_str()).is_some();
-            let checkbox = if checked {
-                "<input type=\"checkbox\" checked disabled>"
-            } else {
-                "<input type=\"checkbox\" disabled>"
-            };
-            format!("<li>{checkbox}{}</li>\n", render_children(node))
+        Node::Item { children, .. } => format!("<li>{}</li>\n", render_all(children)),
+        Node::TaskItem { symbol, children } => {
+            format!("<li>{}{}</li>\n", checkbox(symbol), render_all(children))
         }
 
-        "table" => {
-            let mut thead = String::new();
-            let mut tbody = String::new();
-            if let Some(rows) = node.get("children").and_then(|c| c.as_array()) {
-                for row in rows {
-                    let is_header = row.get("header").and_then(|h| h.as_bool()).unwrap_or(false);
-                    let tag = if is_header { "th" } else { "td" };
-                    let row_html = row
-                        .get("children")
-                        .and_then(|c| c.as_array())
-                        .map(|cells| {
-                            let cells_html: String = cells
-                                .iter()
-                                .map(|cell| format!("<{tag}>{}</{tag}>", render_children(cell)))
-                                .collect();
-                            format!("<tr>{cells_html}</tr>\n")
-                        })
-                        .unwrap_or_default();
-                    if is_header {
-                        thead.push_str(&row_html);
-                    } else {
-                        tbody.push_str(&row_html);
-                    }
-                }
-            }
-            let mut result = "<table>\n".to_string();
-            if !thead.is_empty() {
-                result.push_str(&format!("<thead>\n{thead}</thead>\n"));
-            }
-            if !tbody.is_empty() {
-                result.push_str(&format!("<tbody>\n{tbody}</tbody>\n"));
-            }
-            result.push_str("</table>\n");
-            result
+        Node::Table { children, .. } => table_to_html(children),
+
+        // Fallback — normally rendered inside the table handler
+        Node::TableRow { children, .. } | Node::TableCell { children } => render_all(children),
+
+        Node::ThematicBreak => "<hr />\n".to_string(),
+
+        Node::HtmlBlock { literal, .. } => literal.clone(),
+
+        Node::FootnoteDefinition { name, children } => footnote_definition_to_html(name, children),
+
+        Node::Alert {
+            alert_type,
+            title,
+            children,
+        } => alert_to_html(alert_type, title, children),
+
+        Node::Subtext { children } => format!("<sub>{}</sub>", render_all(children)),
+
+        Node::Text { value } => escape_html(value),
+
+        Node::Softbreak => "\n".to_string(),
+        Node::Linebreak => "<br />\n".to_string(),
+
+        Node::Emph { children } => format!("<em>{}</em>", render_all(children)),
+        Node::Strong { children } => format!("<strong>{}</strong>", render_all(children)),
+        Node::Strikethrough { children } => format!("<del>{}</del>", render_all(children)),
+        Node::Underline { children } => format!("<u>{}</u>", render_all(children)),
+        Node::Highlight { children } => format!("<mark>{}</mark>", render_all(children)),
+        Node::Superscript { children } => format!("<sup>{}</sup>", render_all(children)),
+        Node::Subscript { children } => format!("<sub>{}</sub>", render_all(children)),
+        Node::SpoileredText { children } => {
+            format!("<span class=\"spoiler\">{}</span>", render_all(children))
         }
 
-        "table_row" | "table_cell" => render_children(node),
+        Node::Code { literal } => format!("<code>{}</code>", escape_html(literal)),
 
-        "thematic_break" => "<hr />\n".to_string(),
-
-        "html_block" => node
-            .get("literal")
-            .and_then(|l| l.as_str())
-            .unwrap_or("")
-            .to_string(),
-
-        "footnote_definition" => {
-            let name = escape_html(node.get("name").and_then(|n| n.as_str()).unwrap_or(""));
-            let label = format!("<a href=\"#fnref-{name}\" class=\"footnote-label\">[{name}]:</a>");
-            let children = node.get("children").and_then(|c| c.as_array());
-            // The label goes inside the first paragraph so that the body continues on
-            // the same line without any CSS. A definition that starts with another
-            // block keeps the label in front of it.
-            let body = match children.and_then(|c| c.split_first()) {
-                Some((first, rest))
-                    if first.get("type").and_then(|t| t.as_str()) == Some("paragraph") =>
-                {
-                    let rest: String = rest.iter().map(ast_to_html).collect();
-                    format!("<p>{label} {}</p>\n{rest}", render_children(first))
-                }
-                _ => format!("{label}\n{}", render_children(node)),
-            };
-            format!("<div id=\"fn-{name}\" class=\"footnote\">\n{body}</div>\n")
-        }
-
-        "alert" => {
-            let alert_type = node
-                .get("alert_type")
-                .and_then(|t| t.as_str())
-                .unwrap_or("note");
-            let title = node
-                .get("title")
-                .filter(|t| !t.is_null())
-                .and_then(|t| t.as_str())
-                .unwrap_or(match alert_type {
-                    "tip" => "Tip",
-                    "important" => "Important",
-                    "warning" => "Warning",
-                    "caution" => "Caution",
-                    _ => "Note",
-                });
-            format!(
-                "<blockquote class=\"alert alert-{alert_type}\">\n<p class=\"alert-title\">{}</p>\n{}</blockquote>\n",
-                escape_html(title),
-                render_children(node)
-            )
-        }
-
-        "subtext" => format!("<sub>{}</sub>", render_children(node)),
-
-        "text" => escape_html(node.get("value").and_then(|v| v.as_str()).unwrap_or("")),
-
-        "softbreak" => "\n".to_string(),
-        "linebreak" => "<br />\n".to_string(),
-
-        "emph" => format!("<em>{}</em>", render_children(node)),
-        "strong" => format!("<strong>{}</strong>", render_children(node)),
-        "strikethrough" => format!("<del>{}</del>", render_children(node)),
-        "underline" => format!("<u>{}</u>", render_children(node)),
-        "highlight" => format!("<mark>{}</mark>", render_children(node)),
-        "superscript" => format!("<sup>{}</sup>", render_children(node)),
-        "subscript" => format!("<sub>{}</sub>", render_children(node)),
-        "spoilered_text" => format!("<span class=\"spoiler\">{}</span>", render_children(node)),
-
-        "code" => {
-            let literal = node.get("literal").and_then(|l| l.as_str()).unwrap_or("");
-            format!("<code>{}</code>", escape_html(literal))
-        }
-
-        "link" => {
-            let url = node.get("url").and_then(|u| u.as_str()).unwrap_or("");
-            let title = node.get("title").and_then(|t| t.as_str()).unwrap_or("");
+        Node::Link {
+            url,
+            title,
+            children,
+        } => {
             if title.is_empty() {
                 format!(
                     "<a href=\"{}\">{}</a>",
                     escape_html(url),
-                    render_children(node)
+                    render_all(children)
                 )
             } else {
                 format!(
                     "<a href=\"{}\" title=\"{}\">{}</a>",
                     escape_html(url),
                     escape_html(title),
-                    render_children(node)
+                    render_all(children)
                 )
             }
         }
 
-        "embed" => {
-            let url = node.get("url").and_then(|u| u.as_str()).unwrap_or("");
-            format!(
-                "<img src=\"{}\" alt=\"{}\" />",
-                escape_html(url),
-                escape_html(&plain_text(node))
-            )
-        }
+        Node::Embed { url, .. } => format!(
+            "<img src=\"{}\" alt=\"{}\" />",
+            escape_html(url),
+            escape_html(&plain_text(node))
+        ),
 
-        "wikilink" => {
-            let url = node.get("url").and_then(|u| u.as_str()).unwrap_or("");
-            format!(
-                "<a href=\"{}\" data-wikilink=\"true\">{}</a>",
-                escape_html(url),
-                render_children(node)
-            )
-        }
+        Node::Wikilink { url, children } => format!(
+            "<a href=\"{}\" data-wikilink=\"true\">{}</a>",
+            escape_html(url),
+            render_all(children)
+        ),
 
-        "hashtag" => {
-            let value = node.get("value").and_then(|v| v.as_str()).unwrap_or("");
-            format!(
-                "<a href=\"{}\" class=\"hashtag\">#{value}</a>",
-                escape_html(value)
-            )
-        }
+        Node::Hashtag { value } => format!(
+            "<a href=\"{}\" class=\"hashtag\">#{value}</a>",
+            escape_html(value)
+        ),
 
         // The label is shown instead of comrak's index: a body is parsed alone, so the
         // index would restart at 1 in every item.
-        "footnote_reference" => {
-            let name = escape_html(node.get("name").and_then(|n| n.as_str()).unwrap_or(""));
+        Node::FootnoteReference { name, .. } => {
+            let name = escape_html(name);
             format!(
                 "<sup id=\"fnref-{name}\" class=\"footnote-ref\"><a href=\"#fn-{name}\">[{name}]</a></sup>"
             )
         }
 
-        "shortcode" => node
-            .get("emoji")
-            .and_then(|e| e.as_str())
-            .unwrap_or("")
-            .to_string(),
+        Node::Shortcode { emoji, .. } => emoji.clone(),
 
-        "math" => {
-            let literal = node.get("literal").and_then(|l| l.as_str()).unwrap_or("");
-            format!("<span class=\"math\">{}</span>", escape_html(literal))
-        }
+        Node::Math { literal } => format!("<span class=\"math\">{}</span>", escape_html(literal)),
 
-        "html_inline" => node
-            .get("value")
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .to_string(),
+        Node::HtmlInline { value } | Node::Raw { value } => value.clone(),
 
-        "raw" => node
-            .get("value")
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .to_string(),
+        Node::Escaped => String::new(),
 
-        "escaped" => String::new(),
+        Node::EscapedTag { value } => format!("&lt;{value}&gt;"),
 
-        "escaped_tag" => {
-            let value = node.get("value").and_then(|v| v.as_str()).unwrap_or("");
-            format!("&lt;{value}&gt;")
-        }
-
-        _ => render_children(node),
+        Node::Unknown { children, .. } => render_all(children),
     }
 }
 
 /// Renders a flatmarkdown item body as an HTML string using the given options.
 pub fn body_to_html_with(input: &str, opts: &BodyOptions) -> String {
-    let ast_str = body_to_ast_with(input, opts);
-    let ast: Value = serde_json::from_str(&ast_str).unwrap();
-    ast_to_html(&ast)
+    node_to_html(&body_to_node(input, opts))
 }
 
 pub fn body_to_html(input: &str) -> String {
