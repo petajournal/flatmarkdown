@@ -260,11 +260,7 @@ fn node_to_html(node: &Node) -> String {
 
         Node::Math { literal } => format!("<span class=\"math\">{}</span>", escape_html(literal)),
 
-        Node::HtmlInline { value } | Node::Raw { value } => value.clone(),
-
-        Node::Escaped => String::new(),
-
-        Node::EscapedTag { value } => format!("&lt;{value}&gt;"),
+        Node::HtmlInline { value } => value.clone(),
 
         Node::Unknown { children, .. } => render_all(children),
     }

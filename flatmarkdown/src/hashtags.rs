@@ -88,9 +88,7 @@ fn restore_as_written(text: &mut String) {
 /// someone decides how its text is restored, so a placeholder cannot be left in the output.
 pub(crate) fn restore_escaped_hashes(node: &mut Node) {
     match node {
-        Node::Text { value } | Node::EscapedTag { value } | Node::Hashtag { value } => {
-            restore_as_hash(value)
-        }
+        Node::Text { value } | Node::Hashtag { value } => restore_as_hash(value),
         Node::FootnoteDefinition { name, .. } | Node::FootnoteReference { name, .. } => {
             restore_as_hash(name)
         }
@@ -127,7 +125,7 @@ pub(crate) fn restore_escaped_hashes(node: &mut Node) {
         Node::Code { literal } | Node::Math { literal } | Node::HtmlBlock { literal, .. } => {
             restore_as_written(literal)
         }
-        Node::HtmlInline { value } | Node::Raw { value } => restore_as_written(value),
+        Node::HtmlInline { value } => restore_as_written(value),
         // These hold no text of the user: only children, numbers, flags, or fixed words.
         Node::Document { .. }
         | Node::Paragraph { .. }
@@ -153,7 +151,6 @@ pub(crate) fn restore_escaped_hashes(node: &mut Node) {
         | Node::Subscript { .. }
         | Node::SpoileredText { .. }
         | Node::Shortcode { .. }
-        | Node::Escaped
         | Node::Unknown { .. } => {}
     }
     if let Some(children) = node.children_mut() {
