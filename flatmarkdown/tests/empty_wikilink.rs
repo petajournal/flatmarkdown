@@ -82,3 +82,18 @@ fn a_wikilink_with_a_name_is_still_a_wikilink() {
         );
     }
 }
+
+// ラベルが空の[[a|]]は、ラベルのない[[a]]と同じである。子はページ名の文字になる。
+#[test]
+fn a_wikilink_with_an_empty_label_shows_its_page_name() {
+    for md in ["[[a|]]", "[[a| ]]"] {
+        assert_eq!(
+            inlines(&ast(md)),
+            [Node::Wikilink {
+                url: "a".to_string(),
+                children: vec![text("a")],
+            }],
+            "{md:?}"
+        );
+    }
+}
