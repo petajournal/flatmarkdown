@@ -1,11 +1,11 @@
-//! Parses the body of one item into the JSON AST.
+//! Parses the body of one item into the AST.
 
 use crate::ast::{node_to_ast, options};
 use crate::footnotes::{complete_footnotes, strip_footnote_placeholders};
 use crate::hashtags::{ESCAPED_HASH_PLACEHOLDER, process_hashtags, restore_escaped_hashes};
 use crate::links::convert_markdown_links_to_wikilinks;
 use comrak::{Arena, parse_document};
-use serde_json::Value;
+use flatmarkdown_ast::Node;
 
 /// Controls whether and how relative Markdown links are resolved.
 #[derive(Default)]
@@ -25,8 +25,8 @@ pub struct BodyOptions {
     pub link_resolution: LinkResolution,
 }
 
-/// Parses a flatmarkdown item body into a JSON AST value using the given options.
-pub(crate) fn body_to_ast_value(input: &str, opts: &BodyOptions) -> Value {
+/// Parses a flatmarkdown item body into the typed AST using the given options.
+pub(crate) fn body_to_node(input: &str, opts: &BodyOptions) -> Node {
     // `\#` is replaced before comrak sees it so that the hashtag pass cannot
     // mistake the escaped `#` for a tag start.
     let preprocessed = input.replace("\\#", &ESCAPED_HASH_PLACEHOLDER.to_string());
@@ -49,7 +49,7 @@ pub(crate) fn body_to_ast_value(input: &str, opts: &BodyOptions) -> Value {
 
 /// Parses a flatmarkdown item body into a JSON AST string using the given options.
 pub fn body_to_ast_with(input: &str, opts: &BodyOptions) -> String {
-    serde_json::to_string(&body_to_ast_value(input, opts)).unwrap()
+    serde_json::to_string(&body_to_node(input, opts)).unwrap()
 }
 
 pub fn body_to_ast(input: &str) -> String {
@@ -59,6 +59,7 @@ pub fn body_to_ast(input: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::Value;
 
     #[test]
     fn ast_multiline_block_quote() {

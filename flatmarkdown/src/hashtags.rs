@@ -1,6 +1,6 @@
 //! Finds `#tag` in text nodes, and restores the escaped `\#`.
 
-use serde_json::{Value, json};
+use flatmarkdown_ast::Node;
 
 /// Placeholder for escaped `\#` – Unicode Private Use Area character
 /// unlikely to appear in normal text.
@@ -16,7 +16,7 @@ fn is_hashtag_char(c: char) -> bool {
 /// A hashtag starts with `#` at the beginning of the string or after a half-width space (U+0020),
 /// and ends when a non-hashtag character is encountered.
 /// `/` is not allowed as the first or last character of the tag name.
-fn split_hashtags(text: &str) -> Vec<Value> {
+fn split_hashtags(text: &str) -> Vec<Node> {
     let mut result = Vec::new();
     let chars: Vec<char> = text.chars().collect();
     let mut i = 0;
@@ -41,11 +41,13 @@ fn split_hashtags(text: &str) -> Vec<Value> {
             if actual_end > tag_start && chars[tag_start] != '/' {
                 // Flush preceding text
                 if i > buf_start {
-                    let s: String = chars[buf_start..i].iter().collect();
-                    result.push(json!({"type": "text", "value": s}));
+                    result.push(Node::Text {
+                        value: chars[buf_start..i].iter().collect(),
+                    });
                 }
-                let tag: String = chars[tag_start..actual_end].iter().collect();
-                result.push(json!({"type": "hashtag", "value": tag}));
+                result.push(Node::Hashtag {
+                    value: chars[tag_start..actual_end].iter().collect(),
+                });
                 i = actual_end;
                 buf_start = i;
                 continue;
@@ -56,22 +58,30 @@ fn split_hashtags(text: &str) -> Vec<Value> {
 
     // Flush remaining text
     if buf_start < chars.len() {
-        let s: String = chars[buf_start..].iter().collect();
-        result.push(json!({"type": "text", "value": s}));
+        result.push(Node::Text {
+            value: chars[buf_start..].iter().collect(),
+        });
     }
 
     result
 }
 
-/// Restores the escaped-hash placeholder back to `#` in all text node values.
-pub(crate) fn restore_escaped_hashes(node: &mut Value) {
-    if let Some(val) = node.get_mut("value")
-        && let Some(s) = val.as_str()
-        && s.contains(ESCAPED_HASH_PLACEHOLDER)
-    {
-        *val = Value::String(s.replace(ESCAPED_HASH_PLACEHOLDER, "#"));
+/// Restores the escaped-hash placeholder back to `#` in every node that has a `value`.
+pub(crate) fn restore_escaped_hashes(node: &mut Node) {
+    match node {
+        Node::Text { value }
+        | Node::FrontMatter { value }
+        | Node::HtmlInline { value }
+        | Node::Raw { value }
+        | Node::EscapedTag { value }
+        | Node::Hashtag { value }
+            if value.contains(ESCAPED_HASH_PLACEHOLDER) =>
+        {
+            *value = value.replace(ESCAPED_HASH_PLACEHOLDER, "#");
+        }
+        _ => {}
     }
-    if let Some(Value::Array(children)) = node.get_mut("children") {
+    if let Some(children) = node.children_mut() {
         for child in children.iter_mut() {
             restore_escaped_hashes(child);
         }
@@ -79,34 +89,26 @@ pub(crate) fn restore_escaped_hashes(node: &mut Value) {
 }
 
 /// Post-processes the AST to extract hashtags from text nodes.
-pub(crate) fn process_hashtags(node: &mut Value) {
-    if let Some(Value::Array(children)) = node.get_mut("children") {
-        // Recurse first
-        for child in children.iter_mut() {
-            process_hashtags(child);
-        }
-
-        // Split text nodes containing hashtags
-        let mut new_children: Vec<Value> = Vec::with_capacity(children.len());
-        for child in children.drain(..) {
-            if child.get("type").and_then(|t| t.as_str()) == Some("text")
-                && let Some(text) = child.get("value").and_then(|v| v.as_str())
-            {
-                let parts = split_hashtags(text);
-                if parts.len() > 1
-                    || parts
-                        .first()
-                        .and_then(|p| p.get("type"))
-                        .and_then(|t| t.as_str())
-                        == Some("hashtag")
-                {
-                    new_children.extend(parts);
-                    continue;
-                }
-            }
-            new_children.push(child);
-        }
-
-        *children = new_children;
+pub(crate) fn process_hashtags(node: &mut Node) {
+    let Some(children) = node.children_mut() else {
+        return;
+    };
+    // Recurse first
+    for child in children.iter_mut() {
+        process_hashtags(child);
     }
+
+    // Split text nodes containing hashtags
+    let mut new_children: Vec<Node> = Vec::with_capacity(children.len());
+    for child in children.drain(..) {
+        if let Node::Text { value } = &child {
+            let parts = split_hashtags(value);
+            if parts.len() > 1 || matches!(parts.first(), Some(Node::Hashtag { .. })) {
+                new_children.extend(parts);
+                continue;
+            }
+        }
+        new_children.push(child);
+    }
+    *children = new_children;
 }

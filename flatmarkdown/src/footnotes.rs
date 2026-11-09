@@ -1,6 +1,6 @@
 //! Keeps footnote references and definitions that have no partner in the same item.
 
-use serde_json::Value;
+use flatmarkdown_ast::Node;
 use std::collections::HashSet;
 
 /// Marks the placeholder text that completes unpaired footnotes before parsing.
@@ -67,18 +67,28 @@ fn scan_footnote_labels(input: &str) -> FootnoteLabels {
     labels
 }
 
-/// Collects the `name` of every node of `node_type` in the AST.
-fn collect_footnote_names(node: &Value, node_type: &str, out: &mut HashSet<String>) {
-    if node.get("type").and_then(|t| t.as_str()) == Some(node_type)
-        && let Some(name) = node.get("name").and_then(|n| n.as_str())
-    {
-        out.insert(name.to_string());
-    }
-    if let Some(children) = node.get("children").and_then(|c| c.as_array()) {
-        for child in children {
-            collect_footnote_names(child, node_type, out);
+/// The `name` of every footnote definition and of every footnote reference in the AST.
+pub(crate) struct FootnoteNames {
+    pub(crate) definitions: HashSet<String>,
+    pub(crate) references: HashSet<String>,
+}
+
+/// Collects the names of the footnote definitions and references of `root` and its descendants.
+pub(crate) fn footnote_names(root: &Node) -> FootnoteNames {
+    let mut names = FootnoteNames {
+        definitions: HashSet::new(),
+        references: HashSet::new(),
+    };
+    root.walk(&mut |node| match node {
+        Node::FootnoteDefinition { name, .. } => {
+            names.definitions.insert(name.clone());
         }
-    }
+        Node::FootnoteReference { name, .. } => {
+            names.references.insert(name.clone());
+        }
+        _ => {}
+    });
+    names
 }
 
 /// Builds the text that completes the unpaired footnotes of `input`, or returns
@@ -92,22 +102,19 @@ fn collect_footnote_names(node: &Value, node_type: &str, out: &mut HashSet<Strin
 /// indented first line of the body cannot be read as a definition continuation.
 /// Placing the placeholders after the body is not an option, because a body that
 /// ends in an unclosed code fence would swallow them.
-pub(crate) fn complete_footnotes(input: &str, ast: &Value) -> Option<(String, HashSet<String>)> {
+pub(crate) fn complete_footnotes(input: &str, ast: &Node) -> Option<(String, HashSet<String>)> {
     let labels = scan_footnote_labels(input);
-    let mut real_defs = HashSet::new();
-    let mut real_refs = HashSet::new();
-    collect_footnote_names(ast, "footnote_definition", &mut real_defs);
-    collect_footnote_names(ast, "footnote_reference", &mut real_refs);
+    let real = footnote_names(ast);
 
     let mut missing_defs: Vec<String> = Vec::new();
     for label in labels.refs {
-        if !real_defs.contains(&label) && !missing_defs.contains(&label) {
+        if !real.definitions.contains(&label) && !missing_defs.contains(&label) {
             missing_defs.push(label);
         }
     }
     let mut missing_refs: Vec<String> = Vec::new();
     for label in labels.defs {
-        if !real_refs.contains(&label) && !missing_refs.contains(&label) {
+        if !real.references.contains(&label) && !missing_refs.contains(&label) {
             missing_refs.push(label);
         }
     }
@@ -129,29 +136,17 @@ pub(crate) fn complete_footnotes(input: &str, ast: &Value) -> Option<(String, Ha
 }
 
 /// Removes the nodes that the placeholders of `complete_footnotes` produced.
-pub(crate) fn strip_footnote_placeholders(ast: &mut Value, placeholder_defs: &HashSet<String>) {
-    let Some(Value::Array(children)) = ast.get_mut("children") else {
+pub(crate) fn strip_footnote_placeholders(ast: &mut Node, placeholder_defs: &HashSet<String>) {
+    let Some(children) = ast.children_mut() else {
         return;
     };
-    children.retain(|child| {
-        let node_type = child.get("type").and_then(|t| t.as_str());
-        match node_type {
-            Some("footnote_definition") => {
-                let name = child.get("name").and_then(|n| n.as_str()).unwrap_or("");
-                !placeholder_defs.contains(name)
-            }
-            Some("paragraph") => {
-                let first_text = child
-                    .get("children")
-                    .and_then(|c| c.as_array())
-                    .and_then(|c| c.first())
-                    .and_then(|n| n.get("value"))
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
-                !first_text.starts_with(FOOTNOTE_PLACEHOLDER)
-            }
-            _ => true,
-        }
+    children.retain(|child| match child {
+        Node::FootnoteDefinition { name, .. } => !placeholder_defs.contains(name),
+        Node::Paragraph { children } => !matches!(
+            children.first(),
+            Some(Node::Text { value }) if value.starts_with(FOOTNOTE_PLACEHOLDER)
+        ),
+        _ => true,
     });
 }
 
@@ -160,12 +155,18 @@ mod tests {
     use super::*;
     use crate::body::body_to_ast;
     use crate::test_support::page;
+    use serde_json::Value;
 
     // ---- Footnotes split across items ----
 
     fn footnote_nodes(v: &Value, node_type: &str) -> Vec<String> {
-        let mut out = HashSet::new();
-        collect_footnote_names(v, node_type, &mut out);
+        let node: Node = serde_json::from_value(v.clone()).unwrap();
+        let found = footnote_names(&node);
+        let out = match node_type {
+            "footnote_definition" => found.definitions,
+            "footnote_reference" => found.references,
+            other => panic!("not a footnote node type: {other}"),
+        };
         let mut names: Vec<String> = out.into_iter().collect();
         names.sort();
         names

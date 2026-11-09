@@ -351,6 +351,7 @@ name = "flatmarkdown"
 version = "0.4.3"
 dependencies = [
  "comrak",
+ "flatmarkdown-ast",
  "serde_json",
 ]
 
@@ -358,7 +359,6 @@ dependencies = [
 name = "flatmarkdown-ast"
 version = "0.4.3"
 dependencies = [
- "flatmarkdown",
  "serde",
  "serde_json",
 ]

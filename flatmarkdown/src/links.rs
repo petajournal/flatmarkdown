@@ -1,6 +1,6 @@
 //! Turns relative Markdown links into wikilink and hashtag nodes.
 
-use serde_json::Value;
+use flatmarkdown_ast::Node;
 
 /// Strips a matching prefix from `url` and removes the `.md` suffix, returning the wikilink URL.
 /// Returns `None` if no prefix matches or the URL does not end with `.md`.
@@ -14,46 +14,36 @@ fn markdown_link_to_wikilink_url(url: &str, prefixes: &[String]) -> Option<Strin
     Some(format!("{}{}", page_path, fragment))
 }
 
-/// Returns `true` if the `link` node represents a serialised tag:
-/// its only child is a text node whose value is `#` + `wikilink_url`.
-fn is_tag_link(link_node: &Value, wikilink_url: &str) -> bool {
-    let expected = format!("#{}", wikilink_url);
-    link_node
-        .get("children")
-        .and_then(|c| c.as_array())
-        .filter(|c| c.len() == 1)
-        .and_then(|c| c.first())
-        .filter(|n| n.get("type").and_then(|t| t.as_str()) == Some("text"))
-        .and_then(|n| n.get("value").and_then(|v| v.as_str()))
-        .is_some_and(|s| s == expected)
+/// Returns `true` if the children of a `link` node represent a serialised tag:
+/// the only child is a text node whose value is `#` + `wikilink_url`.
+fn is_tag_link(children: &[Node], wikilink_url: &str) -> bool {
+    match children {
+        [Node::Text { value }] => value.strip_prefix('#') == Some(wikilink_url),
+        _ => false,
+    }
 }
 
 /// Walks the AST and converts `link` nodes whose URL starts with one of `prefixes`
 /// into `wikilink` or `hashtag` nodes. The matching prefix and `.md` suffix are stripped.
 /// A link of the form `[#tagname](<prefix>tagname.md)` becomes a `hashtag` node;
 /// all other matching links become `wikilink` nodes.
-pub(crate) fn convert_markdown_links_to_wikilinks(node: &mut Value, prefixes: &[String]) {
-    if node.get("type").and_then(|t| t.as_str()) == Some("link")
-        && let Some(url) = node.get("url").and_then(|u| u.as_str())
+pub(crate) fn convert_markdown_links_to_wikilinks(node: &mut Node, prefixes: &[String]) {
+    if let Node::Link { url, children, .. } = node
         && let Some(wikilink_url) = markdown_link_to_wikilink_url(url, prefixes)
     {
-        let is_tag = is_tag_link(node, &wikilink_url);
-        if let Some(obj) = node.as_object_mut() {
-            if is_tag {
-                obj.insert("type".into(), Value::String("hashtag".into()));
-                obj.insert("value".into(), Value::String(wikilink_url));
-                obj.remove("url");
-                obj.remove("title");
-                obj.remove("children");
-            } else {
-                obj.insert("type".into(), Value::String("wikilink".into()));
-                obj.insert("url".into(), Value::String(wikilink_url));
-                obj.remove("title");
+        *node = if is_tag_link(children, &wikilink_url) {
+            Node::Hashtag {
+                value: wikilink_url,
             }
-        }
+        } else {
+            Node::Wikilink {
+                url: wikilink_url,
+                children: std::mem::take(children),
+            }
+        };
         return;
     }
-    if let Some(Value::Array(children)) = node.get_mut("children") {
+    if let Some(children) = node.children_mut() {
         for child in children.iter_mut() {
             convert_markdown_links_to_wikilinks(child, prefixes);
         }

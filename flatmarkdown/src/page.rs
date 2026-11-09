@@ -1,10 +1,10 @@
 //! Parses a whole page: the front matter, the metadata lines, and the items.
 
 use crate::ast::options;
-use crate::body::{BodyOptions, body_to_ast_value};
+use crate::body::{BodyOptions, body_to_node};
 use comrak::nodes::NodeValue;
 use comrak::{Arena, parse_document};
-use serde_json::{Value, json};
+use flatmarkdown_ast::{Item, Page};
 
 /// Item metadata parsed from a `<!-- @@ ID key="value" -->` line.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -139,25 +139,21 @@ fn body_text(lines: &[&str], start: usize, end: usize) -> String {
     lines[s..=e].join("\n")
 }
 
-fn item_json(meta: Option<ItemMetadata>, body: String, opts: &BodyOptions) -> Value {
+/// Builds the item of one metadata line (or of none) and its body.
+fn item(meta: Option<ItemMetadata>, body: String, opts: &BodyOptions) -> Item {
     let meta = meta.unwrap_or(ItemMetadata {
         level: 1,
         id: None,
         properties: Vec::new(),
     });
-    let properties: serde_json::Map<String, Value> = meta
-        .properties
-        .into_iter()
-        .map(|(k, v)| (k, Value::String(v)))
-        .collect();
-    let ast = body_to_ast_value(&body, opts);
-    json!({
-        "level": meta.level,
-        "id": meta.id,
-        "properties": properties,
-        "body": body,
-        "ast": ast,
-    })
+    let ast = body_to_node(&body, opts);
+    Item {
+        level: meta.level as u32,
+        id: meta.id,
+        properties: meta.properties.into_iter().collect(),
+        body,
+        ast,
+    }
 }
 
 /// An item whose body has not been closed yet while scanning a page.
@@ -186,7 +182,7 @@ pub fn page_to_ast_with(input: &str, opts: &BodyOptions) -> String {
     let root = parse_document(&arena, input, &options(true));
 
     let mut front_matter: Option<String> = None;
-    let mut items: Vec<Value> = Vec::new();
+    let mut items: Vec<Item> = Vec::new();
     // The implicit leading item collects lines that precede the first block, so that
     // nothing before the first block or metadata line is lost.
     let mut open = OpenItem {
@@ -195,7 +191,7 @@ pub fn page_to_ast_with(input: &str, opts: &BodyOptions) -> String {
         has_block: false,
     };
 
-    let close = |open: OpenItem, end_exclusive: usize, items: &mut Vec<Value>| {
+    let close = |open: OpenItem, end_exclusive: usize, items: &mut Vec<Item>| {
         let body = if end_exclusive > open.start {
             body_text(&lines, open.start, end_exclusive - 1)
         } else {
@@ -204,7 +200,7 @@ pub fn page_to_ast_with(input: &str, opts: &BodyOptions) -> String {
         // A metadata line alone is an item with an empty body. Anything else
         // without text is just blank space between items.
         if open.meta.is_some() || !body.is_empty() {
-            items.push(item_json(open.meta, body, opts));
+            items.push(item(open.meta, body, opts));
         }
     };
 
@@ -252,11 +248,10 @@ pub fn page_to_ast_with(input: &str, opts: &BodyOptions) -> String {
     }
     close(open, lines.len(), &mut items);
 
-    let page = json!({
-        "type": "page",
-        "front_matter": front_matter,
-        "items": items,
-    });
+    let page = Page {
+        front_matter,
+        items,
+    };
     serde_json::to_string(&page).unwrap()
 }
 
@@ -269,6 +264,7 @@ mod tests {
     use super::*;
     use crate::body::{BodyOptions, LinkResolution};
     use crate::test_support::page;
+    use serde_json::{Value, json};
 
     // ---- Metadata line syntax ----
 

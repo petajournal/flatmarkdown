@@ -9,7 +9,11 @@ Flat Markdown is defined in the [Flat Markdown specification](https://github.com
 | Crate | What it does |
 |---|---|
 | [flatmarkdown](flatmarkdown/) | Parses a page or an item body into a JSON AST, and renders an item body to HTML |
-| [flatmarkdown-ast](flatmarkdown-ast/) | Reads the JSON AST into Rust types with serde. It has no Markdown parser |
+| [flatmarkdown-ast](flatmarkdown-ast/) | The AST as Rust types. Reads and writes the JSON AST with serde. It has no Markdown parser |
+
+`flatmarkdown` builds its AST with the types of `flatmarkdown-ast`, and writes the JSON from them.
+So the types are the only place where the shape of the AST is written in Rust.
+`flatmarkdown-ast` does not depend on `flatmarkdown`.
 
 The AST is defined in [SPEC_AST.md](SPEC_AST.md) ([日本語](SPEC_AST_ja.md)).
 The same AST as TypeScript types is the npm package [flatmarkdown-ast](https://www.npmjs.com/package/flatmarkdown-ast).
@@ -35,8 +39,9 @@ cargo clippy --workspace --all-targets
 cargo test --workspace
 ```
 
-The round-trip tests of `flatmarkdown-ast` parse Markdown with the `flatmarkdown` crate of this repository.
-So they always test the two crates of the same version together.
+[SPEC_AST.md](SPEC_AST.md) is the source of truth for the AST.
+The types of `flatmarkdown-ast` hold what the specification defines, and nothing more.
+When the AST changes, change the specification first, and then the types and the parser.
 
 GitHub Actions runs the same commands on every pull request and on `main`.
 It also runs `cargo package --workspace`, to build each crate from its packaged files.
@@ -51,9 +56,12 @@ Only the lints in `[workspace.lints]` of the top `Cargo.toml` are errors: `unsaf
 
 ## Release
 
-1. Set `version` in the `Cargo.toml` at the top of the repository, and merge the change into `main`.
-2. Run `cargo publish --dry-run -p flatmarkdown` and `cargo publish --dry-run -p flatmarkdown-ast`.
-3. Run `cargo publish -p flatmarkdown`, and then `cargo publish -p flatmarkdown-ast`.
+1. Set `version` in the `Cargo.toml` at the top of the repository. Set the same version in `flatmarkdown-ast` of `[workspace.dependencies]` in that file. Merge the change into `main`.
+2. Run `cargo publish --dry-run -p flatmarkdown-ast`.
+3. Run `cargo publish -p flatmarkdown-ast`.
+4. Run `cargo publish --dry-run -p flatmarkdown`, and then `cargo publish -p flatmarkdown`.
+
+`flatmarkdown-ast` goes first, because `flatmarkdown` depends on it.
 
 Publish both crates every time, even when only one of them changed.
 A published version cannot be deleted or replaced.
