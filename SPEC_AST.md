@@ -318,26 +318,6 @@ Raw inline HTML.
 |-----------|--------|------------------|
 | `value`   | string | Raw HTML content |
 
-#### `raw`
-
-Verbatim output content.
-
-| Attribute | Type   | Description |
-|-----------|--------|-------------|
-| `value`   | string | Raw content |
-
-#### `escaped`
-
-An escaped character.
-
-#### `escaped_tag`
-
-An escaped HTML tag (from tagfilter).
-
-| Attribute | Type   | Description    |
-|-----------|--------|----------------|
-| `value`   | string | The tag name   |
-
 #### `hashtag`
 
 A hashtag (e.g. `#tag`, `#diary`). Extracted from `text` nodes in AST post-processing.

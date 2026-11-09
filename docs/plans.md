@@ -67,3 +67,8 @@
 - [x] `front_matter`ノードを消す
   - 2026-11-09に決めた。仕様は「`page_to_ast`が出力する」と書いていたが、ノードとしては一度も出ていなかった。front matterは、ページの`front_matter`という文字列の項目に入る
   - 古いASTに`front_matter`ノードがあれば、未知のノード（`Node::Unknown`）として読む
+- [x] `raw`、`escaped`、`escaped_tag`を消す
+  - 2026-11-10に決めた。comrakのノードだが、このクレートの設定では作られない。`raw`はプログラムが差し込むもの、`escaped`は`escaped_char_spans`、`escaped_tag`は`tagfilter`のものである
+  - 古いASTにあれば、未知のノード（`Node::Unknown`）として読む
+  - `\#`の処理は別の仕組みで、変わらない
+  - これで、2026-11-09の再確認で見つけた仕様との4つの食い違いは、すべて解決した
