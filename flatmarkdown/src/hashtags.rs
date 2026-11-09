@@ -66,20 +66,96 @@ fn split_hashtags(text: &str) -> Vec<Node> {
     result
 }
 
-/// Restores the escaped-hash placeholder back to `#` in every node that has a `value`.
+/// Puts a `#` where the placeholder is. For text in which Markdown reads backslash escapes:
+/// there `\#` means a plain `#`.
+fn restore_as_hash(text: &mut String) {
+    if text.contains(ESCAPED_HASH_PLACEHOLDER) {
+        *text = text.replace(ESCAPED_HASH_PLACEHOLDER, "#");
+    }
+}
+
+/// Puts `\#` back where the placeholder is. For text that Markdown keeps raw (code, math, and
+/// raw HTML): there a backslash is an ordinary character, so the text stays as it was written.
+fn restore_as_written(text: &mut String) {
+    if text.contains(ESCAPED_HASH_PLACEHOLDER) {
+        *text = text.replace(ESCAPED_HASH_PLACEHOLDER, "\\#");
+    }
+}
+
+/// Restores the escaped-hash placeholder in every text that a node holds, and in its descendants.
+///
+/// The `match` names every kind of node on purpose. A new kind of node does not compile until
+/// someone decides how its text is restored, so a placeholder cannot be left in the output.
 pub(crate) fn restore_escaped_hashes(node: &mut Node) {
     match node {
         Node::Text { value }
         | Node::FrontMatter { value }
-        | Node::HtmlInline { value }
-        | Node::Raw { value }
         | Node::EscapedTag { value }
-        | Node::Hashtag { value }
-            if value.contains(ESCAPED_HASH_PLACEHOLDER) =>
-        {
-            *value = value.replace(ESCAPED_HASH_PLACEHOLDER, "#");
+        | Node::Hashtag { value } => restore_as_hash(value),
+        Node::FootnoteDefinition { name, .. } | Node::FootnoteReference { name, .. } => {
+            restore_as_hash(name)
         }
-        _ => {}
+        Node::Wikilink { url, .. } => restore_as_hash(url),
+        Node::Link { url, title, .. } => {
+            restore_as_hash(url);
+            restore_as_hash(title);
+        }
+        Node::Embed {
+            url, title, props, ..
+        } => {
+            restore_as_hash(url);
+            restore_as_hash(title);
+            *props = std::mem::take(props)
+                .into_iter()
+                .map(|(mut key, mut value)| {
+                    restore_as_hash(&mut key);
+                    if let serde_json::Value::String(text) = &mut value {
+                        restore_as_hash(text);
+                    }
+                    (key, value)
+                })
+                .collect();
+        }
+        Node::Alert { title, .. } => {
+            if let Some(title) = title {
+                restore_as_hash(title);
+            }
+        }
+        Node::CodeBlock { info, literal } => {
+            restore_as_hash(info);
+            restore_as_written(literal);
+        }
+        Node::Code { literal } | Node::Math { literal } | Node::HtmlBlock { literal, .. } => {
+            restore_as_written(literal)
+        }
+        Node::HtmlInline { value } | Node::Raw { value } => restore_as_written(value),
+        // These hold no text of the user: only children, numbers, flags, or fixed words.
+        Node::Document { .. }
+        | Node::Paragraph { .. }
+        | Node::Heading { .. }
+        | Node::BlockQuote { .. }
+        | Node::MultilineBlockQuote { .. }
+        | Node::List { .. }
+        | Node::Item { .. }
+        | Node::TaskItem { .. }
+        | Node::Table { .. }
+        | Node::TableRow { .. }
+        | Node::TableCell { .. }
+        | Node::ThematicBreak
+        | Node::Subtext { .. }
+        | Node::Softbreak
+        | Node::Linebreak
+        | Node::Emph { .. }
+        | Node::Strong { .. }
+        | Node::Strikethrough { .. }
+        | Node::Underline { .. }
+        | Node::Highlight { .. }
+        | Node::Superscript { .. }
+        | Node::Subscript { .. }
+        | Node::SpoileredText { .. }
+        | Node::Shortcode { .. }
+        | Node::Escaped
+        | Node::Unknown { .. } => {}
     }
     if let Some(children) = node.children_mut() {
         for child in children.iter_mut() {

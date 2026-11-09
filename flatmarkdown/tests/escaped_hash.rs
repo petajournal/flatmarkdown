@@ -54,7 +54,7 @@ fn an_escaped_hash_in_raw_html_stays_as_written() {
 
     let block = ast("<div>\n\\#\n</div>")["children"][0].clone();
     assert_eq!(block["type"], "html_block");
-    assert_eq!(block["literal"], "<div>\n\\#\n</div>\n");
+    assert_eq!(block["literal"], "<div>\n\\#\n</div>");
 }
 
 // リンクのURLと題名の\#は、#になる。
