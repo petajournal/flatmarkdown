@@ -92,3 +92,13 @@ fn raw_escaped_and_escaped_tag_of_an_old_ast_are_read_as_unknown() {
         );
     }
 }
+
+// 未知のノードは、type が unknown のノードとして書き出される。元の type の名前は書き出されない。
+#[test]
+fn an_unknown_node_is_written_with_the_type_unknown() {
+    let node = parse(r#"{"type":"insert","children":[{"type":"text","value":"x"}]}"#).unwrap();
+    assert_eq!(
+        serde_json::to_value(&node).unwrap(),
+        serde_json::json!({"type": "unknown", "children": [{"type": "text", "value": "x"}]})
+    );
+}
