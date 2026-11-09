@@ -141,7 +141,7 @@ fn a_hashtag_can_start_right_after_a_line_break() {
     );
 }
 
-// 「文字列の先頭」は、textノードの先頭を指す。強調の直後の#tagは、空白がなくてもハッシュタグになる。
+// ハッシュタグの位置は、textノードの中で判定する。強調の直後の#tagは、空白がなくてもハッシュタグになる。
 #[test]
 fn a_hashtag_can_start_right_after_inline_markup() {
     let root = ast_with_hashtags("**b**#tag");

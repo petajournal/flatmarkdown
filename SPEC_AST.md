@@ -328,7 +328,9 @@ Raw inline HTML.
 
 A hashtag (e.g. `#tag`, `#diary`). Extracted from `text` nodes in AST post-processing.
 
-`#` must appear at the start of a string or immediately after a half-width space (U+0020). A `#` preceded by any other character is not recognized as a tag. The tag name consists of Unicode alphanumerics, `_`, `-`, and `/`; any other character (punctuation, whitespace, end of string, etc.) terminates the tag. `/` is not allowed as the first or last character of the tag name.
+`#` must appear at the start of a `text` node or immediately after a half-width space (U+0020). A `#` preceded by any other character in the same `text` node is not recognized as a tag. The tag name consists of Unicode alphanumerics, `_`, `-`, and `/`; any other character (punctuation, whitespace, end of string, etc.) terminates the tag. `/` is not allowed as the first or last character of the tag name.
+
+The position is judged in the `text` node, not in the source. A `text` node starts after a line break and after inline markup. So `#tag` at the start of a line is a tag. `#tag` in `**b**#tag` is also a tag, without a space: the `text` node starts right after the `strong` node. In `foo#bar`, the `#` is in the middle of one `text` node, so it is not a tag.
 
 `\#` is treated as a literal `#` and is never recognized as a hashtag. This holds wherever Markdown reads backslash escapes: in text, in the URL and title of a link or an embed, in the info string of a code block, and in the title of an alert. Where Markdown keeps the text raw, `\#` stays as written: in `code`, `code_block`, and `math` (`literal`), and in `html_inline` and `html_block`.
 
