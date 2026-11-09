@@ -38,3 +38,16 @@ fn a_hashtag_is_not_made_in_the_label_of_a_link() {
         }]
     );
 }
+
+// wikilinkのラベルの中の#tagは、ハッシュタグにならない。
+#[test]
+fn a_hashtag_is_not_made_in_the_label_of_a_wikilink() {
+    let root = ast("[[page|#tag]]");
+    assert_eq!(
+        inlines(&root),
+        [Node::Wikilink {
+            url: "page".to_string(),
+            children: vec![text("#tag")],
+        }]
+    );
+}
