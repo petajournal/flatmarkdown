@@ -1,6 +1,6 @@
 use comrak::nodes::NodeValue;
-use comrak::{parse_document, Arena, Options};
-use serde_json::{json, Value};
+use comrak::{Arena, Options, parse_document};
+use serde_json::{Value, json};
 use std::collections::HashSet;
 
 /// Builds the comrak options shared by body and page parsing.
@@ -59,7 +59,7 @@ fn escape_html(s: &str) -> String {
 fn render_children(node: &Value) -> String {
     node.get("children")
         .and_then(|c| c.as_array())
-        .map(|arr| arr.iter().map(|child| ast_to_html(child)).collect::<String>())
+        .map(|arr| arr.iter().map(ast_to_html).collect::<String>())
         .unwrap_or_default()
 }
 
@@ -72,9 +72,7 @@ fn render_item_content(item: &Value, tight: bool) -> String {
             children
                 .iter()
                 .map(|child| {
-                    if tight
-                        && child.get("type").and_then(|t| t.as_str()) == Some("paragraph")
-                    {
+                    if tight && child.get("type").and_then(|t| t.as_str()) == Some("paragraph") {
                         render_children(child)
                     } else {
                         ast_to_html(child)
@@ -122,10 +120,7 @@ fn ast_to_html(node: &Value) -> String {
                 .and_then(|t| t.as_str())
                 .unwrap_or("bullet");
             let start = node.get("start").and_then(|s| s.as_u64()).unwrap_or(1);
-            let tight = node
-                .get("tight")
-                .and_then(|t| t.as_bool())
-                .unwrap_or(false);
+            let tight = node.get("tight").and_then(|t| t.as_bool()).unwrap_or(false);
             let items_html = node
                 .get("children")
                 .and_then(|c| c.as_array())
@@ -133,15 +128,12 @@ fn ast_to_html(node: &Value) -> String {
                     items
                         .iter()
                         .map(|item| {
-                            let item_type =
-                                item.get("type").and_then(|t| t.as_str()).unwrap_or("");
+                            let item_type = item.get("type").and_then(|t| t.as_str()).unwrap_or("");
                             let content = render_item_content(item, tight);
                             match item_type {
                                 "task_item" => {
-                                    let checked = item
-                                        .get("symbol")
-                                        .and_then(|s| s.as_str())
-                                        .is_some();
+                                    let checked =
+                                        item.get("symbol").and_then(|s| s.as_str()).is_some();
                                     let checkbox = if checked {
                                         "<input type=\"checkbox\" checked disabled>"
                                     } else {
@@ -183,8 +175,7 @@ fn ast_to_html(node: &Value) -> String {
             let mut tbody = String::new();
             if let Some(rows) = node.get("children").and_then(|c| c.as_array()) {
                 for row in rows {
-                    let is_header =
-                        row.get("header").and_then(|h| h.as_bool()).unwrap_or(false);
+                    let is_header = row.get("header").and_then(|h| h.as_bool()).unwrap_or(false);
                     let tag = if is_header { "th" } else { "td" };
                     let row_html = row
                         .get("children")
@@ -192,9 +183,7 @@ fn ast_to_html(node: &Value) -> String {
                         .map(|cells| {
                             let cells_html: String = cells
                                 .iter()
-                                .map(|cell| {
-                                    format!("<{tag}>{}</{tag}>", render_children(cell))
-                                })
+                                .map(|cell| format!("<{tag}>{}</{tag}>", render_children(cell)))
                                 .collect();
                             format!("<tr>{cells_html}</tr>\n")
                         })
@@ -235,7 +224,9 @@ fn ast_to_html(node: &Value) -> String {
             // the same line without any CSS. A definition that starts with another
             // block keeps the label in front of it.
             let body = match children.and_then(|c| c.split_first()) {
-                Some((first, rest)) if first.get("type").and_then(|t| t.as_str()) == Some("paragraph") => {
+                Some((first, rest))
+                    if first.get("type").and_then(|t| t.as_str()) == Some("paragraph") =>
+                {
                     let rest: String = rest.iter().map(ast_to_html).collect();
                     format!("<p>{label} {}</p>\n{rest}", render_children(first))
                 }
@@ -268,9 +259,7 @@ fn ast_to_html(node: &Value) -> String {
 
         "subtext" => format!("<sub>{}</sub>", render_children(node)),
 
-        "text" => {
-            escape_html(node.get("value").and_then(|v| v.as_str()).unwrap_or(""))
-        }
+        "text" => escape_html(node.get("value").and_then(|v| v.as_str()).unwrap_or("")),
 
         "softbreak" => "\n".to_string(),
         "linebreak" => "<br />\n".to_string(),
@@ -285,10 +274,7 @@ fn ast_to_html(node: &Value) -> String {
         "spoilered_text" => format!("<span class=\"spoiler\">{}</span>", render_children(node)),
 
         "code" => {
-            let literal = node
-                .get("literal")
-                .and_then(|l| l.as_str())
-                .unwrap_or("");
+            let literal = node.get("literal").and_then(|l| l.as_str()).unwrap_or("");
             format!("<code>{}</code>", escape_html(literal))
         }
 
@@ -338,7 +324,9 @@ fn ast_to_html(node: &Value) -> String {
         // index would restart at 1 in every item.
         "footnote_reference" => {
             let name = escape_html(node.get("name").and_then(|n| n.as_str()).unwrap_or(""));
-            format!("<sup id=\"fnref-{name}\" class=\"footnote-ref\"><a href=\"#fn-{name}\">[{name}]</a></sup>")
+            format!(
+                "<sup id=\"fnref-{name}\" class=\"footnote-ref\"><a href=\"#fn-{name}\">[{name}]</a></sup>"
+            )
         }
 
         "shortcode" => node
@@ -348,10 +336,7 @@ fn ast_to_html(node: &Value) -> String {
             .to_string(),
 
         "math" => {
-            let literal = node
-                .get("literal")
-                .and_then(|l| l.as_str())
-                .unwrap_or("");
+            let literal = node.get("literal").and_then(|l| l.as_str()).unwrap_or("");
             format!("<span class=\"math\">{}</span>", escape_html(literal))
         }
 
@@ -416,7 +401,7 @@ fn is_tag_link(link_node: &Value, wikilink_url: &str) -> bool {
         .and_then(|c| c.first())
         .filter(|n| n.get("type").and_then(|t| t.as_str()) == Some("text"))
         .and_then(|n| n.get("value").and_then(|v| v.as_str()))
-        .map_or(false, |s| s == expected)
+        .is_some_and(|s| s == expected)
 }
 
 /// Walks the AST and converts `link` nodes whose URL starts with one of `prefixes`
@@ -424,26 +409,25 @@ fn is_tag_link(link_node: &Value, wikilink_url: &str) -> bool {
 /// A link of the form `[#tagname](<prefix>tagname.md)` becomes a `hashtag` node;
 /// all other matching links become `wikilink` nodes.
 fn convert_markdown_links_to_wikilinks(node: &mut Value, prefixes: &[String]) {
-    if node.get("type").and_then(|t| t.as_str()) == Some("link") {
-        if let Some(url) = node.get("url").and_then(|u| u.as_str()) {
-            if let Some(wikilink_url) = markdown_link_to_wikilink_url(url, prefixes) {
-                let is_tag = is_tag_link(node, &wikilink_url);
-                if let Some(obj) = node.as_object_mut() {
-                    if is_tag {
-                        obj.insert("type".into(), Value::String("hashtag".into()));
-                        obj.insert("value".into(), Value::String(wikilink_url));
-                        obj.remove("url");
-                        obj.remove("title");
-                        obj.remove("children");
-                    } else {
-                        obj.insert("type".into(), Value::String("wikilink".into()));
-                        obj.insert("url".into(), Value::String(wikilink_url));
-                        obj.remove("title");
-                    }
-                }
-                return;
+    if node.get("type").and_then(|t| t.as_str()) == Some("link")
+        && let Some(url) = node.get("url").and_then(|u| u.as_str())
+        && let Some(wikilink_url) = markdown_link_to_wikilink_url(url, prefixes)
+    {
+        let is_tag = is_tag_link(node, &wikilink_url);
+        if let Some(obj) = node.as_object_mut() {
+            if is_tag {
+                obj.insert("type".into(), Value::String("hashtag".into()));
+                obj.insert("value".into(), Value::String(wikilink_url));
+                obj.remove("url");
+                obj.remove("title");
+                obj.remove("children");
+            } else {
+                obj.insert("type".into(), Value::String("wikilink".into()));
+                obj.insert("url".into(), Value::String(wikilink_url));
+                obj.remove("title");
             }
         }
+        return;
     }
     if let Some(Value::Array(children)) = node.get_mut("children") {
         for child in children.iter_mut() {
@@ -496,7 +480,10 @@ fn read_footnote_label(s: &str, start: usize) -> Option<(&str, usize)> {
 }
 
 fn scan_footnote_labels(input: &str) -> FootnoteLabels {
-    let mut labels = FootnoteLabels { refs: Vec::new(), defs: Vec::new() };
+    let mut labels = FootnoteLabels {
+        refs: Vec::new(),
+        defs: Vec::new(),
+    };
     for line in input.lines() {
         // A definition may be indented by up to three spaces, like any block start.
         let trimmed = line.trim_start_matches(' ');
@@ -514,7 +501,8 @@ fn scan_footnote_labels(input: &str) -> FootnoteLabels {
             let label_start = pos + found + 2;
             match read_footnote_label(line, label_start) {
                 Some((label, end)) => {
-                    let is_definition = def_label.as_deref() == Some(label) && label_start == indent + 2;
+                    let is_definition =
+                        def_label.as_deref() == Some(label) && label_start == indent + 2;
                     if !is_definition {
                         labels.refs.push(label.to_string());
                     }
@@ -715,7 +703,10 @@ fn parse_property(chars: &[char], pos: usize) -> Option<((String, String), usize
 /// because such comments must stay in the body.
 fn parse_metadata_line(line: &str) -> Option<ItemMetadata> {
     // Trailing whitespace is invisible in an editor, so it does not invalidate the line.
-    let inner = line.trim_end().strip_prefix("<!-- @")?.strip_suffix(" -->")?;
+    let inner = line
+        .trim_end()
+        .strip_prefix("<!-- @")?
+        .strip_suffix(" -->")?;
     let chars: Vec<char> = inner.chars().collect();
     let extra_ats = chars.iter().take_while(|&&c| c == '@').count();
     let level = 1 + extra_ats;
@@ -751,7 +742,11 @@ fn parse_metadata_line(line: &str) -> Option<ItemMetadata> {
         }
         first = false;
     }
-    Some(ItemMetadata { level, id, properties })
+    Some(ItemMetadata {
+        level,
+        id,
+        properties,
+    })
 }
 
 /// Returns `true` if the line is empty or contains only whitespace.
@@ -776,7 +771,11 @@ fn body_text(lines: &[&str], start: usize, end: usize) -> String {
 }
 
 fn item_json(meta: Option<ItemMetadata>, body: String, opts: &BodyOptions) -> Value {
-    let meta = meta.unwrap_or(ItemMetadata { level: 1, id: None, properties: Vec::new() });
+    let meta = meta.unwrap_or(ItemMetadata {
+        level: 1,
+        id: None,
+        properties: Vec::new(),
+    });
     let properties: serde_json::Map<String, Value> = meta
         .properties
         .into_iter()
@@ -821,7 +820,11 @@ pub fn page_to_ast_with(input: &str, opts: &BodyOptions) -> String {
     let mut items: Vec<Value> = Vec::new();
     // The implicit leading item collects lines that precede the first block, so that
     // nothing before the first block or metadata line is lost.
-    let mut open = OpenItem { meta: None, start: 0, has_block: false };
+    let mut open = OpenItem {
+        meta: None,
+        start: 0,
+        has_block: false,
+    };
 
     let close = |open: OpenItem, end_exclusive: usize, items: &mut Vec<Value>| {
         let body = if end_exclusive > open.start {
@@ -862,10 +865,18 @@ pub fn page_to_ast_with(input: &str, opts: &BodyOptions) -> String {
 
         if let Some(meta) = meta {
             close(open, start, &mut items);
-            open = OpenItem { meta: Some(meta), start: end + 1, has_block: false };
+            open = OpenItem {
+                meta: Some(meta),
+                start: end + 1,
+                has_block: false,
+            };
         } else if open.has_block {
             close(open, start, &mut items);
-            open = OpenItem { meta: None, start, has_block: true };
+            open = OpenItem {
+                meta: None,
+                start,
+                has_block: true,
+            };
         } else {
             open.has_block = true;
         }
@@ -943,12 +954,11 @@ fn split_hashtags(text: &str) -> Vec<Value> {
 
 /// Restores the escaped-hash placeholder back to `#` in all text node values.
 fn restore_escaped_hashes(node: &mut Value) {
-    if let Some(val) = node.get_mut("value") {
-        if let Some(s) = val.as_str() {
-            if s.contains(ESCAPED_HASH_PLACEHOLDER) {
-                *val = Value::String(s.replace(ESCAPED_HASH_PLACEHOLDER, "#"));
-            }
-        }
+    if let Some(val) = node.get_mut("value")
+        && let Some(s) = val.as_str()
+        && s.contains(ESCAPED_HASH_PLACEHOLDER)
+    {
+        *val = Value::String(s.replace(ESCAPED_HASH_PLACEHOLDER, "#"));
     }
     if let Some(Value::Array(children)) = node.get_mut("children") {
         for child in children.iter_mut() {
@@ -968,16 +978,19 @@ fn process_hashtags(node: &mut Value) {
         // Split text nodes containing hashtags
         let mut new_children: Vec<Value> = Vec::with_capacity(children.len());
         for child in children.drain(..) {
-            if child.get("type").and_then(|t| t.as_str()) == Some("text") {
-                if let Some(text) = child.get("value").and_then(|v| v.as_str()) {
-                    let parts = split_hashtags(text);
-                    if parts.len() > 1 || parts.first()
+            if child.get("type").and_then(|t| t.as_str()) == Some("text")
+                && let Some(text) = child.get("value").and_then(|v| v.as_str())
+            {
+                let parts = split_hashtags(text);
+                if parts.len() > 1
+                    || parts
+                        .first()
                         .and_then(|p| p.get("type"))
-                        .and_then(|t| t.as_str()) == Some("hashtag")
-                    {
-                        new_children.extend(parts);
-                        continue;
-                    }
+                        .and_then(|t| t.as_str())
+                        == Some("hashtag")
+                {
+                    new_children.extend(parts);
+                    continue;
                 }
             }
             new_children.push(child);
@@ -987,7 +1000,9 @@ fn process_hashtags(node: &mut Value) {
     }
 }
 
-fn node_to_ast<'a>(node: &'a comrak::arena_tree::Node<'a, std::cell::RefCell<comrak::nodes::Ast>>) -> Value {
+fn node_to_ast<'a>(
+    node: &'a comrak::arena_tree::Node<'a, std::cell::RefCell<comrak::nodes::Ast>>,
+) -> Value {
     let ast = node.data.borrow();
     let (node_type, attrs) = serialize_node_value(&ast.value);
 
@@ -995,11 +1010,11 @@ fn node_to_ast<'a>(node: &'a comrak::arena_tree::Node<'a, std::cell::RefCell<com
 
     let mut obj = serde_json::Map::new();
     obj.insert("type".into(), Value::String(node_type));
-    if !attrs.is_null() {
-        if let Value::Object(map) = attrs {
-            for (k, v) in map {
-                obj.insert(k, v);
-            }
+    if !attrs.is_null()
+        && let Value::Object(map) = attrs
+    {
+        for (k, v) in map {
+            obj.insert(k, v);
         }
     }
     if !children.is_empty() {
@@ -1017,7 +1032,10 @@ fn parse_embed_url(url: &str) -> (String, serde_json::Map<String, Value>) {
                 .split('&')
                 .filter(|s| !s.is_empty())
                 .map(|kv| match kv.find('=') {
-                    Some(eq) => (kv[..eq].to_string(), Value::String(kv[eq + 1..].to_string())),
+                    Some(eq) => (
+                        kv[..eq].to_string(),
+                        Value::String(kv[eq + 1..].to_string()),
+                    ),
                     None => (kv.to_string(), Value::Bool(true)),
                 })
                 .collect();
@@ -1032,70 +1050,100 @@ fn serialize_node_value(value: &NodeValue) -> (String, Value) {
         NodeValue::Document => ("document".into(), Value::Null),
         NodeValue::FrontMatter(s) => ("front_matter".into(), json!({ "value": s })),
         NodeValue::BlockQuote => ("block_quote".into(), Value::Null),
-        NodeValue::List(nl) => ("list".into(), json!({
-            "list_type": match nl.list_type {
-                comrak::nodes::ListType::Bullet => "bullet",
-                comrak::nodes::ListType::Ordered => "ordered",
-            },
-            "start": nl.start,
-            "tight": nl.tight,
-            "delimiter": match nl.delimiter {
-                comrak::nodes::ListDelimType::Period => "period",
-                comrak::nodes::ListDelimType::Paren => "paren",
-            },
-        })),
-        NodeValue::Item(nl) => ("item".into(), json!({
-            "list_type": match nl.list_type {
-                comrak::nodes::ListType::Bullet => "bullet",
-                comrak::nodes::ListType::Ordered => "ordered",
-            },
-            "start": nl.start,
-            "tight": nl.tight,
-        })),
+        NodeValue::List(nl) => (
+            "list".into(),
+            json!({
+                "list_type": match nl.list_type {
+                    comrak::nodes::ListType::Bullet => "bullet",
+                    comrak::nodes::ListType::Ordered => "ordered",
+                },
+                "start": nl.start,
+                "tight": nl.tight,
+                "delimiter": match nl.delimiter {
+                    comrak::nodes::ListDelimType::Period => "period",
+                    comrak::nodes::ListDelimType::Paren => "paren",
+                },
+            }),
+        ),
+        NodeValue::Item(nl) => (
+            "item".into(),
+            json!({
+                "list_type": match nl.list_type {
+                    comrak::nodes::ListType::Bullet => "bullet",
+                    comrak::nodes::ListType::Ordered => "ordered",
+                },
+                "start": nl.start,
+                "tight": nl.tight,
+            }),
+        ),
         NodeValue::DescriptionList => ("description_list".into(), Value::Null),
         NodeValue::DescriptionItem(_) => ("description_item".into(), Value::Null),
         NodeValue::DescriptionTerm => ("description_term".into(), Value::Null),
         NodeValue::DescriptionDetails => ("description_details".into(), Value::Null),
-        NodeValue::CodeBlock(cb) => ("code_block".into(), json!({
-            "info": cb.info,
-            "literal": cb.literal,
-        })),
-        NodeValue::HtmlBlock(hb) => ("html_block".into(), json!({
-            "block_type": hb.block_type,
-            "literal": hb.literal,
-        })),
+        NodeValue::CodeBlock(cb) => (
+            "code_block".into(),
+            json!({
+                "info": cb.info,
+                "literal": cb.literal,
+            }),
+        ),
+        NodeValue::HtmlBlock(hb) => (
+            "html_block".into(),
+            json!({
+                "block_type": hb.block_type,
+                "literal": hb.literal,
+            }),
+        ),
         NodeValue::HeexBlock(_) => ("heex_block".into(), Value::Null),
         NodeValue::Paragraph => ("paragraph".into(), Value::Null),
-        NodeValue::Heading(h) => ("heading".into(), json!({
-            "level": h.level,
-        })),
+        NodeValue::Heading(h) => (
+            "heading".into(),
+            json!({
+                "level": h.level,
+            }),
+        ),
         NodeValue::ThematicBreak => ("thematic_break".into(), Value::Null),
-        NodeValue::FootnoteDefinition(fd) => ("footnote_definition".into(), json!({
-            "name": fd.name,
-        })),
-        NodeValue::Table(t) => ("table".into(), json!({
-            "alignments": t.alignments.iter().map(|a| match a {
-                comrak::nodes::TableAlignment::None => "none",
-                comrak::nodes::TableAlignment::Left => "left",
-                comrak::nodes::TableAlignment::Center => "center",
-                comrak::nodes::TableAlignment::Right => "right",
-            }).collect::<Vec<_>>(),
-            "num_columns": t.num_columns,
-            "num_rows": t.num_rows,
-        })),
-        NodeValue::TableRow(header) => ("table_row".into(), json!({
-            "header": header,
-        })),
+        NodeValue::FootnoteDefinition(fd) => (
+            "footnote_definition".into(),
+            json!({
+                "name": fd.name,
+            }),
+        ),
+        NodeValue::Table(t) => (
+            "table".into(),
+            json!({
+                "alignments": t.alignments.iter().map(|a| match a {
+                    comrak::nodes::TableAlignment::None => "none",
+                    comrak::nodes::TableAlignment::Left => "left",
+                    comrak::nodes::TableAlignment::Center => "center",
+                    comrak::nodes::TableAlignment::Right => "right",
+                }).collect::<Vec<_>>(),
+                "num_columns": t.num_columns,
+                "num_rows": t.num_rows,
+            }),
+        ),
+        NodeValue::TableRow(header) => (
+            "table_row".into(),
+            json!({
+                "header": header,
+            }),
+        ),
         NodeValue::TableCell => ("table_cell".into(), Value::Null),
         NodeValue::Text(s) => ("text".into(), json!({ "value": s.as_ref() })),
-        NodeValue::TaskItem(ti) => ("task_item".into(), json!({
-            "symbol": ti.symbol.map(|c| c.to_string()),
-        })),
+        NodeValue::TaskItem(ti) => (
+            "task_item".into(),
+            json!({
+                "symbol": ti.symbol.map(|c| c.to_string()),
+            }),
+        ),
         NodeValue::SoftBreak => ("softbreak".into(), Value::Null),
         NodeValue::LineBreak => ("linebreak".into(), Value::Null),
-        NodeValue::Code(c) => ("code".into(), json!({
-            "literal": c.literal,
-        })),
+        NodeValue::Code(c) => (
+            "code".into(),
+            json!({
+                "literal": c.literal,
+            }),
+        ),
         NodeValue::HtmlInline(s) => ("html_inline".into(), json!({ "value": s })),
         NodeValue::HeexInline(s) => ("heex_inline".into(), json!({ "value": s })),
         NodeValue::Raw(s) => ("raw".into(), json!({ "value": s })),
@@ -1104,42 +1152,63 @@ fn serialize_node_value(value: &NodeValue) -> (String, Value) {
         NodeValue::Strikethrough => ("strikethrough".into(), Value::Null),
         NodeValue::Highlight => ("highlight".into(), Value::Null),
         NodeValue::Superscript => ("superscript".into(), Value::Null),
-        NodeValue::Link(link) => ("link".into(), json!({
-            "url": link.url,
-            "title": link.title,
-        })),
+        NodeValue::Link(link) => (
+            "link".into(),
+            json!({
+                "url": link.url,
+                "title": link.title,
+            }),
+        ),
         NodeValue::Image(link) => {
             let (url, props) = parse_embed_url(link.url.as_str());
             let mut attrs = json!({ "url": url, "title": link.title });
             if !props.is_empty() {
-                attrs.as_object_mut().unwrap().insert("props".into(), Value::Object(props));
+                attrs
+                    .as_object_mut()
+                    .unwrap()
+                    .insert("props".into(), Value::Object(props));
             }
             ("embed".into(), attrs)
         }
-        NodeValue::FootnoteReference(fr) => ("footnote_reference".into(), json!({
-            "name": fr.name,
-            "ref_num": fr.ref_num,
-            "ix": fr.ix,
-        })),
-        NodeValue::ShortCode(sc) => ("shortcode".into(), json!({
-            "code": sc.code,
-            "emoji": sc.emoji,
-        })),
-        NodeValue::Math(m) => ("math".into(), json!({
-            "literal": m.literal,
-        })),
+        NodeValue::FootnoteReference(fr) => (
+            "footnote_reference".into(),
+            json!({
+                "name": fr.name,
+                "ref_num": fr.ref_num,
+                "ix": fr.ix,
+            }),
+        ),
+        NodeValue::ShortCode(sc) => (
+            "shortcode".into(),
+            json!({
+                "code": sc.code,
+                "emoji": sc.emoji,
+            }),
+        ),
+        NodeValue::Math(m) => (
+            "math".into(),
+            json!({
+                "literal": m.literal,
+            }),
+        ),
         NodeValue::Escaped => ("escaped".into(), Value::Null),
-        NodeValue::WikiLink(wl) => ("wikilink".into(), json!({
-            "url": wl.url,
-        })),
+        NodeValue::WikiLink(wl) => (
+            "wikilink".into(),
+            json!({
+                "url": wl.url,
+            }),
+        ),
         NodeValue::Underline => ("underline".into(), Value::Null),
         NodeValue::Subscript => ("subscript".into(), Value::Null),
         NodeValue::SpoileredText => ("spoilered_text".into(), Value::Null),
         NodeValue::EscapedTag(s) => ("escaped_tag".into(), json!({ "value": s })),
-        NodeValue::Alert(a) => ("alert".into(), json!({
-            "alert_type": format!("{:?}", a.alert_type).to_lowercase(),
-            "title": a.title,
-        })),
+        NodeValue::Alert(a) => (
+            "alert".into(),
+            json!({
+                "alert_type": format!("{:?}", a.alert_type).to_lowercase(),
+                "title": a.title,
+            }),
+        ),
         NodeValue::Subtext => ("subtext".into(), Value::Null),
         NodeValue::Insert => ("insert".into(), Value::Null),
         NodeValue::MultilineBlockQuote(_) => ("multiline_block_quote".into(), Value::Null),
@@ -1193,7 +1262,10 @@ mod tests {
     #[test]
     fn multiline_block_quote_html() {
         let result = body_to_html(">>>\nq1\n\nq2\n>>>");
-        assert_eq!(result, "<blockquote>\n<p>q1</p>\n<p>q2</p>\n</blockquote>\n");
+        assert_eq!(
+            result,
+            "<blockquote>\n<p>q1</p>\n<p>q2</p>\n</blockquote>\n"
+        );
     }
 
     #[test]
@@ -1247,13 +1319,19 @@ mod tests {
     #[test]
     fn wikilink_html_basic() {
         let result = body_to_html("[[page]]");
-        assert_eq!(result, "<p><a href=\"page\" data-wikilink=\"true\">page</a></p>\n");
+        assert_eq!(
+            result,
+            "<p><a href=\"page\" data-wikilink=\"true\">page</a></p>\n"
+        );
     }
 
     #[test]
     fn wikilink_html_with_label() {
         let result = body_to_html("[[url|link label]]");
-        assert_eq!(result, "<p><a href=\"url\" data-wikilink=\"true\">link label</a></p>\n");
+        assert_eq!(
+            result,
+            "<p><a href=\"url\" data-wikilink=\"true\">link label</a></p>\n"
+        );
     }
 
     #[test]
@@ -1294,7 +1372,14 @@ mod tests {
 
     #[test]
     fn ast_hashtag_basic() {
-        let result = body_to_ast_with("#tag", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "#tag",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -1303,7 +1388,14 @@ mod tests {
 
     #[test]
     fn ast_hashtag_japanese() {
-        let result = body_to_ast_with("#日記", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "#日記",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -1312,7 +1404,14 @@ mod tests {
 
     #[test]
     fn ast_hashtag_with_special_chars() {
-        let result = body_to_ast_with("#my_tag-name/sub", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "#my_tag-name/sub",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -1321,7 +1420,14 @@ mod tests {
 
     #[test]
     fn ast_hashtag_in_text() {
-        let result = body_to_ast_with("hello #tag world", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "hello #tag world",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -1334,7 +1440,14 @@ mod tests {
 
     #[test]
     fn ast_hashtag_multiple() {
-        let result = body_to_ast_with("#tag1 #tag2", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "#tag1 #tag2",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -1356,7 +1469,14 @@ mod tests {
 
     #[test]
     fn ast_hashtag_terminated_by_punctuation() {
-        let result = body_to_ast_with("#タグ。本文", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "#タグ。本文",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -1378,7 +1498,14 @@ mod tests {
     #[test]
     fn ast_hashtag_trailing_slash_trimmed() {
         // "#tag/" must be recognized as hashtag "tag" (trailing '/' is trimmed)
-        let result = body_to_ast_with("#tag/", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "#tag/",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
@@ -1425,7 +1552,14 @@ mod tests {
 
     #[test]
     fn ast_escaped_hashtag_with_real_hashtag() {
-        let result = body_to_ast_with(r"\#notag #real", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            r"\#notag #real",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -1609,7 +1743,9 @@ mod tests {
         let result = body_to_ast("Text[^1].\n\n[^1]: Footnote.");
         let v: Value = serde_json::from_str(&result).unwrap();
         let para_children = v["children"][0]["children"].as_array().unwrap();
-        let fref = para_children.iter().find(|n| n["type"] == "footnote_reference");
+        let fref = para_children
+            .iter()
+            .find(|n| n["type"] == "footnote_reference");
         assert!(fref.is_some(), "expected footnote_reference in paragraph");
         assert_eq!(fref.unwrap()["name"], "1");
         let blocks = v["children"].as_array().unwrap();
@@ -1661,7 +1797,14 @@ mod tests {
     // SSoT: Markdown relative link → wikilink (no label: link text equals page name)
     #[test]
     fn ast_md_link_to_wikilink_no_label() {
-        let result = body_to_ast_with("[pagename](../pagename.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "[pagename](../pagename.md)",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -1672,7 +1815,14 @@ mod tests {
     // SSoT: Markdown relative link → wikilink (with label)
     #[test]
     fn ast_md_link_to_wikilink_with_label() {
-        let result = body_to_ast_with("[display label](../pagename.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "[display label](../pagename.md)",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -1683,7 +1833,14 @@ mod tests {
     // SSoT: Markdown relative link with path → wikilink URL preserves full path
     #[test]
     fn ast_md_link_to_wikilink_with_path() {
-        let result = body_to_ast_with("[label](../journal/2024-01-01.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "[label](../journal/2024-01-01.md)",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -1694,7 +1851,14 @@ mod tests {
     // SSoT: Markdown relative link with fragment → wikilink URL includes #id
     #[test]
     fn ast_md_link_to_wikilink_with_fragment() {
-        let result = body_to_ast_with("[label](../page.md#block-id)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "[label](../page.md#block-id)",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -1705,7 +1869,14 @@ mod tests {
     // SSoT: Markdown relative link with ./ prefix → wikilink
     #[test]
     fn ast_md_link_dotslash_to_wikilink() {
-        let result = body_to_ast_with("[pagename](./pagename.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "[pagename](./pagename.md)",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -1716,7 +1887,14 @@ mod tests {
     // SSoT: Markdown relative link with ./ prefix and path → wikilink URL preserves path
     #[test]
     fn ast_md_link_dotslash_with_path() {
-        let result = body_to_ast_with("[label](./journal/2024-01-01.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "[label](./journal/2024-01-01.md)",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -1727,7 +1905,14 @@ mod tests {
     // SSoT: Markdown relative link with ./ prefix and fragment → wikilink includes #id
     #[test]
     fn ast_md_link_dotslash_with_fragment() {
-        let result = body_to_ast_with("[label](./page.md#block-id)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "[label](./page.md#block-id)",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
@@ -1738,7 +1923,14 @@ mod tests {
     // SSoT: Tag Markdown link with ./ prefix → hashtag node
     #[test]
     fn ast_md_tag_link_dotslash_to_hashtag() {
-        let result = body_to_ast_with("[#mytag](./mytag.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "[#mytag](./mytag.md)",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "hashtag");
@@ -1750,7 +1942,14 @@ mod tests {
     // SSoT: Tag Markdown link → hashtag node
     #[test]
     fn ast_md_tag_link_to_hashtag() {
-        let result = body_to_ast_with("[#日記](../日記.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "[#日記](../日記.md)",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "hashtag");
@@ -1761,7 +1960,14 @@ mod tests {
 
     #[test]
     fn ast_md_tag_link_ascii() {
-        let result = body_to_ast_with("[#mytag](../mytag.md)", &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] } });
+        let result = body_to_ast_with(
+            "[#mytag](../mytag.md)",
+            &BodyOptions {
+                link_resolution: LinkResolution::On {
+                    prefixes: vec!["../".into(), "./".into()],
+                },
+            },
+        );
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "hashtag");
@@ -1800,7 +2006,9 @@ mod tests {
     fn ast_on_empty_prefixes_md_link_stays_link() {
         let result = body_to_ast_with(
             "[text](../page.md)",
-            &BodyOptions { link_resolution: LinkResolution::On { prefixes: vec![] } },
+            &BodyOptions {
+                link_resolution: LinkResolution::On { prefixes: vec![] },
+            },
         );
         let v: Value = serde_json::from_str(&result).unwrap();
         let node = &v["children"][0]["children"][0];
@@ -1843,7 +2051,10 @@ mod tests {
         let cb = &v["children"][0];
         assert_eq!(cb["type"], "code_block");
         let literal = cb["literal"].as_str().unwrap();
-        assert!(literal.contains("\n\n"), "blank line inside fence must be preserved");
+        assert!(
+            literal.contains("\n\n"),
+            "blank line inside fence must be preserved"
+        );
     }
 
     // ---- Metadata line syntax ----
@@ -1855,7 +2066,14 @@ mod tests {
     #[test]
     fn metadata_level_only() {
         let m = parse_metadata_line("<!-- @ -->").unwrap();
-        assert_eq!(m, ItemMetadata { level: 1, id: None, properties: vec![] });
+        assert_eq!(
+            m,
+            ItemMetadata {
+                level: 1,
+                id: None,
+                properties: vec![]
+            }
+        );
         let m = parse_metadata_line("<!-- @@@ -->").unwrap();
         assert_eq!(m.level, 3);
     }
@@ -1889,7 +2107,10 @@ mod tests {
         let m = parse_metadata_line("<!-- @@ collapsed=\"true\" -->").unwrap();
         assert_eq!(m.level, 2);
         assert_eq!(m.id, None);
-        assert_eq!(m.properties, vec![("collapsed".to_string(), "true".to_string())]);
+        assert_eq!(
+            m.properties,
+            vec![("collapsed".to_string(), "true".to_string())]
+        );
     }
 
     #[test]
@@ -1955,7 +2176,10 @@ mod tests {
         assert_eq!(items[3]["id"], ID3);
         assert_eq!(items[3]["properties"]["plan"], "2026-09-28");
         assert_eq!(items[3]["body"], "- [ ] Task1");
-        assert_eq!(items[3]["ast"]["children"][0]["children"][0]["type"], "task_item");
+        assert_eq!(
+            items[3]["ast"]["children"][0]["children"][0]["type"],
+            "task_item"
+        );
     }
 
     #[test]
@@ -2098,10 +2322,14 @@ mod tests {
     #[test]
     fn page_applies_link_resolution() {
         let opts = BodyOptions {
-            link_resolution: LinkResolution::On { prefixes: vec!["../".into()] },
+            link_resolution: LinkResolution::On {
+                prefixes: vec!["../".into()],
+            },
         };
         let v: Value = serde_json::from_str(&page_to_ast_with("#tag [p](../p.md)", &opts)).unwrap();
-        let inline = v["items"][0]["ast"]["children"][0]["children"].as_array().unwrap();
+        let inline = v["items"][0]["ast"]["children"][0]["children"]
+            .as_array()
+            .unwrap();
         assert_eq!(inline[0]["type"], "hashtag");
         assert_eq!(inline[2]["type"], "wikilink");
     }
@@ -2136,7 +2364,10 @@ mod tests {
         assert!(footnote_nodes(&v, "footnote_reference").is_empty());
         let blocks = v["children"].as_array().unwrap();
         assert_eq!(blocks.len(), 1);
-        assert_eq!(blocks[0]["children"][0]["children"][0]["value"], "The note.");
+        assert_eq!(
+            blocks[0]["children"][0]["children"][0]["value"],
+            "The note."
+        );
         assert!(!contains_placeholder(&v));
     }
 
@@ -2192,7 +2423,13 @@ mod tests {
         assert_eq!(items[0]["body"], "Text[^1].");
         assert_eq!(items[1]["body"], "Middle.\n\n[^1]: Footnote.");
         assert_eq!(items[2]["body"], "Last.");
-        assert_eq!(footnote_nodes(&items[0]["ast"], "footnote_reference"), vec!["1"]);
-        assert_eq!(footnote_nodes(&items[1]["ast"], "footnote_definition"), vec!["1"]);
+        assert_eq!(
+            footnote_nodes(&items[0]["ast"], "footnote_reference"),
+            vec!["1"]
+        );
+        assert_eq!(
+            footnote_nodes(&items[1]["ast"], "footnote_definition"),
+            vec!["1"]
+        );
     }
 }

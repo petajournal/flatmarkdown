@@ -1,13 +1,17 @@
-[package]
-name = "flatmarkdown"
+[workspace]
+resolver = "3"
+members = ["flatmarkdown", "flatmarkdown-ast"]
+
+# Both crates always have the same version (ADR 012 of peta-journal), so it is written only here.
+[workspace.package]
 version = "0.4.3"
 edition = "2024"
-description = "Flat Markdown parser — outline format with block-delimited items"
 license = "MIT"
 repository = "https://github.com/petajournal/flatmarkdown"
-keywords = ["markdown", "html", "ast", "comrak"]
-categories = ["text-processing", "parsing"]
 
-[dependencies]
-comrak = { version = "0.51", features = ["shortcodes"] }
-serde_json = "1"
+# Less debug info makes linking faster. A panic still shows the file name and the line number.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false

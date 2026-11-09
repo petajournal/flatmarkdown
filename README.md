@@ -1,71 +1,52 @@
 # flatmarkdown
 
-Flat Markdown parser — outline format with block-delimited items.
+The Rust crates for Flat Markdown, an outline format with block-delimited items.
 
-Based on the Flat Markdown specification v0.2: https://github.com/petajournal/flatmarkdown-spec/
+Flat Markdown is defined in the [Flat Markdown specification](https://github.com/petajournal/flatmarkdown-spec/).
 
-## API
+## Crates
 
-### Options
-
-```rust
-#[derive(Default)]
-pub enum LinkResolution {
-    #[default]
-    Off,
-    On { prefixes: Vec<String> },
-}
-
-#[derive(Default)]
-pub struct BodyOptions {
-    pub link_resolution: LinkResolution,
-}
-```
-
-`link_resolution` (default: `Off`) — when `On`, enables link and hashtag resolution:
-
-| Input | AST node | HTML output |
-|---|---|---|
-| `[label](<prefix>page.md)`, or with `#id` | `wikilink` | `<a href="page" data-wikilink="true">label</a>` |
-| `[#tag](<prefix>tag.md)` | `hashtag` | `<a href="tag" class="hashtag">#tag</a>` |
-| `#tag` in text | `hashtag` | `<a href="tag" class="hashtag">#tag</a>` |
-
-Relative links are matched when the URL starts with one of `prefixes` (for example `../` or `./`) and ends with `.md`. When `Off`, these links remain as `link` nodes and `#tag` text remains as plain text.
-
-### Functions
-
-| Function | Description |
+| Crate | What it does |
 |---|---|
-| `page_to_ast(input)` | Split a page into items with metadata ([spec](SPEC_AST.md)) |
-| `page_to_ast_with(input, opts)` | Same, with explicit `BodyOptions` |
-| `body_to_ast(input)` | Parse an item body to JSON AST ([spec](SPEC_AST.md)) |
-| `body_to_ast_with(input, opts)` | Same, with explicit `BodyOptions` |
-| `body_to_html(input)` | Render an item body to HTML |
-| `body_to_html_with(input, opts)` | Same, with explicit `BodyOptions` |
+| [flatmarkdown](flatmarkdown/) | Parses a page or an item body into a JSON AST, and renders an item body to HTML |
+| [flatmarkdown-ast](flatmarkdown-ast/) | Reads the JSON AST into Rust types with serde. It has no Markdown parser |
 
-### Examples
+The AST is defined in [SPEC_AST.md](SPEC_AST.md) ([日本語](SPEC_AST_ja.md)).
+The same AST as TypeScript types is the npm package [flatmarkdown-ast](https://www.npmjs.com/package/flatmarkdown-ast).
 
-```rust
-use flatmarkdown::{body_to_ast, body_to_html_with, page_to_ast, BodyOptions, LinkResolution};
+## Versions
 
-// Split a page into items. Each top-level block is one item.
-// A `<!-- @@ ID key="value" -->` line above a block is its metadata.
-let page = page_to_ast("<!-- @@ 2026-09-27-15-00-16-W3N8ASY plan=\"2026-09-28\" -->\n- [ ] Task1\n\nParagraph");
+Both crates always have the same version.
+The version is written once, in the `Cargo.toml` at the top of the repository.
+The AST made by `flatmarkdown` x.y.z can be read by `flatmarkdown-ast` x.y.z.
 
-// Parse one item body (link resolution off)
-let ast = body_to_ast("Hello **world**");
+A change of the AST goes into one pull request: the parser, the specification, and the types.
 
-// With link resolution enabled
-let opts = BodyOptions {
-    link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] },
-};
-let html = body_to_html_with("#tag text", &opts);
-```
+A new kind of node is a breaking change, because `Node` of `flatmarkdown-ast` is not `#[non_exhaustive]`.
+The version then goes up, for example from 0.4 to 0.5.
 
-## Build
+## Development
+
+Run these at the top of the repository. They cover both crates.
 
 ```sh
-cargo clean
-cargo build
-cargo test
+cargo fmt --all --check
+cargo clippy --workspace --all-targets
+cargo test --workspace
 ```
+
+The round-trip tests of `flatmarkdown-ast` parse Markdown with the `flatmarkdown` crate of this repository.
+So they always test the two crates of the same version together.
+
+## Release
+
+1. Set `version` in the `Cargo.toml` at the top of the repository, and merge the change into `main`.
+2. Run `cargo publish --dry-run -p flatmarkdown` and `cargo publish --dry-run -p flatmarkdown-ast`.
+3. Run `cargo publish -p flatmarkdown`, and then `cargo publish -p flatmarkdown-ast`.
+
+Publish both crates every time, even when only one of them changed.
+A published version cannot be deleted or replaced.
+
+## License
+
+MIT
