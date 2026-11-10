@@ -1,0 +1,33 @@
+{
+    "name": "flatmarkdown-ast2html",
+    "version": "0.6.0",
+    "description": "Renders the Flat Markdown AST to HTML. The wasm build of the Rust crate flatmarkdown-ast2html.",
+    "unpkg": "./dist/index.global.js",
+    "jsdelivr": "./dist/index.global.js",
+    "files": [
+        "dist"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/petajournal/flatmarkdown.git",
+        "directory": "flatmarkdown-ast2html-wasm"
+    },
+    "bugs": {
+        "url": "https://github.com/petajournal/flatmarkdown/issues"
+    },
+    "homepage": "https://github.com/petajournal/flatmarkdown/tree/main/flatmarkdown-ast2html-wasm#readme",
+    "scripts": {
+        "build": "node build.mjs",
+        "test": "node --test",
+        "prepublishOnly": "npm run build && npm test"
+    },
+    "keywords": [
+        "flatmarkdown",
+        "ast",
+        "html",
+        "markdown",
+        "wasm"
+    ],
+    "author": "Hidekazu Kubota",
+    "license": "MIT"
+}
