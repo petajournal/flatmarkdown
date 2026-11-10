@@ -76,7 +76,7 @@ fn children_to_ast<'a>(
             NodeValue::EscapedTag(delimiter) => {
                 Some((delimiter.to_string(), delimiter.to_string()))
             }
-            NodeValue::WikiLink(link) if names_no_page(link.url.trim()) => {
+            NodeValue::WikiLink(link) if names_no_page(page_url(&link.url)) => {
                 Some((wikilink_opening(link.url.trim(), child), "]]".to_string()))
             }
             _ => None,
@@ -104,6 +104,15 @@ fn children_to_ast<'a>(
 /// An escaped `\#` is a `#` here too.
 fn names_no_page(url: &str) -> bool {
     url.is_empty() || restored_as_hash(url) == "#"
+}
+
+/// The `url` of a wikilink, from the URL that comrak read. comrak drops ASCII whitespace
+/// around the page name. Other whitespace is dropped here, such as the full-width space, so
+/// that a name never starts or ends with one. A `#` at the end names no item, so it is dropped
+/// too: `[[a#]]` is `[[a]]`.
+fn page_url(raw: &str) -> &str {
+    let url = raw.trim();
+    url.strip_suffix('#').unwrap_or(url)
 }
 
 /// True if a comrak wikilink has no label of its own. comrak then gives it one text child that
@@ -310,9 +319,7 @@ fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
             literal: m.literal.clone(),
         },
         NodeValue::WikiLink(wl) => {
-            // comrak drops ASCII whitespace around the page name. Other whitespace is dropped
-            // here, such as the full-width space, so that a name never starts or ends with one.
-            let url = wl.url.trim();
+            let url = page_url(&wl.url);
             // An empty label (`[[page|]]`) is no label. The page name is shown, as for
             // `[[page]]`, so that the link is never drawn without any text. A label that
             // comrak copied from the URL is replaced too, because it still has the whitespace.

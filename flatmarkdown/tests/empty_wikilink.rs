@@ -151,3 +151,24 @@ fn a_wikilink_with_only_wide_whitespace_as_its_name_stays_text() {
     }
     assert_eq!(inlines(&ast("[[\u{3000}|label]]")), [text("[[|label]]")]);
 }
+
+// #のあとにIDがなければ、#は落とす。[[a#]]は[[a]]と同じである。
+#[test]
+fn a_hash_sign_without_an_id_is_dropped_from_a_page_name() {
+    for md in ["[[a#]]", "[[a# ]]", "[[a#|a]]"] {
+        assert_eq!(
+            inlines(&ast(md)),
+            [Node::Wikilink {
+                url: "a".to_string(),
+                children: vec![text("a")],
+            }],
+            "{md:?}"
+        );
+    }
+}
+
+// ##は、IDのない#ではない。[[##]]のurlは#になりそうだが、#だけの名前は名前ではないので、文字のままである。
+#[test]
+fn a_wikilink_with_two_hash_signs_stays_text() {
+    assert_eq!(inlines(&ast("[[##]]")), [text("[[##]]")]);
+}

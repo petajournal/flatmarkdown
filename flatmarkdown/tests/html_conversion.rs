@@ -103,3 +103,16 @@ fn the_second_inline_footnote_shows_two() {
         "{html}"
     );
 }
+
+// 同じ脚注を2回参照すると、2回目からのidにはref_numが付く。idが重ならないためである。
+#[test]
+fn the_second_reference_to_a_footnote_has_its_number_in_the_id() {
+    assert_eq!(
+        body_to_html("A[^x] B[^x] C[^x]"),
+        concat!(
+            "<p>A<sup id=\"fnref-x\" class=\"footnote-ref\"><a href=\"#fn-x\">[x]</a></sup>",
+            " B<sup id=\"fnref-x-2\" class=\"footnote-ref\"><a href=\"#fn-x\">[x]</a></sup>",
+            " C<sup id=\"fnref-x-3\" class=\"footnote-ref\"><a href=\"#fn-x\">[x]</a></sup></p>\n"
+        )
+    );
+}

@@ -256,11 +256,17 @@ fn node_to_html(node: &Node) -> String {
 
         // The label is shown instead of comrak's index: a body is parsed alone, so the
         // index would restart at 1 in every item.
-        Node::FootnoteReference { name, .. } => {
+        Node::FootnoteReference { name, ref_num, .. } => {
             let shown = footnote_label(name);
             let name = escape_html(name);
+            // An `id` must be unique. The second reference to the same footnote carries its
+            // number; the first does not, so that the label of the definition links to it.
+            let id = match ref_num {
+                1 => format!("fnref-{name}"),
+                n => format!("fnref-{name}-{n}"),
+            };
             format!(
-                "<sup id=\"fnref-{name}\" class=\"footnote-ref\"><a href=\"#fn-{name}\">[{shown}]</a></sup>"
+                "<sup id=\"{id}\" class=\"footnote-ref\"><a href=\"#fn-{name}\">[{shown}]</a></sup>"
             )
         }
 

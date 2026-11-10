@@ -34,7 +34,9 @@ fn markdown_link_to_wikilink_url(url: &str, prefixes: &[String]) -> Option<Strin
     if file_name.trim().is_empty() {
         return None;
     }
-    // The whitespace around the page path is dropped, as it is for `[[ page ]]`.
+    // The whitespace around the page path is dropped, as it is for `[[ page ]]`. A `#` without
+    // an ID names no item, so it is dropped too.
+    let fragment = if fragment == "#" { "" } else { fragment };
     Some(format!("{}{}", page_path.trim(), fragment))
 }
 

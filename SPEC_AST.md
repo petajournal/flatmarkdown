@@ -50,7 +50,7 @@ Each item has:
 **Markdown link → wikilink / hashtag conversion** *(LinkResolution::On only)*: After parsing, `link` nodes whose URL starts with one of the configured prefixes and ends with `.md` are converted as follows. The matching prefix and `.md` suffix are stripped to form the page path. When more than one prefix matches, the longest one is used: with the prefixes `../` and `../docs/`, the page path of `../docs/a.md` is `a`. The order of the prefixes does not change the result.
 
 - If the link text is a single text node whose value equals `#page_path` (i.e. `[#tagname](<prefix>tagname.md)`), the node becomes a `hashtag` node with `value = tagname`. The `url`, `title`, and `children` fields are removed. A link with a `#id` fragment is not such a link: `[#tagname](<prefix>tagname.md#id)` becomes a `wikilink`. The page path must also follow the rules of a tag name (see `hashtag`). When it does not, as in `[#a b](<prefix>a b.md)`, the node becomes a `wikilink` and its label stays the text `#a b`. A `hashtag` therefore always has a name that could be written as `#name` in text.
-- Otherwise, the node becomes a `wikilink` node. The `url` is the page path (prefix and `.md` suffix stripped); a `#id` fragment is preserved. The `title` field is removed; `children` (link text) are kept as the label.
+- Otherwise, the node becomes a `wikilink` node. The `url` is the page path (prefix and `.md` suffix stripped); a `#id` fragment is preserved. A `#` without an ID is dropped: the `url` of `[x](<prefix>a.md#)` is `a`. The `title` field is removed; `children` (link text) are kept as the label.
 
 Links that do not match any prefix (external URLs, non-`.md` paths, or paths with non-matching prefixes) are kept as `link` nodes.
 
@@ -58,11 +58,13 @@ A link to a `.md` file without a name is also kept as a `link` node: `[x](<prefi
 
 The whitespace around the page path is dropped, as it is for `[[ page ]]`: the page path of `[x](<<prefix> a .md>)` is `a`. Whitespace inside the page path is kept.
 
+The parser does not check the page path. `..`, a `/` at the start, and `%23` stay as they are: the `url` of `[x](<prefix>a/../b.md)` is `a/../b`. A program that opens a file by the `url` of a `wikilink` must check the path itself.
+
 A link with an escaped `\#` in its page path is also kept as a `link` node: `[x](<prefix>a\#b.md)`. As a wikilink, its `url` would be `a#b`. That reads as the item `b` of the page `a`, which the author did not write.
 
 When *LinkResolution::Off* (the default), this conversion is skipped entirely, as is the `#tag` text-node extraction described below.
 
-**Footnote completion**: the Markdown parser keeps a footnote only when its reference and its definition are in the same document. A body is parsed alone, so a body that holds only `[^label]` references or only `[^label]:` definitions would lose them. Such a body is parsed again with a placeholder for the missing side, and the placeholder nodes are removed afterwards. A `footnote_reference` therefore always appears for `[^label]` outside code, and a `footnote_definition` always appears for a definition line, even when the other side is in another item. Both sides keep `name`, so a renderer can link them by label across items.
+**Footnote completion**: the Markdown parser keeps a footnote only when its reference and its definition are in the same document. A body is parsed alone, so a body that holds only `[^label]` references or only `[^label]:` definitions would lose them. Such a body is parsed again with a placeholder for the missing side, and the placeholder nodes are removed afterwards. A `footnote_reference` therefore always appears for `[^label]` outside code, and a `footnote_definition` always appears for a definition line, even when the other side is in another item. Both sides keep `name`, so a renderer can link them by label across items. It must compare the names without regard to case, because GFM does not distinguish case in footnote labels: `[^Note]` in one item and `[^note]:` in another are one footnote, but their names are `Note` and `note`. In one body the parser pairs them itself, and both sides get the name of the definition.
 
 **Inline footnotes**: `^[content]` is a footnote written in place. The content can hold inline markup. It becomes a `footnote_reference` at that place and a `footnote_definition` at the end of the same body. The parser makes the name: `__inline_1` for the first inline footnote of the body, `__inline_2` for the second, and so on. The count restarts in every body, so inline footnotes of different items have the same name. Both sides of an inline footnote are always in the same body. A renderer must link a name that starts with `__inline_` only inside one item, and should show a number instead of the name. An empty `^[]` is plain text.
 
@@ -306,7 +308,7 @@ A wikilink. Children are the label (inline nodes); when no label is given, the c
 |-----------|--------|-----------------|
 | `url`     | string | Link destination. May contain a `#id` fragment for block links. |
 
-A wikilink without a page name is not a wikilink. `[[]]` and `[[|label]]` stay text, so a `wikilink` node never has an empty `url`. The whitespace around the page name is dropped. This holds for every kind of whitespace, also the full-width space (U+3000) and the no-break space (U+00A0). Whitespace alone is no name: `[[ ]]` becomes the text `[[]]`. A `#` without a page name and without an ID is no name either: `[[#]]` and `[[#|label]]` stay text. An escaped `\#` is a `#` here too, so `[[\#]]` becomes the text `[[#]]`. `[[#id]]` is a wikilink, with the `url` `#id`.
+A wikilink without a page name is not a wikilink. `[[]]` and `[[|label]]` stay text, so a `wikilink` node never has an empty `url`. The whitespace around the page name is dropped. This holds for every kind of whitespace, also the full-width space (U+3000) and the no-break space (U+00A0). Whitespace alone is no name: `[[ ]]` becomes the text `[[]]`. A `#` without a page name and without an ID is no name either: `[[#]]` and `[[#|label]]` stay text. An escaped `\#` is a `#` here too, so `[[\#]]` becomes the text `[[#]]`. `[[#id]]` is a wikilink, with the `url` `#id`. A `#` at the end without an ID is dropped: `[[a#]]` is the same as `[[a]]`.
 
 #### `footnote_reference`
 
