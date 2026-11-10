@@ -48,6 +48,7 @@ page
 
 - GitHub Flavored Markdown and the following comrak extensions are available.
   - footnote
+    - This includes the inline footnote `^[text]`.
   - alert
   - subtext
   - highlight
@@ -56,11 +57,18 @@ page
   - spoilered_text
   - shortcode
   - math
-  - hashtag
+    - Only the code style `` $`formula`$ `` is math. `$formula$` and `$$formula$$` are plain text.
   - underline
   - wikilink
   - multiline_block_quotes
-- See [example.md](example.md) for examples of each extension.
+  - cjk_friendly_emphasis
+- Hashtags (`#tag`) are also available. They are not a comrak extension. The Flat Markdown parser finds them itself. See "Tags".
+- A task list item may hold any one character in its brackets, as in `- [>]`.
+- See [example.md](example.md) for examples of each syntax.
+- See [SPEC_AST.md](SPEC_AST.md) for the AST that the parser makes from each syntax.
+- Footnotes
+  - A footnote reference and its definition may be in different items. They are linked by label. Case is not distinguished: `[^Note]` and `[^note]:` are one footnote.
+  - The parser gives an inline footnote a name that starts with `__inline_`. An author must not write such a name by hand, as in `[^__inline_1]`.
 
 ## Item Delimiters via Blocks
 
@@ -133,7 +141,9 @@ Paragraph 1
 
 - A metadata line starts with `<!-- @` at the beginning of the line and ends with `-->`. No leading whitespace is allowed.
 - A metadata line is complete on a single line. A comment spanning multiple lines is not metadata.
-- Elements are separated by ASCII spaces.
+- Elements are separated by one or more half-width spaces. A tab is not a separator.
+- One or more half-width spaces stand before `-->`. Without a space there, the line is not a metadata line.
+- Whitespace after `-->` is allowed, because it cannot be seen in an editor.
 - The only required element is one or more consecutive `@` characters.
 - The number of `@` characters indicates the indent level. The shallowest level is `@`. An item indented one step to the right is `@@`.
 - An item whose metadata is omitted is treated the same as `@`. In other words, when ordinary Markdown is interpreted under the Flat Markdown rules, every item is at the shallowest level.
@@ -141,14 +151,17 @@ Paragraph 1
   - Optional element. Used for cross-references and synchronization.
   - Placed directly after the `@` characters.
   - The format is HMTID. https://github.com/sosuisen/hmtid
-    - A 27-character ID separated by hyphens, including the date and time.
+    - A 27-character ID separated by hyphens, including the date and time: `YYYY-MM-DD-hh-mm-ss-XXXXXXX`.
+    - The date and time part is digits. The tail is 7 characters of Crockford's Base32 (`0123456789ABCDEFGHJKMNPQRSTVWXYZ`). It has no lower case, and no `I`, `L`, `O`, or `U`.
+    - A line whose ID does not have this form is not a metadata line.
 - Properties
   - Optional elements. Zero or more may be listed.
   - Written in `key="value"` form. Placed after the ID, or after the `@` characters when there is no ID.
   - A key must not contain whitespace, `=`, or `"`.
   - A value is enclosed in double quotes. This allows a value to contain spaces. Metadata is not meant to be written by hand, so a few extra symbols are acceptable.
-  - A `"` inside a value is escaped as `\"`. A `\` is escaped as `\\`.
+  - A `"` inside a value is escaped as `\"`. A `\` is escaped as `\\`. No other escape exists: a `\` before any other character makes the line invalid.
   - A value must not contain `-->`.
+  - When the same key is written twice in one metadata line, only the last value is kept.
   - The meaning of each key is defined by the application. Examples include the collapsed state of an item, task details, or any other key-value pair.
 - Metadata can be written by hand, but it is designed for automatic input or input through a GUI.
 
@@ -207,6 +220,8 @@ Embedding format for media, including images:
 
 The server-side parser adds an embed node to the AST and returns it. Rendering is the responsibility of the frontend.
 
+The part after `#` is split at `&` into properties. See `embed` in [SPEC_AST.md](SPEC_AST.md) for the exact rules.
+
 ## Tags
 
 - Can be placed anywhere in the item body. `#tagname`
@@ -222,10 +237,18 @@ The server-side parser adds an embed node to the AST and returns it. Rendering i
     - Punctuation is not included.
   - Three symbols: `-` `_` `/`
   - `/` is not allowed at the beginning or end of a tag name.
+    - `#/a` is not a tag.
+    - In `#a/`, the tag is `a`. The `/` at the end is plain text.
+  - Tag names are written in NFC. The parser does not normalize the text. A combining character ends the tag.
 - Tag start conditions
-  - `#` at the beginning of a line or following a half-width space.
+  - `#` at the start of a run of plain text, or following a half-width space (U+0020).
+    - A run of plain text starts at the beginning of a line, and also right after inline markup. So `#tag` in `**b**#tag` is a tag, without a space.
+    - In `foo#bar` and `C#`, the `#` follows another character of the same text. It is not a tag.
+    - A full-width space or a tab before `#` does not start a tag.
     - ==Note: Logseq does not require a half-width space, so this is not compatible.==
   - Can be escaped with a backslash. `\#`
+    - `\#` is the only way to write a `#` that is not a tag. The character reference `&#35;` becomes `#` first, so `&#35;tag` is a tag.
+  - No tag is made in code, in math, or inside the label of a link or a Wikilink.
 - Tag end conditions
   - The rule is simply: the tag ends at any character that is not an allowed character.
     - In `#mytag。next`, the tag is mytag.
@@ -254,6 +277,14 @@ Conversion rule: `Tag <---> Markdown link`
 - Link to a block
   - `[[full path of page name#id]]`
   - With a label `[[full path of page name#id|label]]`
+  - `[[#id]]` is also a Wikilink. It has no page name, only the ID.
+- Page names
+  - The whitespace around the page name is dropped. This holds for every kind of whitespace, also the full-width space.
+  - A Wikilink without a page name is not a Wikilink. `[[]]`, `[[ ]]`, and `[[|label]]` stay plain text.
+  - A `#` without a page name and without an ID is no name either. `[[#]]` and `[[#|label]]` stay plain text.
+  - A `#` at the end without an ID is dropped. `[[a#]]` is the same as `[[a]]`.
+- Labels
+  - An empty label is no label. `[[page|]]` is the same as `[[page]]`.
 
 ## Handling in Markdown Files
 
@@ -277,6 +308,24 @@ Conversion rule: `Tag <---> Markdown link`
   - Text inside code blocks and inline code is never converted in either direction.
 - When link resolution is OFF
   - No conversion
+
+## Link Resolution in the Parser
+
+- The rules above are for the application that reads and writes the Markdown files. In PetaJournal, this is journal-server. It knows where each file is, so it can make and resolve a path relative to the file.
+- The flatmarkdown parser does not know where a file is. Its link resolution works on prefixes instead.
+  - The caller gives a list of prefixes, such as `./` and `../`.
+  - A Markdown link whose target starts with one of the prefixes and ends with `.md` becomes a Wikilink, or a tag. The prefix and `.md` are removed, and the rest is the page path.
+  - When more than one prefix matches, the longest one is used.
+  - A link whose label is `#` followed by the page path becomes a tag: `[#test](../test.md)` is the tag `#test`.
+    - The page path must follow the rules of a tag name. `[#a b](<../a b.md>)` becomes a Wikilink with the label `#a b`, because `#a b` cannot be written as a tag.
+    - A link with a `#id` fragment becomes a Wikilink, not a tag.
+  - Every other link is kept as a Markdown link. This includes an external URL, a file that is not `.md`, and a path without a prefix such as `prd.md`.
+  - A link to a `.md` file without a name, such as `[x](../.md)`, is kept as a Markdown link.
+  - A link with an escaped `\#` in its page path is kept as a Markdown link.
+  - The parser does not check the page path. `..` stays as it is: the page path of `../../journals/2026-10-12.md` with the prefix `../` is `../journals/2026-10-12`.
+- So the parser alone does not turn a path relative to a file back into the full path of a page. An application that needs the full path must resolve the path itself, before or after it calls the parser.
+- When link resolution is OFF, which is the default of the parser, no link is converted. The parser does not make tags from `#tag` either.
+- See "Body Preprocessing" in [SPEC_AST.md](SPEC_AST.md) for the exact rules.
 
 ## Path Handling
 
