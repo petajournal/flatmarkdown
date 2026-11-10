@@ -13,13 +13,13 @@ The same AST as TypeScript types is the npm package [flatmarkdown-ast](https://w
 ## Usage
 
 ```rust
-use flatmarkdown_ast::{Node, extract_text, parse};
+use flatmarkdown_ast::{Node, extract_text};
 
 let json = r#"{"type":"document","children":[
     {"type":"paragraph","children":[{"type":"text","value":"Hello"}]}
 ]}"#;
 
-let root = parse(json).unwrap();
+let root = Node::from_json(json).unwrap();
 assert_eq!(extract_text(&root), "Hello");
 
 for child in root.children() {
@@ -29,16 +29,20 @@ for child in root.children() {
 }
 ```
 
-- `parse` reads the JSON of one item body. The root is normally `Node::Document`.
+- `Node::from_json` reads the JSON of a node. The node is normally the `Node::Document` of one item body.
 - `Node::children` gives the child nodes of any node. A leaf has none.
 - `Node::walk` visits a node and all its descendants.
 - `extract_text` joins the text of a node and its descendants.
-- `parse_page` reads the JSON of a whole page into a `Page`. Each `Item` of the page has `level`, `id`, `properties`, `body`, and `ast`.
+- `Page::from_json` reads the JSON of a whole page into a `Page`. Each `Item` of the page has `level`, `id`, `properties`, `body`, and `ast`.
 
 ## Writing
 
 `Node::to_json` and `Page::to_json` write a `Node` or a `Page` as JSON.
 The JSON follows the specification: a node without children has no `children`, and an `embed` without properties has no `props`.
+`Node::from_json` and `Page::from_json` read that JSON back.
+
+The functions `parse` and `parse_page` are the old names of `Node::from_json` and `Page::from_json`.
+They still work, but they are deprecated.
 
 ## Unknown Nodes
 

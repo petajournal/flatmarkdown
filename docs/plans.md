@@ -209,3 +209,7 @@
   - [x] リポジトリ`petajournal/flatmarkdown-ast2html`のREADMEに移動先を書き、アーカイブする。2026-11-10に、ユーザーがアーカイブした
   - [x] 使っている側を直す: peta-journalの付箋紙アプリ（peta-journalの#226）
     - 実際のWebView2で試して、URLのない文書（`about:blank`）では.jsが読み込めない問題を見つけた。.jsの中で`document`を隠して直した
+- [x] `flatmarkdown-ast`の`parse`と`parse_page`を、`Node::from_json`と`Page::from_json`に改名する。古い名前は`#[deprecated]`で残す
+  - 理由: `parse`は入力がJSONだと言わず、`to_json`とも対になっていなかった
+  - [ ] 古い名前を消す版を決める（ユーザーが決める）
+  - [ ] peta-journalの呼び出しを、新しい名前に替える。新しい版を公開したあとに行う

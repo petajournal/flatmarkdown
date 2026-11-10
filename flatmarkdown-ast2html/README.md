@@ -13,14 +13,14 @@ The AST is defined in [SPEC_AST.md](https://github.com/petajournal/flatmarkdown/
 From the JSON of an AST, for example one that is stored in a database:
 
 ```rust
-use flatmarkdown_ast::parse;
+use flatmarkdown_ast::Node;
 use flatmarkdown_ast2html::ast_to_html;
 
 let json = r#"{"type":"document","children":[
     {"type":"paragraph","children":[{"type":"text","value":"Hello"}]}
 ]}"#;
 
-let ast = parse(json).unwrap();
+let ast = Node::from_json(json).unwrap();
 assert_eq!(ast_to_html(&ast), "<p>Hello</p>\n");
 ```
 
