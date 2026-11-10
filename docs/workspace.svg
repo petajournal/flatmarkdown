@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1224 1150" width="1224" height="1150" role="img" aria-labelledby="title desc">
+  <title id="title">flatmarkdown workspace: crate dependencies, public functions, and the structure of a page</title>
+  <desc id="desc">Four crates. flatmarkdown and flatmarkdown-ast2html depend on flatmarkdown-ast. flatmarkdown-ast2html-wasm depends on flatmarkdown-ast2html and flatmarkdown-ast. flatmarkdown-ast2html uses flatmarkdown only in its tests. A page is optional page metadata and a list of items. An item is optional item metadata and a body.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#334155"/>
+    </marker>
+    <marker id="arrow-dev" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b45309"/>
+    </marker>
+    <style>
+      text { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; fill: #0f172a; }
+      .heading { font-size: 20px; font-weight: 600; }
+      .crate { font-size: 17px; font-weight: 600; }
+      .sub { font-size: 12px; fill: #64748b; }
+      .label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; fill: #64748b; }
+      .code { font-family: Consolas, "Cascadia Mono", Menlo, monospace; font-size: 13px; fill: #334155; }
+      .code .name { font-weight: 700; fill: #0f172a; }
+      .ext { font-size: 12px; fill: #64748b; }
+      .box { fill: #f8fafc; stroke: #334155; stroke-width: 1.5; }
+      .sep { stroke: #cbd5e1; stroke-width: 1; }
+      .dep { fill: none; stroke: #334155; stroke-width: 1.5; marker-end: url(#arrow); }
+      .dev { fill: none; stroke: #b45309; stroke-width: 1.5; stroke-dasharray: 6 4; marker-end: url(#arrow-dev); }
+      .devtext { font-size: 11px; fill: #b45309; }
+    </style>
+  </defs>
+
+  <rect width="1224" height="1150" fill="#ffffff"/>
+  <text class="heading" x="40" y="38">flatmarkdown workspace 0.7.0: crate dependencies and public functions</text>
+
+  <!-- Dependency arrows: from the crate that depends to the crate it uses -->
+  <path class="dep" d="M300,326 L300,466"/>
+  <path class="dep" d="M900,406 L900,466"/>
+  <path class="dep" d="M900,214 L900,264"/>
+  <path class="dep" d="M1160,140 L1190,140 L1190,596 L1160,596"/>
+  <path class="dev" d="M640,300 L560,300"/>
+  <text class="devtext" x="600" y="291" text-anchor="middle">dev</text>
+
+  <!-- flatmarkdown -->
+  <rect class="box" x="40" y="64" width="520" height="262" rx="8"/>
+  <text class="crate" x="60" y="92">flatmarkdown</text>
+  <text class="sub" x="60" y="112">Parser: Flat Markdown text to the AST</text>
+  <line class="sep" x1="40" y1="124" x2="560" y2="124"/>
+  <text class="label" x="60" y="146">PUBLIC FUNCTIONS</text>
+  <text class="code" x="60" y="168"><tspan class="name">parse_body</tspan>(input: &amp;str) -&gt; Node</text>
+  <text class="code" x="60" y="190"><tspan class="name">parse_body_with</tspan>(input: &amp;str, opts: &amp;BodyOptions) -&gt; Node</text>
+  <text class="code" x="60" y="212"><tspan class="name">parse_page</tspan>(input: &amp;str) -&gt; Page</text>
+  <text class="code" x="60" y="234"><tspan class="name">parse_page_with</tspan>(input: &amp;str, opts: &amp;BodyOptions) -&gt; Page</text>
+  <text class="label" x="60" y="260">PUBLIC TYPES</text>
+  <text class="code" x="60" y="280">struct BodyOptions, enum LinkResolution</text>
+  <text class="ext" x="60" y="308">External crates: comrak 0.51, serde_json 1</text>
+
+  <!-- flatmarkdown-ast2html-wasm -->
+  <rect class="box" x="640" y="64" width="520" height="150" rx="8"/>
+  <text class="crate" x="660" y="92">flatmarkdown-ast2html-wasm</text>
+  <text class="sub" x="660" y="112">wasm build for the npm package flatmarkdown-ast2html. Not on crates.io.</text>
+  <line class="sep" x1="640" y1="124" x2="1160" y2="124"/>
+  <text class="label" x="660" y="146">PUBLIC FUNCTIONS</text>
+  <text class="code" x="660" y="168"><tspan class="name">render_to_html</tspan>(json: &amp;str) -&gt; Result&lt;String, JsError&gt;</text>
+  <text class="sub" x="660" y="185">Its name in JavaScript is renderToHtml.</text>
+  <text class="ext" x="660" y="203">External crates: wasm-bindgen 0.2</text>
+
+  <!-- flatmarkdown-ast2html -->
+  <rect class="box" x="640" y="264" width="520" height="142" rx="8"/>
+  <text class="crate" x="660" y="292">flatmarkdown-ast2html</text>
+  <text class="sub" x="660" y="312">Renderer: the AST to HTML, without a Markdown parser</text>
+  <line class="sep" x1="640" y1="324" x2="1160" y2="324"/>
+  <text class="label" x="660" y="346">PUBLIC FUNCTIONS</text>
+  <text class="code" x="660" y="368"><tspan class="name">ast_to_html</tspan>(node: &amp;Node) -&gt; String</text>
+  <text class="ext" x="660" y="392">External crates: none</text>
+
+  <!-- flatmarkdown-ast -->
+  <rect class="box" x="40" y="466" width="1120" height="260" rx="8"/>
+  <text class="crate" x="60" y="494">flatmarkdown-ast</text>
+  <text class="sub" x="60" y="514">The typed AST and its JSON form</text>
+  <line class="sep" x1="40" y1="526" x2="1160" y2="526"/>
+  <text class="label" x="60" y="548">PUBLIC FUNCTIONS</text>
+  <text class="code" x="60" y="570"><tspan class="name">extract_text</tspan>(node: &amp;Node) -&gt; String</text>
+  <text class="code" x="60" y="592"><tspan class="name">heading_level</tspan>(root: &amp;Node) -&gt; Option&lt;u8&gt;</text>
+  <text class="label" x="60" y="662">PUBLIC TYPES</text>
+  <text class="code" x="60" y="682">enum Node, struct Page, struct Item</text>
+  <text class="ext" x="60" y="708">External crates: serde 1, serde_json 1</text>
+  <text class="label" x="620" y="548">PUBLIC METHODS</text>
+  <text class="code" x="620" y="568"><tspan class="name">Node::from_json</tspan>(json: &amp;str) -&gt; Result&lt;Node, serde_json::Error&gt;</text>
+  <text class="code" x="620" y="588"><tspan class="name">Node::to_json</tspan>(&amp;self) -&gt; String</text>
+  <text class="code" x="620" y="608"><tspan class="name">Node::children</tspan>(&amp;self) -&gt; &amp;[Node]</text>
+  <text class="code" x="620" y="628"><tspan class="name">Node::children_mut</tspan>(&amp;mut self) -&gt; Option&lt;&amp;mut Vec&lt;Node&gt;&gt;</text>
+  <text class="code" x="620" y="648"><tspan class="name">Node::type_name</tspan>(&amp;self) -&gt; &amp;str</text>
+  <text class="code" x="620" y="668"><tspan class="name">Node::walk</tspan>(&amp;self, visit: &amp;mut dyn FnMut(&amp;Node))</text>
+  <text class="code" x="620" y="688"><tspan class="name">Page::from_json</tspan>(json: &amp;str) -&gt; Result&lt;Page, serde_json::Error&gt;</text>
+  <text class="code" x="620" y="708"><tspan class="name">Page::to_json</tspan>(&amp;self) -&gt; String</text>
+
+  <!-- Legend -->
+  <path class="dep" d="M40,762 L96,762"/>
+  <text class="sub" x="106" y="766">A depends on B</text>
+  <path class="dev" d="M240,762 L296,762"/>
+  <text class="sub" x="306" y="766">dev-dependency: only the tests use it</text>
+  <text class="sub" x="1160" y="766" text-anchor="end">The arrow points to the crate that is used.</text>
+
+  <!-- Page and item structure -->
+  <line class="sep" x1="40" y1="790" x2="1160" y2="790"/>
+  <text class="heading" x="40" y="828">Structure of a page and an item</text>
+
+  <!-- A page as text: one band per line, coloured by the part the line belongs to -->
+  <rect class="box" x="40" y="852" width="600" height="238" rx="8"/>
+  <rect x="52" y="865" width="440" height="20" fill="#e2e8f0"/>
+  <rect x="52" y="887" width="440" height="20" fill="#e2e8f0"/>
+  <rect x="52" y="909" width="440" height="20" fill="#e2e8f0"/>
+  <rect x="52" y="931" width="440" height="20" fill="#fef3c7"/>
+  <rect x="52" y="953" width="440" height="20" fill="#dcfce7"/>
+  <rect x="52" y="997" width="440" height="20" fill="#fef3c7"/>
+  <rect x="52" y="1019" width="440" height="20" fill="#dcfce7"/>
+  <text class="code" x="60" y="880">---</text>
+  <text class="code" x="60" y="902">title: Trip</text>
+  <text class="code" x="60" y="924">---</text>
+  <text class="code" x="60" y="946">&lt;!-- @ 2026-09-26-18-15-30-6VZSYB4 --&gt;</text>
+  <text class="code" x="60" y="968"># Plan</text>
+  <text class="code" x="60" y="1012">&lt;!-- @@ 2026-09-27-15-00-16-W3N8ASY plan="2026-09-28" --&gt;</text>
+  <text class="code" x="60" y="1034">- [ ] Book the hotel</text>
+  <text class="sub" x="504" y="902">page-metadata</text>
+  <text class="sub" x="504" y="946">item 1: item-metadata</text>
+  <text class="sub" x="504" y="968">item 1: body</text>
+  <text class="sub" x="504" y="1012">item 2: item-metadata</text>
+  <text class="sub" x="504" y="1034">item 2: body</text>
+  <text class="sub" x="60" y="1072">The number of @ is the level: @ is 1 and @@ is 2. An item without metadata has level 1.</text>
+
+  <!-- The same page as the types of flatmarkdown-ast -->
+  <rect class="box" x="690" y="852" width="470" height="78" rx="8"/>
+  <text class="code" x="710" y="876"><tspan class="name">struct Page</tspan></text>
+  <rect x="710" y="888" width="10" height="10" fill="#e2e8f0" stroke="#94a3b8"/>
+  <text class="code" x="728" y="898">front_matter: Option&lt;String&gt;</text>
+  <text class="sub" x="1144" y="898" text-anchor="end">page-metadata, as text</text>
+  <text class="code" x="728" y="918">items: Vec&lt;Item&gt;</text>
+
+  <rect class="box" x="690" y="950" width="470" height="140" rx="8"/>
+  <text class="code" x="710" y="974"><tspan class="name">struct Item</tspan></text>
+  <rect x="710" y="986" width="10" height="10" fill="#fef3c7" stroke="#d97706"/>
+  <text class="code" x="728" y="996">level: u32</text>
+  <text class="sub" x="1144" y="996" text-anchor="end">the number of @</text>
+  <rect x="710" y="1006" width="10" height="10" fill="#fef3c7" stroke="#d97706"/>
+  <text class="code" x="728" y="1016">id: Option&lt;String&gt;</text>
+  <text class="sub" x="1144" y="1016" text-anchor="end">the HMTID</text>
+  <rect x="710" y="1026" width="10" height="10" fill="#fef3c7" stroke="#d97706"/>
+  <text class="code" x="728" y="1036">properties: BTreeMap&lt;String, String&gt;</text>
+  <text class="sub" x="1144" y="1036" text-anchor="end">key="value" pairs</text>
+  <rect x="710" y="1046" width="10" height="10" fill="#dcfce7" stroke="#16a34a"/>
+  <text class="code" x="728" y="1056">body: String</text>
+  <text class="sub" x="1144" y="1056" text-anchor="end">the Markdown source</text>
+  <text class="code" x="728" y="1076">ast: Node</text>
+  <text class="sub" x="1144" y="1076" text-anchor="end">the result of parse_body(body)</text>
+
+  <text class="sub" x="40" y="1122">parse_page takes the whole text and returns a Page. parse_body takes one body and returns its Node.</text>
+</svg>
