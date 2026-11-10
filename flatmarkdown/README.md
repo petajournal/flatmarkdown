@@ -2,7 +2,7 @@
 
 Flat Markdown parser — outline format with block-delimited items.
 
-Based on the Flat Markdown specification v0.2: https://github.com/petajournal/flatmarkdown-spec/
+Based on the Flat Markdown specification v0.2: https://github.com/petajournal/flatmarkdown/blob/main/SPEC.md
 
 ## API
 
