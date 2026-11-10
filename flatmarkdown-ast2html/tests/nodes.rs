@@ -1,12 +1,12 @@
 //! Renders nodes that are built by hand or read from JSON. No Markdown parser is used.
 
-use flatmarkdown_ast::{Node, parse};
+use flatmarkdown_ast::Node;
 use flatmarkdown_ast2html::ast_to_html;
 
 // JSONから読んだASTは、パーサーなしでHTMLになる。
 #[test]
 fn an_ast_read_from_json_is_rendered_without_a_parser() {
-    let ast = parse(
+    let ast = Node::from_json(
         r#"{"type":"document","children":[{"type":"paragraph","children":[
             {"type":"text","value":"Hello "},
             {"type":"strong","children":[{"type":"text","value":"world"}]}]}]}"#,
@@ -28,7 +28,8 @@ fn a_node_that_is_not_a_document_is_rendered_alone() {
 #[test]
 fn an_unknown_node_is_rendered_as_its_children_only() {
     let ast =
-        parse(r#"{"type":"future_node","children":[{"type":"text","value":"a < b"}]}"#).unwrap();
+        Node::from_json(r#"{"type":"future_node","children":[{"type":"text","value":"a < b"}]}"#)
+            .unwrap();
     assert_eq!(ast_to_html(&ast), "a &lt; b");
 }
 

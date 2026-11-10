@@ -1,11 +1,11 @@
 //! Checks that the types read and write the JSON that SPEC_AST.md defines, and nothing more.
 
-use flatmarkdown_ast::{Node, parse, parse_page};
+use flatmarkdown_ast::{Node, Page};
 use serde_json::{Value, json};
 
 /// Reads `json` into the types and writes it back.
 fn rewritten(json: &Value) -> Value {
-    let node = parse(&json.to_string()).unwrap();
+    let node = Node::from_json(&json.to_string()).unwrap();
     serde_json::to_value(&node).unwrap()
 }
 
@@ -85,7 +85,7 @@ fn a_node_that_the_spec_does_not_define_is_read_as_unknown() {
         "insert",
     ] {
         let json = json!({"type": node_type, "children": [{"type": "text", "value": "x"}]});
-        let node = parse(&json.to_string()).unwrap();
+        let node = Node::from_json(&json.to_string()).unwrap();
         match &node {
             Node::Unknown {
                 node_type: read,
@@ -126,7 +126,7 @@ fn a_page_is_read_as_front_matter_and_items() {
             {"level": 1, "id": null, "properties": {}, "body": "", "ast": {"type": "document"}}
         ]
     });
-    let page = parse_page(&json.to_string()).unwrap();
+    let page = Page::from_json(&json.to_string()).unwrap();
     assert_eq!(
         page.front_matter.as_deref(),
         Some("---\nkey: value\n---\n\n")
@@ -159,22 +159,24 @@ fn a_page_is_written_back_as_the_same_json() {
              "ast": {"type": "document", "children": [{"type": "paragraph", "children": [{"type": "text", "value": "x"}]}]}}
         ]
     });
-    let page = parse_page(&json.to_string()).unwrap();
+    let page = Page::from_json(&json.to_string()).unwrap();
     assert_eq!(serde_json::to_value(&page).unwrap(), json);
 }
 
 // ページでないJSONと、必須の項目を欠く項目は、エラーになる。
 #[test]
 fn a_malformed_page_is_an_error() {
-    assert!(parse_page("not json").is_err());
-    assert!(parse_page(r#"{"type":"page","front_matter":null}"#).is_err());
-    assert!(parse_page(r#"{"type":"page","front_matter":null,"items":[{"level":1}]}"#).is_err());
+    assert!(Page::from_json("not json").is_err());
+    assert!(Page::from_json(r#"{"type":"page","front_matter":null}"#).is_err());
+    assert!(
+        Page::from_json(r#"{"type":"page","front_matter":null,"items":[{"level":1}]}"#).is_err()
+    );
 }
 
-// Node::to_jsonの書き出したJSONは、parseで同じノードに戻る。
+// Node::to_jsonの書き出したJSONは、Node::from_jsonで同じノードに戻る。
 #[test]
 fn the_json_of_a_node_is_read_back_as_the_same_node() {
-    let node = parse(
+    let node = Node::from_json(
         r#"{"type":"document","children":[{"type":"paragraph","children":[{"type":"text","value":"a"}]}]}"#,
     )
     .unwrap();
@@ -182,13 +184,13 @@ fn the_json_of_a_node_is_read_back_as_the_same_node() {
         node.to_json(),
         r#"{"type":"document","children":[{"type":"paragraph","children":[{"type":"text","value":"a"}]}]}"#
     );
-    assert_eq!(parse(&node.to_json()).unwrap(), node);
+    assert_eq!(Node::from_json(&node.to_json()).unwrap(), node);
 }
 
-// Page::to_jsonの書き出したJSONは、parse_pageで同じページに戻る。
+// Page::to_jsonの書き出したJSONは、Page::from_jsonで同じページに戻る。
 #[test]
 fn the_json_of_a_page_is_read_back_as_the_same_page() {
-    let page = parse_page(
+    let page = Page::from_json(
         r#"{"type":"page","front_matter":null,"items":[{"level":1,"id":null,"properties":{},"body":"a","ast":{"type":"document"}}]}"#,
     )
     .unwrap();
@@ -196,5 +198,24 @@ fn the_json_of_a_page_is_read_back_as_the_same_page() {
         page.to_json(),
         r#"{"type":"page","front_matter":null,"items":[{"level":1,"id":null,"properties":{},"body":"a","ast":{"type":"document"}}]}"#
     );
-    assert_eq!(parse_page(&page.to_json()).unwrap(), page);
+    assert_eq!(Page::from_json(&page.to_json()).unwrap(), page);
+}
+
+// 古い名前のparseとparse_pageは、from_jsonと同じ結果を返す。0.6.0向けに書かれたコードが動き続ける。
+#[test]
+#[allow(deprecated)]
+fn the_old_names_read_the_same_node_and_page() {
+    let node = r#"{"type":"document","children":[{"type":"paragraph"}]}"#;
+    assert_eq!(
+        flatmarkdown_ast::parse(node).unwrap(),
+        Node::from_json(node).unwrap()
+    );
+    assert!(flatmarkdown_ast::parse("not json").is_err());
+
+    let page = r#"{"type":"page","front_matter":null,"items":[{"level":1,"id":null,"properties":{},"body":"a","ast":{"type":"document"}}]}"#;
+    assert_eq!(
+        flatmarkdown_ast::parse_page(page).unwrap(),
+        Page::from_json(page).unwrap()
+    );
+    assert!(flatmarkdown_ast::parse_page("not json").is_err());
 }

@@ -443,10 +443,17 @@ impl Node {
         }
     }
 
-    /// Writes this node and its descendants as the JSON of `SPEC_AST.md`. [`parse`] reads it back.
+    /// Writes this node and its descendants as the JSON of `SPEC_AST.md`.
+    /// [`Node::from_json`] reads it back.
     pub fn to_json(&self) -> String {
         // Every key of the JSON is a string, so serde_json has nothing to refuse.
         serde_json::to_string(self).expect("a node is always valid JSON")
+    }
+
+    /// Reads a node and its descendants from the JSON of `SPEC_AST.md`
+    /// (as written by [`Node::to_json`]). The root is normally a [`Node::Document`].
+    pub fn from_json(json: &str) -> Result<Node, serde_json::Error> {
+        serde_json::from_str(json)
     }
 }
 
@@ -478,22 +485,30 @@ pub struct Item {
 }
 
 impl Page {
-    /// Writes this page as the JSON of `SPEC_AST.md`. [`parse_page`] reads it back.
+    /// Writes this page as the JSON of `SPEC_AST.md`. [`Page::from_json`] reads it back.
     pub fn to_json(&self) -> String {
         // Every key of the JSON is a string, so serde_json has nothing to refuse.
         serde_json::to_string(self).expect("a page is always valid JSON")
     }
+
+    /// Reads a whole page from the JSON of `SPEC_AST.md` (as written by [`Page::to_json`]).
+    pub fn from_json(json: &str) -> Result<Page, serde_json::Error> {
+        serde_json::from_str(json)
+    }
 }
 
-/// Parses an AST JSON string (as written by [`Node::to_json`]).
-/// The root is normally a [`Node::Document`].
+/// The old name of [`Node::from_json`].
+// Kept so that code written for 0.6.0 still builds. The name did not say that the input is
+// JSON, and it had no pair with `Node::to_json`.
+#[deprecated(note = "use `Node::from_json`")]
 pub fn parse(json: &str) -> Result<Node, serde_json::Error> {
-    serde_json::from_str(json)
+    Node::from_json(json)
 }
 
-/// Parses the JSON string of a whole page (as written by [`Page::to_json`]).
+/// The old name of [`Page::from_json`].
+#[deprecated(note = "use `Page::from_json`")]
 pub fn parse_page(json: &str) -> Result<Page, serde_json::Error> {
-    serde_json::from_str(json)
+    Page::from_json(json)
 }
 
 /// Concatenates the `text` values of a node and its descendants, in document order.

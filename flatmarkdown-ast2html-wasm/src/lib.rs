@@ -10,6 +10,6 @@ use wasm_bindgen::prelude::*;
 /// JSON that is not an AST becomes an exception in JavaScript.
 #[wasm_bindgen(js_name = renderToHtml)]
 pub fn render_to_html(json: &str) -> Result<String, JsError> {
-    let ast = flatmarkdown_ast::parse(json)?;
+    let ast = flatmarkdown_ast::Node::from_json(json)?;
     Ok(flatmarkdown_ast2html::ast_to_html(&ast))
 }

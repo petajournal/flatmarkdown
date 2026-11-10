@@ -2,7 +2,7 @@
 //! typed nodes that the parser makes: their kinds, their attributes, and the text they hold.
 
 use flatmarkdown::{BodyOptions, LinkResolution};
-use flatmarkdown_ast::{Node, extract_text, parse};
+use flatmarkdown_ast::{Node, extract_text};
 
 /// The same options as the PetaJournal journal server: link resolution on.
 fn options() -> BodyOptions {
@@ -16,7 +16,8 @@ fn options() -> BodyOptions {
 /// Parses `md` and asserts no node fell back to `Unknown`.
 fn ast(md: &str) -> Node {
     let json = flatmarkdown::body_to_ast_with(md, &options()).to_json();
-    let root = parse(&json).unwrap_or_else(|e| panic!("parse failed for {md:?}: {e}\n{json}"));
+    let root =
+        Node::from_json(&json).unwrap_or_else(|e| panic!("parse failed for {md:?}: {e}\n{json}"));
     let mut unknown = Vec::new();
     root.walk(&mut |n| {
         if let Node::Unknown { node_type, .. } = n {
