@@ -216,7 +216,9 @@
     - 古い名前は、いったん`#[deprecated]`で残したが、消した。`flatmarkdown::parse_page`と名前がぶつかるためである
   - [x] `flatmarkdown`の`body_to_ast`と`page_to_ast`を、`parse_body`と`parse_page`に替える（`_with`も同じ）。古い名前は残さない
     - 理由: このクレートはパーサーである。`page_to_ast`が返すのは`Page`で、ASTそのものではなかった
-  - [ ] 公開する版を決める（ユーザーが決める）。破壊的変更なので、0.6.0のままでは公開できない
+  - [x] 公開する版を決める。2026-11-11に、ユーザーが0.7.0と決めた
+  - [ ] `cargo publish`で、`flatmarkdown-ast`、`flatmarkdown`、`flatmarkdown-ast2html`の順に公開する（ユーザーが行う）
+  - [ ] `npm publish`で、`flatmarkdown-ast2html`の0.7.0を公開する（ユーザーが行う）
   - [ ] 新しい版を公開したあとに、利用側の呼び出しを替える
     - [ ] peta-journal（`journal-server-rust`と`frontend-rust`）
     - [ ] `flatmarkdown-java`の`rust/lib.rs`

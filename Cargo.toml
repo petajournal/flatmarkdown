@@ -11,7 +11,7 @@ members = [
 # written only here. The npm package made from flatmarkdown-ast2html-wasm has this version too
 # (ADR 023 of peta-journal); its package.json repeats it, and a test compares the two.
 [workspace.package]
-version = "0.6.0"
+version = "0.7.0"
 edition = "2024"
 # The oldest Rust that builds the workspace. The code uses let chains, and the dependencies
 # `time` and `darling` ask for 1.88 too. The `msrv` job of the CI builds with this version.
@@ -25,7 +25,7 @@ repository = "https://github.com/petajournal/flatmarkdown"
 # Keep this version the same as `version` above: a release always has all three crates.
 # flatmarkdown-ast2html-wasm names the version of flatmarkdown-ast2html in its own Cargo.toml.
 [workspace.dependencies]
-flatmarkdown-ast = { version = "=0.6.0", path = "flatmarkdown-ast" }
+flatmarkdown-ast = { version = "=0.7.0", path = "flatmarkdown-ast" }
 
 # Clippy warnings stay warnings, so that a new lint of a new toolchain does not stop the build.
 # Only the lints below are errors: each one marks code that must not reach a release.
