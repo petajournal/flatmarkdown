@@ -30,7 +30,9 @@ pub struct BodyOptions {
 | `[#tag](<prefix>tag.md)` | `hashtag` | `<a href="tag" class="hashtag">#tag</a>` |
 | `#tag` in text | `hashtag` | `<a href="tag" class="hashtag">#tag</a>` |
 
-Relative links are matched when the URL starts with one of `prefixes` (for example `../` or `./`) and ends with `.md`. When more than one prefix matches, the longest one is used. When `Off`, these links remain as `link` nodes and `#tag` text remains as plain text.
+Relative links are matched when the URL starts with one of `prefixes` (for example `../` or `./`) and ends with `.md`. When more than one prefix matches, the longest one is used.
+
+A footnote shows its name: `[^memo]` is shown as `[memo]`. An inline footnote (`^[content]`) has no name of its own, so it shows its number: `[1]` for the first one of the body. When `Off`, these links remain as `link` nodes and `#tag` text remains as plain text.
 
 ### Functions
 
