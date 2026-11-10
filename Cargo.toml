@@ -4,7 +4,7 @@ members = ["flatmarkdown", "flatmarkdown-ast"]
 
 # Both crates always have the same version (ADR 012 of peta-journal), so it is written only here.
 [workspace.package]
-version = "0.4.3"
+version = "0.5.0"
 edition = "2024"
 # The oldest Rust that builds the workspace. The code uses let chains, and the dependencies
 # `time` and `darling` ask for 1.88 too. The `msrv` job of the CI builds with this version.
@@ -16,7 +16,7 @@ repository = "https://github.com/petajournal/flatmarkdown"
 # flatmarkdown builds its AST with the types of flatmarkdown-ast (ADR 014 of peta-journal).
 # Keep this version the same as `version` above: a release always has both crates.
 [workspace.dependencies]
-flatmarkdown-ast = { version = "=0.4.3", path = "flatmarkdown-ast" }
+flatmarkdown-ast = { version = "=0.5.0", path = "flatmarkdown-ast" }
 
 # Clippy warnings stay warnings, so that a new lint of a new toolchain does not stop the build.
 # Only the lints below are errors: each one marks code that must not reach a release.
