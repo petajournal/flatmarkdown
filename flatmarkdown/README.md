@@ -32,7 +32,7 @@ pub struct BodyOptions {
 
 Relative links are matched when the URL starts with one of `prefixes` (for example `../` or `./`) and ends with `.md`. When more than one prefix matches, the longest one is used.
 
-A footnote shows its name: `[^memo]` is shown as `[memo]`. An inline footnote (`^[content]`) has no name of its own, so it shows its number: `[1]` for the first one of the body. When `Off`, these links remain as `link` nodes and `#tag` text remains as plain text.
+When `Off`, these links remain as `link` nodes and `#tag` text remains as plain text.
 
 ### Functions
 
@@ -44,6 +44,12 @@ A footnote shows its name: `[^memo]` is shown as `[memo]`. An inline footnote (`
 | `body_to_ast_with(input, opts)` | Same, with explicit `BodyOptions` |
 | `body_to_html(input)` | Render an item body to HTML |
 | `body_to_html_with(input, opts)` | Same, with explicit `BodyOptions` |
+
+### Footnotes in HTML
+
+A footnote shows its name: `[^memo]` is shown as `[memo]`. An inline footnote (`^[content]`) has no name of its own, so it shows its number: `[1]` for the first one of the body.
+
+A reference has the `id` `fnref-<name>`, and a definition has the `id` `fn-<name>`. The second reference to the same footnote has the `id` `fnref-<name>-2`, the third `fnref-<name>-3`, and so on. The label of the definition links back to the first reference.
 
 ### HTML output is for trusted content
 
