@@ -69,7 +69,7 @@ Only the lints in `[workspace.lints]` of the top `Cargo.toml` are errors: `unsaf
 
 ## Release
 
-1. Set `version` in the `Cargo.toml` at the top of the repository. Set the same version in `flatmarkdown-ast` of `[workspace.dependencies]` in that file, in `flatmarkdown-ast2html` of `flatmarkdown-ast2html-wasm/Cargo.toml`, and in `flatmarkdown-ast2html-wasm/package.json`. Merge the change into `main`.
+1. Set `version` in the `Cargo.toml` at the top of the repository. Set the same version in `flatmarkdown-ast` of `[workspace.dependencies]` in that file, in `flatmarkdown-ast2html` of `flatmarkdown-ast2html-wasm/Cargo.toml`, and in `flatmarkdown-ast2html-wasm/package.json`. Set it in the heading of `docs/workspace.svg` too. If the public functions or the dependencies changed, update the rest of that diagram. Merge the change into `main`.
 2. Run `cargo publish --dry-run -p flatmarkdown-ast`.
 3. Run `cargo publish -p flatmarkdown-ast`.
 4. Run `cargo publish --dry-run -p flatmarkdown`, and then `cargo publish -p flatmarkdown`.
