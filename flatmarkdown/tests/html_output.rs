@@ -224,3 +224,18 @@ fn special_characters_in_text_are_escaped() {
         "<p>a &lt; b &amp; c &gt; d</p>\n"
     );
 }
+
+// ── Embeds ──
+
+// embedはimgになる。題名があるときだけ、title属性が付く。propsは出ない。
+#[test]
+fn an_embed_is_an_img_with_a_title_only_when_it_has_one() {
+    assert_eq!(
+        body_to_html("![a](u.png)"),
+        "<p><img src=\"u.png\" alt=\"a\" /></p>\n"
+    );
+    assert_eq!(
+        body_to_html("![a](u.png#w=100 \"t\")"),
+        "<p><img src=\"u.png\" alt=\"a\" title=\"t\" /></p>\n"
+    );
+}
