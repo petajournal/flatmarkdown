@@ -62,6 +62,19 @@ fn a_table_has_its_header_row_in_thead_and_the_other_rows_in_tbody() {
     );
 }
 
+// 列ぞろえは、GFMと同じくalign属性になる。ぞろえのない列には付かない。
+#[test]
+fn the_alignment_of_a_column_is_an_align_attribute() {
+    assert_eq!(
+        body_to_html("| a | b | c | d |\n|:--|:-:|--:|---|\n| 1 | 2 | 3 | 4 |"),
+        "<table>\n<thead>\n\
+         <tr><th align=\"left\">a</th><th align=\"center\">b</th><th align=\"right\">c</th><th>d</th></tr>\n\
+         </thead>\n<tbody>\n\
+         <tr><td align=\"left\">1</td><td align=\"center\">2</td><td align=\"right\">3</td><td>4</td></tr>\n\
+         </tbody>\n</table>\n"
+    );
+}
+
 // 見出しの行だけの表は、tbodyを持たない。
 #[test]
 fn a_table_with_only_a_header_row_has_no_tbody() {
@@ -134,10 +147,14 @@ fn a_thematic_break_is_an_hr() {
     assert_eq!(body_to_html("---"), "<hr />\n");
 }
 
-// subtextはsubになる。
+// subtextは、comrakと同じく、pで包んだsubになる。ブロックなので、行の終わりに改行がある。
 #[test]
-fn a_subtext_is_a_sub_element() {
-    assert_eq!(body_to_html("-# small"), "<sub>small</sub>");
+fn a_subtext_is_a_sub_element_in_a_paragraph() {
+    assert_eq!(body_to_html("-# small"), "<p><sub>small</sub></p>\n");
+    assert_eq!(
+        body_to_html("-# small\n\nnext"),
+        "<p><sub>small</sub></p>\n<p>next</p>\n"
+    );
 }
 
 // 引用はblockquoteになる。
@@ -205,5 +222,20 @@ fn special_characters_in_text_are_escaped() {
     assert_eq!(
         body_to_html("a < b & c > d"),
         "<p>a &lt; b &amp; c &gt; d</p>\n"
+    );
+}
+
+// ── Embeds ──
+
+// embedはimgになる。題名があるときだけ、title属性が付く。propsは出ない。
+#[test]
+fn an_embed_is_an_img_with_a_title_only_when_it_has_one() {
+    assert_eq!(
+        body_to_html("![a](u.png)"),
+        "<p><img src=\"u.png\" alt=\"a\" /></p>\n"
+    );
+    assert_eq!(
+        body_to_html("![a](u.png#w=100 \"t\")"),
+        "<p><img src=\"u.png\" alt=\"a\" title=\"t\" /></p>\n"
     );
 }

@@ -45,7 +45,15 @@ When `Off`, these links remain as `link` nodes and `#tag` text remains as plain 
 | `body_to_html(input)` | Render an item body to HTML |
 | `body_to_html_with(input, opts)` | Same, with explicit `BodyOptions` |
 
-### Footnotes in HTML
+### HTML output
+
+The HTML follows comrak where comrak has a form. These are the choices of this crate:
+
+- A task item is a checkbox. Any character in the brackets counts as checked: `[x]` and `[-]` are both checked.
+- A table cell has the `align` attribute of its column (`left`, `center`, or `right`), as in GFM. A column without an alignment has none.
+- An `embed` is an `<img>` with `src`, `alt`, and, when it has one, `title`. The `props` of the URL fragment (`#w=100`) are not written: how an app uses them is up to the app.
+- A `subtext` (`-# text`) is `<p><sub>text</sub></p>`, as in comrak.
+- A hashtag is `<a href="<name>" class="hashtag">#<name></a>`. A wikilink is `<a href="<url>" data-wikilink="true">`.
 
 A footnote shows its name: `[^memo]` is shown as `[memo]`. An inline footnote (`^[content]`) has no name of its own, so it shows its number: `[1]` for the first one of the body.
 

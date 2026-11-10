@@ -75,7 +75,15 @@ fn list_to_html(list_type: &str, start: u32, tight: bool, items: &[Node]) -> Str
     }
 }
 
-fn table_to_html(rows: &[Node]) -> String {
+/// The `align` attribute of a cell, as GFM writes it. A column without an alignment has none.
+fn align_attribute(alignment: Option<&String>) -> String {
+    match alignment.map(String::as_str) {
+        Some(alignment @ ("left" | "center" | "right")) => format!(" align=\"{alignment}\""),
+        _ => String::new(),
+    }
+}
+
+fn table_to_html(alignments: &[String], rows: &[Node]) -> String {
     let mut thead = String::new();
     let mut tbody = String::new();
     for row in rows {
@@ -84,7 +92,11 @@ fn table_to_html(rows: &[Node]) -> String {
         let cells_html: String = row
             .children()
             .iter()
-            .map(|cell| format!("<{tag}>{}</{tag}>", render_children(cell)))
+            .enumerate()
+            .map(|(column, cell)| {
+                let align = align_attribute(alignments.get(column));
+                format!("<{tag}{align}>{}</{tag}>", render_children(cell))
+            })
             .collect();
         let row_html = format!("<tr>{cells_html}</tr>\n");
         if is_header {
@@ -164,7 +176,6 @@ fn node_to_html(node: &Node) -> String {
             format!("<blockquote>\n{}</blockquote>\n", render_all(children))
         }
 
-        // Page metadata is not part of the rendered content.
         Node::List {
             list_type,
             start,
@@ -179,7 +190,11 @@ fn node_to_html(node: &Node) -> String {
             format!("<li>{}{}</li>\n", checkbox(symbol), render_all(children))
         }
 
-        Node::Table { children, .. } => table_to_html(children),
+        Node::Table {
+            alignments,
+            children,
+            ..
+        } => table_to_html(alignments, children),
 
         // Fallback — normally rendered inside the table handler
         Node::TableRow { children, .. } | Node::TableCell { children } => render_all(children),
@@ -196,7 +211,8 @@ fn node_to_html(node: &Node) -> String {
             children,
         } => alert_to_html(alert_type, title, children),
 
-        Node::Subtext { children } => format!("<sub>{}</sub>", render_all(children)),
+        // The same HTML as comrak writes for `-# text`.
+        Node::Subtext { children } => format!("<p><sub>{}</sub></p>\n", render_all(children)),
 
         Node::Text { value } => escape_html(value),
 
@@ -237,11 +253,19 @@ fn node_to_html(node: &Node) -> String {
             }
         }
 
-        Node::Embed { url, .. } => format!(
-            "<img src=\"{}\" alt=\"{}\" />",
-            escape_html(url),
-            escape_html(&plain_text(node))
-        ),
+        // `props` are not written. How a renderer uses them differs from app to app.
+        Node::Embed { url, title, .. } => {
+            let title = if title.is_empty() {
+                String::new()
+            } else {
+                format!(" title=\"{}\"", escape_html(title))
+            };
+            format!(
+                "<img src=\"{}\" alt=\"{}\"{title} />",
+                escape_html(url),
+                escape_html(&plain_text(node))
+            )
+        }
 
         Node::Wikilink { url, children } => format!(
             "<a href=\"{}\" data-wikilink=\"true\">{}</a>",
