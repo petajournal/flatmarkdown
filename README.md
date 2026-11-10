@@ -16,7 +16,7 @@ So the types are the only place where the shape of the AST is written in Rust.
 `flatmarkdown-ast` does not depend on `flatmarkdown`.
 
 The AST is defined in [SPEC_AST.md](SPEC_AST.md) ([日本語](SPEC_AST_ja.md)).
-The same AST as TypeScript types is the npm package [flatmarkdown-ast](https://www.npmjs.com/package/flatmarkdown-ast).
+The same AST as TypeScript types is the npm package [flatmarkdown-ast](https://www.npmjs.com/package/flatmarkdown-ast). Its source is the [flatmarkdown-ast-ts](https://github.com/petajournal/flatmarkdown-ast-ts) repository.
 
 ## Versions
 
