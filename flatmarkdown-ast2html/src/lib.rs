@@ -1,8 +1,8 @@
 //! Renders the Flat Markdown AST to HTML.
 //!
 //! The AST is the [`Node`] of the `flatmarkdown-ast` crate. This crate has no Markdown parser:
-//! the `flatmarkdown` crate makes the AST from Markdown, and `flatmarkdown_ast::parse` reads it
-//! from JSON.
+//! the `flatmarkdown` crate makes the AST from Markdown, and `Node::from_json` reads it from
+//! JSON.
 //!
 //! The HTML is made for content that you trust. Raw HTML of the AST is written as it is, and
 //! the URL of a link is not checked.
