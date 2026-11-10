@@ -254,11 +254,19 @@ fn node_to_html(node: &Node) -> String {
             }
         }
 
-        Node::Embed { url, .. } => format!(
-            "<img src=\"{}\" alt=\"{}\" />",
-            escape_html(url),
-            escape_html(&plain_text(node))
-        ),
+        // `props` are not written. How a renderer uses them differs from app to app.
+        Node::Embed { url, title, .. } => {
+            let title = if title.is_empty() {
+                String::new()
+            } else {
+                format!(" title=\"{}\"", escape_html(title))
+            };
+            format!(
+                "<img src=\"{}\" alt=\"{}\"{title} />",
+                escape_html(url),
+                escape_html(&plain_text(node))
+            )
+        }
 
         Node::Wikilink { url, children } => format!(
             "<a href=\"{}\" data-wikilink=\"true\">{}</a>",
