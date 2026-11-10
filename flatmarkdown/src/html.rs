@@ -104,9 +104,16 @@ fn table_to_html(rows: &[Node]) -> String {
     result
 }
 
+/// The text that a reader sees for a footnote. An inline footnote has a name that the parser
+/// made (`__inline_1`), so its number is shown instead.
+fn footnote_label(name: &str) -> String {
+    escape_html(name.strip_prefix("__inline_").unwrap_or(name))
+}
+
 fn footnote_definition_to_html(name: &str, children: &[Node]) -> String {
+    let shown = footnote_label(name);
     let name = escape_html(name);
-    let label = format!("<a href=\"#fnref-{name}\" class=\"footnote-label\">[{name}]:</a>");
+    let label = format!("<a href=\"#fnref-{name}\" class=\"footnote-label\">[{shown}]:</a>");
     // The label goes inside the first paragraph so that the body continues on
     // the same line without any CSS. A definition that starts with another
     // block keeps the label in front of it.
@@ -250,9 +257,10 @@ fn node_to_html(node: &Node) -> String {
         // The label is shown instead of comrak's index: a body is parsed alone, so the
         // index would restart at 1 in every item.
         Node::FootnoteReference { name, .. } => {
+            let shown = footnote_label(name);
             let name = escape_html(name);
             format!(
-                "<sup id=\"fnref-{name}\" class=\"footnote-ref\"><a href=\"#fn-{name}\">[{name}]</a></sup>"
+                "<sup id=\"fnref-{name}\" class=\"footnote-ref\"><a href=\"#fn-{name}\">[{shown}]</a></sup>"
             )
         }
 
