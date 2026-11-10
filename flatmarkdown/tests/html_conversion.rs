@@ -74,3 +74,32 @@ fn footnote_definition_starting_with_a_list_keeps_the_label_in_front() {
         "<div id=\"fn-n\" class=\"footnote\">\n<a href=\"#fnref-n\" class=\"footnote-label\">[n]:</a>\n<ul>\n<li>item</li>\n</ul>\n</div>\n"
     );
 }
+
+// インライン脚注は、名前の__inline_1ではなく、番号の1を表示する。idとhrefは名前のままである。
+#[test]
+fn an_inline_footnote_shows_its_number_instead_of_its_name() {
+    assert_eq!(
+        body_to_html("Hi^[a note]."),
+        concat!(
+            "<p>Hi<sup id=\"fnref-__inline_1\" class=\"footnote-ref\">",
+            "<a href=\"#fn-__inline_1\">[1]</a></sup>.</p>\n",
+            "<div id=\"fn-__inline_1\" class=\"footnote\">\n",
+            "<p><a href=\"#fnref-__inline_1\" class=\"footnote-label\">[1]:</a> a note</p>\n",
+            "</div>\n"
+        )
+    );
+}
+
+// 2つ目のインライン脚注は、2を表示する。
+#[test]
+fn the_second_inline_footnote_shows_two() {
+    let html = body_to_html("A^[x] B^[y]");
+    assert!(
+        html.contains("<a href=\"#fn-__inline_2\">[2]</a>"),
+        "{html}"
+    );
+    assert!(
+        html.contains("<a href=\"#fnref-__inline_2\" class=\"footnote-label\">[2]:</a>"),
+        "{html}"
+    );
+}
