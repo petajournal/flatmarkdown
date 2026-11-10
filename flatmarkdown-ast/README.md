@@ -46,8 +46,8 @@ Reading is tolerant.
 
 - Unknown fields are ignored.
 - A missing scalar field gets its default value.
-- A node with an unknown `type` becomes `Node::Unknown`, and it keeps its children.
-  `Node::Unknown` is written back as the type `unknown`, so the original type name is lost.
+- A node with an unknown `type` becomes `Node::Unknown`, and it keeps its type name and its children.
+  It is written back with that type name, so nothing is lost on the way through.
 
 So an old version of this crate can still read the AST of a newer parser.
 
