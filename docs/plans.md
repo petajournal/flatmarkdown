@@ -197,3 +197,14 @@
   - 2026-11-10に、ユーザーが決めた。`flatmarkdown-ast`と同じ仕組みである
 - [x] 仕様にないノードを書き戻すとき、元の`type`の名前を残す
   - 2026-11-10に、ユーザーが決めた。前は`unknown`になり、名前が消えていた。読むときは前から名前を持っていた
+- [ ] npmの`flatmarkdown-ast2html`を、Rustのクレートをwasmにしたものに作り替える（peta-journalのADR 023）
+  - 2026-11-10に決めた。TypeScriptの実装（リポジトリ`petajournal/flatmarkdown-ast2html`）は使わなくなる
+  - [x] `flatmarkdown-ast2html-wasm/`を足す。wasm-bindgenの薄い層で、crates.ioには公開しない
+  - [x] `npm run build`が、wasmをbase64で埋め込んだ`dist/index.global.js`を1つ作る
+  - [x] `npm test`が、その.jsをNodeで、ページと同じ形で動かして確かめる
+  - [x] CIに、npmのパッケージをビルドしてテストするジョブを足す
+  - [x] READMEのリリースの手順に、npmへの公開を足す
+  - この層には、Rustのテストがない。動きは`npm test`で確かめる。そのため、cargo-mutantsの対象にならない
+  - [ ] `npm publish`で、0.6.0を公開する（ユーザーが行う）
+  - [ ] リポジトリ`petajournal/flatmarkdown-ast2html`のREADMEに移動先を書き、アーカイブする（ユーザーが行う）
+  - [ ] 使っている側を直す: peta-journalの付箋紙アプリ
