@@ -348,7 +348,7 @@ dependencies = [
 
 [[package]]
 name = "flatmarkdown"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "comrak",
  "flatmarkdown-ast",
@@ -357,7 +357,7 @@ dependencies = [
 
 [[package]]
 name = "flatmarkdown-ast"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -365,7 +365,7 @@ dependencies = [
 
 [[package]]
 name = "flatmarkdown-ast2html"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "flatmarkdown",
  "flatmarkdown-ast",
