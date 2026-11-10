@@ -5,7 +5,7 @@ use flatmarkdown::{body_to_ast, page_to_ast};
 use serde_json::{Value, json};
 
 fn ast(md: &str) -> Value {
-    serde_json::from_str(&body_to_ast(md)).unwrap()
+    serde_json::from_str(&body_to_ast(md).to_json()).unwrap()
 }
 
 fn text(value: &str) -> Value {
@@ -51,7 +51,8 @@ fn inline_footnotes_are_numbered_from_one_in_a_body() {
 // 名前は項目ごとに1から数え直す。別の項目のインライン脚注が、同じ名前になる。
 #[test]
 fn the_names_of_inline_footnotes_restart_in_every_item_of_a_page() {
-    let page: Value = serde_json::from_str(&page_to_ast("first^[one]\n\nsecond^[two]\n")).unwrap();
+    let page: Value =
+        serde_json::from_str(&page_to_ast("first^[one]\n\nsecond^[two]\n").to_json()).unwrap();
     for item in page["items"].as_array().unwrap() {
         assert_eq!(
             item["ast"]["children"][0]["children"][1]["name"],

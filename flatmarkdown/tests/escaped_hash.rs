@@ -2,11 +2,11 @@
 //! in each place of a body: a plain `#` where Markdown reads backslash escapes, and `\#` as it
 //! is where Markdown keeps the text raw (code, math, and raw HTML).
 
-use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast, body_to_ast_with, body_to_html};
+use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast, body_to_ast_with};
 use serde_json::Value;
 
 fn ast(md: &str) -> Value {
-    serde_json::from_str(&body_to_ast(md)).unwrap()
+    serde_json::from_str(&body_to_ast(md).to_json()).unwrap()
 }
 
 /// The first inline node of the first block.
@@ -91,7 +91,8 @@ fn with_link_resolution_an_escaped_hash_is_no_hashtag_and_code_stays_as_written(
             prefixes: vec!["./".into()],
         },
     };
-    let v: Value = serde_json::from_str(&body_to_ast_with(r"\#no `\#code`", &opts)).unwrap();
+    let v: Value =
+        serde_json::from_str(&body_to_ast_with(r"\#no `\#code`", &opts).to_json()).unwrap();
     let inlines = v["children"][0]["children"].as_array().unwrap();
     assert_eq!(inlines[0]["type"], "text");
     assert_eq!(inlines[0]["value"], "#no ");
@@ -103,12 +104,5 @@ fn with_link_resolution_an_escaped_hash_is_no_hashtag_and_code_stays_as_written(
 #[test]
 fn no_placeholder_character_is_left_in_the_output() {
     let md = "`\\#` [x](u\\#f \"\\#\") ![a](p\\#q) $`\\#`$ <b>\\#</b> \\#t\n\n```\\#\n\\#\n```\n\n<div>\n\\#\n</div>\n\n> [!TIP] \\#\n> \\#";
-    assert!(!body_to_ast(md).contains('\u{FDD0}'));
-    assert!(!body_to_html(md).contains('\u{FDD0}'));
-}
-
-// HTMLでも、コードの中の\#はそのまま出る。
-#[test]
-fn html_shows_an_escaped_hash_in_code_as_written() {
-    assert_eq!(body_to_html(r"`a \# b`"), "<p><code>a \\# b</code></p>\n");
+    assert!(!body_to_ast(md).to_json().contains('\u{FDD0}'));
 }

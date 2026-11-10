@@ -2,10 +2,10 @@
 //! could be changed at these places without any test failing.
 
 use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast, body_to_ast_with};
-use flatmarkdown_ast::{Node, parse};
+use flatmarkdown_ast::Node;
 
 fn ast(md: &str) -> Node {
-    parse(&body_to_ast(md)).unwrap()
+    body_to_ast(md)
 }
 
 /// Parses with link resolution on, which also turns hashtags on.
@@ -15,7 +15,7 @@ fn ast_with_hashtags(md: &str) -> Node {
             prefixes: vec!["./".to_string()],
         },
     };
-    parse(&body_to_ast_with(md, &opts)).unwrap()
+    body_to_ast_with(md, &opts)
 }
 
 /// The inline nodes of the first block.

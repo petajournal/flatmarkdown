@@ -206,7 +206,7 @@ mod tests {
     // 定義のない脚注の参照は、footnote_referenceとして残る。
     #[test]
     fn ast_footnote_reference_without_definition_is_kept() {
-        let v: Value = serde_json::from_str(&body_to_ast("Text[^note].")).unwrap();
+        let v: Value = serde_json::from_str(&body_to_ast("Text[^note].").to_json()).unwrap();
         assert_eq!(footnote_nodes(&v, "footnote_reference"), vec!["note"]);
         assert!(footnote_nodes(&v, "footnote_definition").is_empty());
         assert_eq!(v["children"].as_array().unwrap().len(), 1);
@@ -216,7 +216,7 @@ mod tests {
     // 参照のない脚注の定義は、footnote_definitionとして残る。
     #[test]
     fn ast_footnote_definition_without_reference_is_kept() {
-        let v: Value = serde_json::from_str(&body_to_ast("[^note]: The note.")).unwrap();
+        let v: Value = serde_json::from_str(&body_to_ast("[^note]: The note.").to_json()).unwrap();
         assert_eq!(footnote_nodes(&v, "footnote_definition"), vec!["note"]);
         assert!(footnote_nodes(&v, "footnote_reference").is_empty());
         let blocks = v["children"].as_array().unwrap();
@@ -231,7 +231,8 @@ mod tests {
     // 参照と定義が同じ本文にあるときは、どちらもそのまま残る。
     #[test]
     fn ast_footnote_paired_in_one_body_is_unchanged() {
-        let v: Value = serde_json::from_str(&body_to_ast("Text[^1].\n\n[^1]: Footnote.")).unwrap();
+        let v: Value =
+            serde_json::from_str(&body_to_ast("Text[^1].\n\n[^1]: Footnote.").to_json()).unwrap();
         assert_eq!(v["children"].as_array().unwrap().len(), 2);
         assert_eq!(footnote_nodes(&v, "footnote_reference"), vec!["1"]);
         assert_eq!(footnote_nodes(&v, "footnote_definition"), vec!["1"]);
@@ -241,7 +242,7 @@ mod tests {
     // 脚注の定義の中で、別の脚注を参照できる。
     #[test]
     fn ast_footnote_definition_may_reference_another_footnote() {
-        let v: Value = serde_json::from_str(&body_to_ast("[^a]: See [^b].")).unwrap();
+        let v: Value = serde_json::from_str(&body_to_ast("[^a]: See [^b].").to_json()).unwrap();
         assert_eq!(footnote_nodes(&v, "footnote_definition"), vec!["a"]);
         assert_eq!(footnote_nodes(&v, "footnote_reference"), vec!["b"]);
         assert!(!contains_placeholder(&v));
@@ -250,7 +251,8 @@ mod tests {
     // コードの中の脚注の記法は、脚注にならない。
     #[test]
     fn ast_footnote_syntax_in_code_stays_text() {
-        let v: Value = serde_json::from_str(&body_to_ast("`[^1]`\n\n```\n[^2]: x\n```")).unwrap();
+        let v: Value =
+            serde_json::from_str(&body_to_ast("`[^1]`\n\n```\n[^2]: x\n```").to_json()).unwrap();
         assert!(footnote_nodes(&v, "footnote_reference").is_empty());
         assert!(footnote_nodes(&v, "footnote_definition").is_empty());
         assert_eq!(v["children"].as_array().unwrap().len(), 2);
@@ -260,7 +262,8 @@ mod tests {
     // 閉じていないコードフェンスの前に脚注の参照があっても、コードの中身は変わらない。
     #[test]
     fn ast_footnote_reference_before_unclosed_fence() {
-        let v: Value = serde_json::from_str(&body_to_ast("Text[^1].\n\n```\ncode")).unwrap();
+        let v: Value =
+            serde_json::from_str(&body_to_ast("Text[^1].\n\n```\ncode").to_json()).unwrap();
         assert_eq!(footnote_nodes(&v, "footnote_reference"), vec!["1"]);
         assert_eq!(v["children"][1]["type"], "code_block");
         assert_eq!(v["children"][1]["literal"], "code");
@@ -270,7 +273,8 @@ mod tests {
     // インデントのコードブロックと脚注の定義が同じ本文にあっても、コードの中身は変わらない。
     #[test]
     fn ast_footnote_definition_before_indented_code() {
-        let v: Value = serde_json::from_str(&body_to_ast("    code\n\n[^1]: note")).unwrap();
+        let v: Value =
+            serde_json::from_str(&body_to_ast("    code\n\n[^1]: note").to_json()).unwrap();
         assert_eq!(v["children"][0]["type"], "code_block");
         assert_eq!(v["children"][0]["literal"], "code\n");
         assert_eq!(footnote_nodes(&v, "footnote_definition"), vec!["1"]);

@@ -1,9 +1,9 @@
 //! Typed serde model of the Flat Markdown AST.
 //!
 //! The AST is defined in `SPEC_AST.md` of the flatmarkdown repository, and the types hold
-//! what that specification defines. The JSON is produced by the `flatmarkdown` crate
-//! (`body_to_ast*` and `page_to_ast*`): every node is an object discriminated by its `type`
-//! field (snake_case), with a `children` array when it has children.
+//! what that specification defines. The `flatmarkdown` crate builds these types
+//! (`body_to_ast*` and `page_to_ast*`). In the JSON, every node is an object discriminated by
+//! its `type` field (snake_case), with a `children` array when it has children.
 //!
 //! Deserialization is tolerant: unknown fields are ignored, scalar fields the producer
 //! omits fall back to their defaults, and a node whose `type` is not modelled here becomes
@@ -442,6 +442,12 @@ impl Node {
             child.walk(visit);
         }
     }
+
+    /// Writes this node and its descendants as the JSON of `SPEC_AST.md`. [`parse`] reads it back.
+    pub fn to_json(&self) -> String {
+        // Every key of the JSON is a string, so serde_json has nothing to refuse.
+        serde_json::to_string(self).expect("a node is always valid JSON")
+    }
 }
 
 /// A whole page, as `flatmarkdown::page_to_ast` returns it.
@@ -471,13 +477,21 @@ pub struct Item {
     pub ast: Node,
 }
 
-/// Parses an AST JSON string (as returned by `flatmarkdown::body_to_ast`).
+impl Page {
+    /// Writes this page as the JSON of `SPEC_AST.md`. [`parse_page`] reads it back.
+    pub fn to_json(&self) -> String {
+        // Every key of the JSON is a string, so serde_json has nothing to refuse.
+        serde_json::to_string(self).expect("a page is always valid JSON")
+    }
+}
+
+/// Parses an AST JSON string (as written by [`Node::to_json`]).
 /// The root is normally a [`Node::Document`].
 pub fn parse(json: &str) -> Result<Node, serde_json::Error> {
     serde_json::from_str(json)
 }
 
-/// Parses the JSON string of a whole page (as returned by `flatmarkdown::page_to_ast`).
+/// Parses the JSON string of a whole page (as written by [`Page::to_json`]).
 pub fn parse_page(json: &str) -> Result<Page, serde_json::Error> {
     serde_json::from_str(json)
 }

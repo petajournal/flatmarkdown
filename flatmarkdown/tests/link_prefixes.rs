@@ -2,7 +2,7 @@
 //! matches, the longest one is used, so the order of the list does not change the result.
 
 use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast_with};
-use flatmarkdown_ast::{Node, parse};
+use flatmarkdown_ast::Node;
 
 fn ast(md: &str, prefixes: &[&str]) -> Node {
     let opts = BodyOptions {
@@ -10,7 +10,7 @@ fn ast(md: &str, prefixes: &[&str]) -> Node {
             prefixes: prefixes.iter().map(|p| p.to_string()).collect(),
         },
     };
-    parse(&body_to_ast_with(md, &opts)).unwrap()
+    body_to_ast_with(md, &opts)
 }
 
 /// The `url` of the wikilink that is the only inline node of the body.

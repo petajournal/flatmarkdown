@@ -3,11 +3,11 @@
 //! take a number.
 
 use flatmarkdown::body_to_ast;
-use flatmarkdown_ast::{Node, parse};
+use flatmarkdown_ast::Node;
 
 /// The name and the `ix` of every footnote reference, in the order of the tree.
 fn references(md: &str) -> Vec<(String, u32)> {
-    let root = parse(&body_to_ast(md)).unwrap();
+    let root = body_to_ast(md);
     let mut found = Vec::new();
     root.walk(&mut |node| {
         if let Node::FootnoteReference { name, ix, .. } = node {

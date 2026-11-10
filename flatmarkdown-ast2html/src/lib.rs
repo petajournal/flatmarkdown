@@ -1,6 +1,12 @@
-//! Renders the AST of an item body to HTML.
+//! Renders the Flat Markdown AST to HTML.
+//!
+//! The AST is the [`Node`] of the `flatmarkdown-ast` crate. This crate has no Markdown parser:
+//! the `flatmarkdown` crate makes the AST from Markdown, and `flatmarkdown_ast::parse` reads it
+//! from JSON.
+//!
+//! The HTML is made for content that you trust. Raw HTML of the AST is written as it is, and
+//! the URL of a link is not checked.
 
-use crate::body::{BodyOptions, body_to_node};
 use flatmarkdown_ast::Node;
 
 fn escape_html(s: &str) -> String {
@@ -23,7 +29,7 @@ fn plain_text(node: &Node) -> String {
 }
 
 fn render_all(nodes: &[Node]) -> String {
-    nodes.iter().map(node_to_html).collect()
+    nodes.iter().map(ast_to_html).collect()
 }
 
 fn render_children(node: &Node) -> String {
@@ -37,7 +43,7 @@ fn render_item_content(item: &Node, tight: bool) -> String {
         .iter()
         .map(|child| match child {
             Node::Paragraph { children } if tight => render_all(children),
-            _ => node_to_html(child),
+            _ => ast_to_html(child),
         })
         .collect()
 }
@@ -153,7 +159,10 @@ fn alert_to_html(alert_type: &str, title: &Option<String>, children: &[Node]) ->
     )
 }
 
-fn node_to_html(node: &Node) -> String {
+/// Renders a node of the AST and its descendants as an HTML string.
+///
+/// The node is normally the `Node::Document` of an item body, but any node can be given.
+pub fn ast_to_html(node: &Node) -> String {
     match node {
         Node::Document { children } => render_all(children),
 
@@ -304,169 +313,7 @@ fn node_to_html(node: &Node) -> String {
     }
 }
 
-/// Renders a flatmarkdown item body as an HTML string using the given options.
-pub fn body_to_html_with(input: &str, opts: &BodyOptions) -> String {
-    node_to_html(&body_to_node(input, opts))
-}
-
-pub fn body_to_html(input: &str) -> String {
-    body_to_html_with(input, &BodyOptions::default())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::body::{BodyOptions, LinkResolution};
-
-    // 段落は<p>になる。
-    #[test]
-    fn basic_paragraph() {
-        let result = body_to_html("Hello, world!");
-        assert_eq!(result, "<p>Hello, world!</p>\n");
-    }
-
-    // レベル1の見出しは<h1>になる。
-    #[test]
-    fn heading() {
-        let result = body_to_html("# Title");
-        assert_eq!(result, "<h1>Title</h1>\n");
-    }
-
-    // ~~text~~は<del>になる。
-    #[test]
-    fn strikethrough() {
-        let result = body_to_html("~~deleted~~");
-        assert_eq!(result, "<p><del>deleted</del></p>\n");
-    }
-
-    // タスクの項目は、無効にしたチェックボックスで始まる。済んだタスクにはcheckedがつく。
-    #[test]
-    fn tasklist() {
-        let result = body_to_html("- [x] done\n- [ ] todo");
-        assert_eq!(
-            result,
-            "<ul>\n<li><input type=\"checkbox\" checked disabled>done</li>\n\
-             <li><input type=\"checkbox\" disabled>todo</li>\n</ul>\n"
-        );
-    }
-
-    // 段落の中のただの改行は、HTMLでも改行のままである。<br />にはならない。
-    #[test]
-    fn softbreak_html() {
-        let result = body_to_html("line1\nline2");
-        assert_eq!(result, "<p>line1\nline2</p>\n");
-    }
-
-    // 行末の\は<br />になる。
-    #[test]
-    fn hardbreak_html() {
-        let result = body_to_html("line1\\\nline2");
-        assert_eq!(result, "<p>line1<br />\nline2</p>\n");
-    }
-
-    // >>>で囲んだ複数行の引用は<blockquote>になる。
-    #[test]
-    fn multiline_block_quote_html() {
-        let result = body_to_html(">>>\nq1\n\nq2\n>>>");
-        assert_eq!(
-            result,
-            "<blockquote>\n<p>q1</p>\n<p>q2</p>\n</blockquote>\n"
-        );
-    }
-
-    // wikilinkは、data-wikilink="true"のついた<a>になる。
-    #[test]
-    fn wikilink_html_basic() {
-        let result = body_to_html("[[page]]");
-        assert_eq!(
-            result,
-            "<p><a href=\"page\" data-wikilink=\"true\">page</a></p>\n"
-        );
-    }
-
-    // ラベルのあるwikilinkは、hrefがurlで、文字がラベルの<a>になる。
-    #[test]
-    fn wikilink_html_with_label() {
-        let result = body_to_html("[[url|link label]]");
-        assert_eq!(
-            result,
-            "<p><a href=\"url\" data-wikilink=\"true\">link label</a></p>\n"
-        );
-    }
-
-    // コードフェンスの言語名は、class属性の中でエスケープされる。
-    #[test]
-    fn html_code_fence_info_is_escaped_in_the_class_attribute() {
-        let result = body_to_html("```a\"><b>\ncode\n```");
-        assert_eq!(
-            result,
-            "<pre><code class=\"language-a&quot;&gt;&lt;b&gt;\">code\n</code></pre>\n"
-        );
-    }
-
-    // アラートの題名は、文字としてエスケープされる。
-    #[test]
-    fn html_alert_title_is_escaped_as_text() {
-        let result = body_to_html("> [!NOTE] a < b & c\n> body");
-        assert_eq!(
-            result,
-            "<blockquote class=\"alert alert-note\">\n<p class=\"alert-title\">a &lt; b &amp; c</p>\n<p>body</p>\n</blockquote>\n"
-        );
-    }
-
-    // 画像のaltには、子の文字だけが入る。子のタグは入らない。
-    #[test]
-    fn html_image_alt_holds_only_the_text_of_its_children() {
-        let result = body_to_html("![a **b** [c](d) <e>](u.png)");
-        assert_eq!(
-            result,
-            "<p><img src=\"u.png\" alt=\"a b c &lt;e&gt;\" /></p>\n"
-        );
-    }
-
-    // 画像のaltには、コードの文字とハッシュタグも入る。改行は空白になる。
-    #[test]
-    fn html_image_alt_holds_code_and_hashtags_and_turns_a_line_break_into_a_space() {
-        let opts = BodyOptions {
-            link_resolution: LinkResolution::On {
-                prefixes: vec!["./".into()],
-            },
-        };
-        let result = body_to_html_with("![a `b`\nc #t](u.png)", &opts);
-        assert_eq!(result, "<p><img src=\"u.png\" alt=\"a b c #t\" /></p>\n");
-    }
-
-    // 本文の生のHTMLは、そのまま出る。自分のノートを描くためのものなので、取り除かない。
-    #[test]
-    fn html_raw_html_in_the_body_is_written_as_it_is() {
-        assert_eq!(
-            body_to_html("<script>alert(1)</script>"),
-            "<script>alert(1)</script>"
-        );
-        assert_eq!(
-            body_to_html("a <img src=x onerror=alert(1)> b"),
-            "<p>a <img src=x onerror=alert(1)> b</p>\n"
-        );
-    }
-
-    // ハッシュタグの名前は、hrefでも表示する文字でもエスケープされる。
-    #[test]
-    fn html_hashtag_name_is_escaped_in_the_href_and_in_the_text() {
-        let node = Node::Hashtag {
-            value: "a<b>&\"c".to_string(),
-        };
-        assert_eq!(
-            node_to_html(&node),
-            "<a href=\"a&lt;b&gt;&amp;&quot;c\" class=\"hashtag\">#a&lt;b&gt;&amp;&quot;c</a>"
-        );
-    }
-
-    // リンクのURLは調べない。javascript:のリンクも、リンクのまま出る。
-    #[test]
-    fn html_link_url_is_not_checked() {
-        assert_eq!(
-            body_to_html("[a](javascript:alert(1))"),
-            "<p><a href=\"javascript:alert(1)\">a</a></p>\n"
-        );
-    }
-}
+// Run the code example in the README as a doctest, so that it keeps working
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;

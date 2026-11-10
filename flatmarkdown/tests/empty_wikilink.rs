@@ -2,10 +2,10 @@
 //! node never has an empty `url`.
 
 use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast, body_to_ast_with};
-use flatmarkdown_ast::{Node, parse};
+use flatmarkdown_ast::Node;
 
 fn ast(md: &str) -> Node {
-    parse(&body_to_ast(md)).unwrap()
+    body_to_ast(md)
 }
 
 /// The inline nodes of the first block.
@@ -56,7 +56,7 @@ fn a_hashtag_after_an_empty_wikilink_is_still_a_hashtag() {
             prefixes: vec!["./".to_string()],
         },
     };
-    let root = parse(&body_to_ast_with("[[]] #tag", &opts)).unwrap();
+    let root = body_to_ast_with("[[]] #tag", &opts);
     assert_eq!(
         inlines(&root),
         [

@@ -25,8 +25,9 @@ pub struct BodyOptions {
     pub link_resolution: LinkResolution,
 }
 
-/// Parses a flatmarkdown item body into the typed AST using the given options.
-pub(crate) fn body_to_node(input: &str, opts: &BodyOptions) -> Node {
+/// Parses a flatmarkdown item body into the AST using the given options.
+/// The root is a [`Node::Document`]. [`Node::to_json`] writes it as JSON.
+pub fn body_to_ast_with(input: &str, opts: &BodyOptions) -> Node {
     // `\#` is replaced before comrak sees it so that the hashtag pass cannot
     // mistake the escaped `#` for a tag start.
     let preprocessed = mark_escaped_hashes(input);
@@ -48,12 +49,8 @@ pub(crate) fn body_to_node(input: &str, opts: &BodyOptions) -> Node {
     ast
 }
 
-/// Parses a flatmarkdown item body into a JSON AST string using the given options.
-pub fn body_to_ast_with(input: &str, opts: &BodyOptions) -> String {
-    serde_json::to_string(&body_to_node(input, opts)).unwrap()
-}
-
-pub fn body_to_ast(input: &str) -> String {
+/// Parses a flatmarkdown item body into the AST with the default options.
+pub fn body_to_ast(input: &str) -> Node {
     body_to_ast_with(input, &BodyOptions::default())
 }
 
@@ -76,7 +73,7 @@ mod tests {
     #[test]
     fn ast_multiline_block_quote() {
         let result = body_to_ast(">>>\nq1\n\nq2\n>>>");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         assert_eq!(v["children"][0]["type"], "multiline_block_quote");
         assert_eq!(v["children"][0]["children"].as_array().unwrap().len(), 2);
     }
@@ -85,7 +82,7 @@ mod tests {
     #[test]
     fn wikilink_ast_basic() {
         let result = body_to_ast("[[page]]");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let wl = &v["children"][0]["children"][0];
         assert_eq!(wl["type"], "wikilink");
         assert_eq!(wl["url"], "page");
@@ -97,7 +94,7 @@ mod tests {
     #[test]
     fn wikilink_ast_with_label() {
         let result = body_to_ast("[[url|link label]]");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let wl = &v["children"][0]["children"][0];
         assert_eq!(wl["type"], "wikilink");
         assert_eq!(wl["url"], "url");
@@ -115,7 +112,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
         assert_eq!(children[0]["value"], "tag");
@@ -132,7 +129,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
         assert_eq!(children[0]["value"], "日記");
@@ -149,7 +146,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
         assert_eq!(children[0]["value"], "my_tag-name/sub");
@@ -166,7 +163,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
         assert_eq!(children[0]["value"], "hello ");
@@ -187,7 +184,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
         assert_eq!(children[0]["value"], "tag1");
@@ -201,7 +198,7 @@ mod tests {
     #[test]
     fn ast_hashtag_not_in_middle_of_word() {
         let result = body_to_ast_with("foo#bar", &with_link_resolution());
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
         assert_eq!(children[0]["value"], "foo#bar");
@@ -218,7 +215,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
         assert_eq!(children[0]["value"], "タグ");
@@ -231,7 +228,7 @@ mod tests {
     fn ast_hashtag_leading_slash_not_hashtag() {
         // "#/tag" must not be recognized as a hashtag (leading '/' is invalid)
         let result = body_to_ast_with("#/tag", &with_link_resolution());
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
         assert_eq!(children[0]["value"], "#/tag");
@@ -249,7 +246,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "hashtag");
         assert_eq!(children[0]["value"], "tag");
@@ -262,7 +259,7 @@ mod tests {
     fn ast_hashtag_leading_and_trailing_slash_not_hashtag() {
         // "#/tag/" must not be recognized as a hashtag (leading '/' is invalid)
         let result = body_to_ast_with("#/tag/", &with_link_resolution());
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
         assert_eq!(children[0]["value"], "#/tag/");
@@ -272,7 +269,7 @@ mod tests {
     #[test]
     fn ast_hash_only_not_hashtag() {
         let result = body_to_ast("# ");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         // "# " is a heading, not a hashtag
         assert_eq!(v["children"][0]["type"], "heading");
     }
@@ -281,7 +278,7 @@ mod tests {
     #[test]
     fn ast_escaped_hashtag_basic() {
         let result = body_to_ast_with(r"\#tag", &with_link_resolution());
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
         assert_eq!(children[0]["value"], "#tag");
@@ -298,7 +295,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
         assert_eq!(children[0]["value"], "#notag ");
@@ -310,7 +307,7 @@ mod tests {
     #[test]
     fn ast_escaped_hashtag_multiple() {
         let result = body_to_ast_with(r"\#a \#b", &with_link_resolution());
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
         assert_eq!(children[0]["value"], "#a #b");
@@ -320,7 +317,7 @@ mod tests {
     #[test]
     fn ast_embed_no_props() {
         let result = body_to_ast("![alt text](img.png)");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let embed = &v["children"][0]["children"][0];
         assert_eq!(embed["type"], "embed");
         assert_eq!(embed["url"], "img.png");
@@ -332,7 +329,7 @@ mod tests {
     #[test]
     fn ast_embed_with_kv_props() {
         let result = body_to_ast("![alt](img.png#w=300&h=240)");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let embed = &v["children"][0]["children"][0];
         assert_eq!(embed["type"], "embed");
         assert_eq!(embed["url"], "img.png");
@@ -344,7 +341,7 @@ mod tests {
     #[test]
     fn ast_embed_with_boolean_flag() {
         let result = body_to_ast("![alt](video.mp4#w=640&autoplay)");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let embed = &v["children"][0]["children"][0];
         assert_eq!(embed["type"], "embed");
         assert_eq!(embed["url"], "video.mp4");
@@ -356,7 +353,7 @@ mod tests {
     #[test]
     fn ast_embed_url_with_query_and_fragment() {
         let result = body_to_ast("![alt](https://youtube.com/watch?v=xxx#w=640&start=30)");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let embed = &v["children"][0]["children"][0];
         assert_eq!(embed["type"], "embed");
         assert_eq!(embed["url"], "https://youtube.com/watch?v=xxx");
@@ -368,7 +365,7 @@ mod tests {
     #[test]
     fn ast_highlight() {
         let result = body_to_ast("==highlighted==");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "highlight");
         assert_eq!(node["children"][0]["value"], "highlighted");
@@ -378,7 +375,7 @@ mod tests {
     #[test]
     fn ast_superscript() {
         let result = body_to_ast("^super^");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "superscript");
         assert_eq!(node["children"][0]["value"], "super");
@@ -388,7 +385,7 @@ mod tests {
     #[test]
     fn ast_subscript() {
         let result = body_to_ast("~sub~");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "subscript");
         assert_eq!(node["children"][0]["value"], "sub");
@@ -398,7 +395,7 @@ mod tests {
     #[test]
     fn ast_spoilered_text() {
         let result = body_to_ast("||spoiler||");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "spoilered_text");
         assert_eq!(node["children"][0]["value"], "spoiler");
@@ -408,7 +405,7 @@ mod tests {
     #[test]
     fn ast_underline() {
         let result = body_to_ast("__underlined__");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "underline");
         assert_eq!(node["children"][0]["value"], "underlined");
@@ -418,7 +415,7 @@ mod tests {
     #[test]
     fn ast_shortcode() {
         let result = body_to_ast(":rabbit:");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "shortcode");
         assert_eq!(node["code"], "rabbit");
@@ -429,7 +426,7 @@ mod tests {
     #[test]
     fn ast_math_inline() {
         let result = body_to_ast("$`x^2`$");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "math");
         assert_eq!(node["literal"], "x^2");
@@ -439,7 +436,7 @@ mod tests {
     #[test]
     fn ast_alert_note() {
         let result = body_to_ast("> [!NOTE]\n> Content");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0];
         assert_eq!(node["type"], "alert");
         assert_eq!(node["alert_type"], "note");
@@ -449,7 +446,7 @@ mod tests {
     #[test]
     fn ast_wikilink_block_link() {
         let result = body_to_ast("[[page#block-id]]");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let wl = &v["children"][0]["children"][0];
         assert_eq!(wl["type"], "wikilink");
         assert_eq!(wl["url"], "page#block-id");
@@ -459,7 +456,7 @@ mod tests {
     #[test]
     fn ast_wikilink_block_link_with_label() {
         let result = body_to_ast("[[page#block-id|label]]");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let wl = &v["children"][0]["children"][0];
         assert_eq!(wl["type"], "wikilink");
         assert_eq!(wl["url"], "page#block-id");
@@ -477,7 +474,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
         assert_eq!(node["url"], "pagename");
@@ -495,7 +492,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
         assert_eq!(node["url"], "pagename");
@@ -513,7 +510,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
         assert_eq!(node["url"], "journal/2024-01-01");
@@ -531,7 +528,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
         assert_eq!(node["url"], "page#block-id");
@@ -549,7 +546,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
         assert_eq!(node["url"], "pagename");
@@ -567,7 +564,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
         assert_eq!(node["url"], "journal/2024-01-01");
@@ -585,7 +582,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "wikilink");
         assert_eq!(node["url"], "page#block-id");
@@ -603,7 +600,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "hashtag");
         assert_eq!(node["value"], "mytag");
@@ -622,7 +619,7 @@ mod tests {
                 },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "hashtag");
         assert_eq!(node["value"], "日記");
@@ -634,7 +631,7 @@ mod tests {
     #[test]
     fn ast_no_resolve_hashtag_stays_text() {
         let result = body_to_ast("#tag");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert!(children.iter().all(|c| c["type"] != "hashtag"));
     }
@@ -643,7 +640,7 @@ mod tests {
     #[test]
     fn ast_no_resolve_tag_link_stays_link() {
         let result = body_to_ast("[#tag](../tag.md)");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "link");
     }
@@ -652,7 +649,7 @@ mod tests {
     #[test]
     fn ast_no_resolve_md_link_stays_link() {
         let result = body_to_ast("[text](../page.md)");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "link");
     }
@@ -666,7 +663,7 @@ mod tests {
                 link_resolution: LinkResolution::On { prefixes: vec![] },
             },
         );
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "link");
     }
@@ -675,7 +672,7 @@ mod tests {
     #[test]
     fn ast_external_link_not_converted_to_wikilink() {
         let result = body_to_ast_with("[text](https://example.com)", &with_link_resolution());
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "link");
     }
@@ -684,7 +681,7 @@ mod tests {
     #[test]
     fn ast_non_md_relative_link_not_converted() {
         let result = body_to_ast_with("[text](../page.html)", &with_link_resolution());
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "link");
     }
@@ -693,7 +690,7 @@ mod tests {
     #[test]
     fn ast_blank_line_between_list_items_keeps_one_list() {
         let result = body_to_ast("- a\n\n- b");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let blocks = v["children"].as_array().unwrap();
         assert_eq!(blocks.len(), 1);
         assert_eq!(blocks[0]["type"], "list");
@@ -704,7 +701,7 @@ mod tests {
     #[test]
     fn ast_blank_line_in_code_fence_preserved() {
         let result = body_to_ast("```\ncode\n\nmore code\n```");
-        let v: Value = serde_json::from_str(&result).unwrap();
+        let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let cb = &v["children"][0];
         assert_eq!(cb["type"], "code_block");
         let literal = cb["literal"].as_str().unwrap();

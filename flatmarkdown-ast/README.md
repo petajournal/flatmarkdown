@@ -2,8 +2,8 @@
 
 The Flat Markdown AST as Rust types.
 
-The [flatmarkdown](https://crates.io/crates/flatmarkdown) crate parses the body of an item, or a whole page, into a JSON AST.
-This crate reads that JSON into Rust types with serde, and writes it back.
+The [flatmarkdown](https://crates.io/crates/flatmarkdown) crate parses the body of an item, or a whole page, into these types.
+This crate also writes the types as JSON with serde, and reads the JSON back.
 It has no Markdown parser, so a program that only reads the AST stays small.
 
 The AST is defined in [SPEC_AST.md](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md).
@@ -37,7 +37,7 @@ for child in root.children() {
 
 ## Writing
 
-`serde_json::to_string` writes a `Node` or a `Page` back to JSON.
+`Node::to_json` and `Page::to_json` write a `Node` or a `Page` as JSON.
 The JSON follows the specification: a node without children has no `children`, and an `embed` without properties has no `props`.
 
 ## Unknown Nodes
@@ -53,9 +53,9 @@ So an old version of this crate can still read the AST of a newer parser.
 
 ## Versions
 
-This crate and `flatmarkdown` always have the same version.
+This crate, `flatmarkdown`, and `flatmarkdown-ast2html` always have the same version.
 The AST made by `flatmarkdown` x.y.z can be read by `flatmarkdown-ast` x.y.z.
-Use the same version of both.
+Use the same version of all three.
 
 `Node` is not `#[non_exhaustive]`.
 A `match` that lists every kind of node stops compiling when a new kind is added.

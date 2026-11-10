@@ -1,0 +1,22 @@
+[package]
+name = "flatmarkdown-ast2html"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Renders the Flat Markdown AST to HTML, without a Markdown parser"
+readme = "README.md"
+keywords = ["markdown", "html", "ast", "flatmarkdown"]
+categories = ["text-processing"]
+
+[lints]
+workspace = true
+
+[dependencies]
+flatmarkdown-ast.workspace = true
+
+# Only the tests that start from Markdown use the parser. A path without a version is left out
+# of the published crate, so the renderer never depends on the parser (ADR 020 of peta-journal).
+[dev-dependencies]
+flatmarkdown = { path = "../flatmarkdown" }
