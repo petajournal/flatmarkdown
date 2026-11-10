@@ -217,9 +217,9 @@
   - [x] `flatmarkdown`の`body_to_ast`と`page_to_ast`を、`parse_body`と`parse_page`に替える（`_with`も同じ）。古い名前は残さない
     - 理由: このクレートはパーサーである。`page_to_ast`が返すのは`Page`で、ASTそのものではなかった
   - [x] 公開する版を決める。2026-11-11に、ユーザーが0.7.0と決めた
-  - [ ] `cargo publish`で、`flatmarkdown-ast`、`flatmarkdown`、`flatmarkdown-ast2html`の順に公開する（ユーザーが行う）
-  - [ ] `npm publish`で、`flatmarkdown-ast2html`の0.7.0を公開する（ユーザーが行う）
+  - [x] `cargo publish`で、`flatmarkdown-ast`、`flatmarkdown`、`flatmarkdown-ast2html`の順に公開する。2026-11-11に、ユーザーが0.7.0を公開した
+  - [x] `npm publish`で、`flatmarkdown-ast2html`の0.7.0を公開する。2026-11-11に、ユーザーが公開した
   - [ ] 新しい版を公開したあとに、利用側の呼び出しを替える
-    - [ ] peta-journal（`journal-server-rust`と`frontend-rust`）
-    - [ ] `flatmarkdown-java`の`rust/lib.rs`
-    - [ ] `flatmarkdown-ast-ts`のREADMEにある関数名
+    - [ ] peta-journal（`journal-server-rust`と`frontend-rust`）。peta-journalのPR #255で替えた。マージを待っている
+    - [ ] `flatmarkdown-java`の`rust/lib.rs`。名前の付け替えだけでは済まない。`flatmarkdown` 0.5.0に依存し、0.6.0で消えた`body_to_html_with`も使っているためである
+    - [ ] `flatmarkdown-ast-ts`のREADMEにある関数名。flatmarkdown-ast-tsのPR #3で替えた。マージを待っている
