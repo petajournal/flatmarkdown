@@ -1,6 +1,6 @@
 # flatmarkdown AST Specification
 
-The basic specification is based on the Flat Markdown specification v0.2: https://github.com/petajournal/flatmarkdown-spec/
+The basic specification is based on the Flat Markdown specification v0.2: [SPEC.md](SPEC.md)
 
 `page_to_ast(input)` parses a whole Flat Markdown page into a JSON string. `body_to_ast(input)` parses the body of one item into a JSON AST string.
 

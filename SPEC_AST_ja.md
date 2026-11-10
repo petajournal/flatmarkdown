@@ -1,6 +1,6 @@
 # flatmarkdown AST 仕様書
 
-基本仕様は、Flat Markdown仕様書v0.2（https://github.com/petajournal/flatmarkdown-spec/）に基づく。
+基本仕様は、Flat Markdown仕様書v0.2（[SPEC_ja.md](SPEC_ja.md)）に基づく。
 
 `page_to_ast(input)` はFlat Markdownのページ全体を解析し、JSON文字列を返す。`body_to_ast(input)` は項目の本文（body）を解析し、JSON形式のAST文字列を返す。
 

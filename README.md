@@ -2,7 +2,8 @@
 
 The Rust crates for Flat Markdown, an outline format with block-delimited items.
 
-Flat Markdown is defined in the [Flat Markdown specification](https://github.com/petajournal/flatmarkdown-spec/).
+Flat Markdown is defined in [SPEC.md](SPEC.md) ([日本語](SPEC_ja.md)).
+[example.md](example.md) ([日本語](example_ja.md)) shows the syntax of each extension.
 
 ## Crates
 
@@ -39,6 +40,7 @@ cargo clippy --workspace --all-targets
 cargo test --workspace
 ```
 
+[SPEC.md](SPEC.md) is the source of truth for the format.
 [SPEC_AST.md](SPEC_AST.md) is the source of truth for the AST.
 The types of `flatmarkdown-ast` hold what the specification defines, and nothing more.
 When the AST changes, change the specification first, and then the types and the parser.
