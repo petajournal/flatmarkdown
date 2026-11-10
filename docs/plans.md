@@ -220,6 +220,6 @@
   - [x] `cargo publish`で、`flatmarkdown-ast`、`flatmarkdown`、`flatmarkdown-ast2html`の順に公開する。2026-11-11に、ユーザーが0.7.0を公開した
   - [x] `npm publish`で、`flatmarkdown-ast2html`の0.7.0を公開する。2026-11-11に、ユーザーが公開した
   - [ ] 新しい版を公開したあとに、利用側の呼び出しを替える
-    - [ ] peta-journal（`journal-server-rust`と`frontend-rust`）。peta-journalのPR #255で替えた。マージを待っている
+    - [x] peta-journal（`journal-server-rust`と`frontend-rust`）。peta-journalのPR #255で替えた
     - [ ] `flatmarkdown-java`の`rust/lib.rs`。名前の付け替えだけでは済まない。`flatmarkdown` 0.5.0に依存し、0.6.0で消えた`body_to_html_with`も使っているためである
-    - [ ] `flatmarkdown-ast-ts`のREADMEにある関数名。flatmarkdown-ast-tsのPR #3で替えた。マージを待っている
+    - [x] `flatmarkdown-ast-ts`のREADMEにある関数名。flatmarkdown-ast-tsのPR #3で替えた
