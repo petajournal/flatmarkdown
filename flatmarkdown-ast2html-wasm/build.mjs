@@ -40,8 +40,14 @@ const { version } = JSON.parse(readFileSync(join(here, 'package.json'), 'utf8'))
 
 // The function keeps `wasm_bindgen` of the glue out of the global scope. `initSync` compiles
 // the wasm at once, so that `renderToHtml` works as soon as the script has run.
+//
+// `var document` hides the document of the page from the glue. The glue reads the URL of its
+// script from the document, to fetch the wasm file later. Here the wasm is in the script, so
+// the URL is not needed. And reading it throws in a document that has no URL (about:blank),
+// which is what WebView2 makes from a string.
 const bundle = `/*! flatmarkdown-ast2html ${version} | MIT License | https://github.com/petajournal/flatmarkdown */
 var FmAst2Html = (function () {
+var document;
 ${glue}
 var text = atob('${wasm}');
 var bytes = new Uint8Array(text.length);

@@ -74,6 +74,19 @@ test('the script adds only FmAst2Html to the global scope', () => {
     assert.deepEqual(added, ['FmAst2Html']);
 });
 
+// URLのない文書（about:blank）でも、スクリプトは読み込める。
+// WebView2のNavigateToStringに渡した文書が、この形である。
+test('the script loads in a document that has no URL', () => {
+    const page = vm.createContext({
+        ...browserGlobals(),
+        URL,
+        document: { currentScript: { src: '' } },
+        location: { href: 'about:blank' },
+    });
+    vm.runInContext(source, page);
+    assert.equal(page.FmAst2Html.renderToHtml({ type: 'text', value: 'a' }), 'a');
+});
+
 // npmのパッケージのバージョンは、クレートのバージョンと同じである。
 test('the version of the npm package is the version of the crates', () => {
     const cargo = readFileSync(new URL('../Cargo.toml', here), 'utf8');
