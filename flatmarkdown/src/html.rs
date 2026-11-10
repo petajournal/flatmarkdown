@@ -1,6 +1,6 @@
 //! Renders the AST of an item body to HTML.
 
-use crate::body::{BodyOptions, body_to_node};
+use crate::body::{BodyOptions, body_to_ast_with};
 use flatmarkdown_ast::Node;
 
 fn escape_html(s: &str) -> String {
@@ -306,7 +306,7 @@ fn node_to_html(node: &Node) -> String {
 
 /// Renders a flatmarkdown item body as an HTML string using the given options.
 pub fn body_to_html_with(input: &str, opts: &BodyOptions) -> String {
-    node_to_html(&body_to_node(input, opts))
+    node_to_html(&body_to_ast_with(input, opts))
 }
 
 pub fn body_to_html(input: &str) -> String {

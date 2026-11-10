@@ -1,7 +1,7 @@
 //! Parses a whole page: the front matter, the metadata lines, and the items.
 
 use crate::ast::options;
-use crate::body::{BodyOptions, body_to_node};
+use crate::body::{BodyOptions, body_to_ast_with};
 use comrak::nodes::NodeValue;
 use comrak::{Arena, parse_document};
 use flatmarkdown_ast::{Item, Page};
@@ -150,7 +150,7 @@ fn item(meta: Option<ItemMetadata>, body: String, opts: &BodyOptions) -> Item {
         id: None,
         properties: Vec::new(),
     });
-    let ast = body_to_node(&body, opts);
+    let ast = body_to_ast_with(&body, opts);
     Item {
         level: meta.level as u32,
         id: meta.id,
@@ -169,8 +169,8 @@ struct OpenItem {
     has_block: bool,
 }
 
-/// Parses a whole Flat Markdown page into a JSON string:
-/// `{"type":"page","front_matter":string|null,"items":[{level,id,properties,body,ast}]}`.
+/// Parses a whole Flat Markdown page into a [`Page`]: its front matter and its items.
+/// [`Page::to_json`] writes it as JSON.
 ///
 /// Each block at the shallowest level becomes one item. A single-line
 /// `<!-- @@ ID key="value" -->` comment directly above a block is that block's metadata.
@@ -180,7 +180,7 @@ struct OpenItem {
 /// consumes without creating a node (link reference definitions) and footnote
 /// definitions therefore stay with the item they follow, which is where the
 /// paragraph that uses them normally is.
-pub fn page_to_ast_with(input: &str, opts: &BodyOptions) -> String {
+pub fn page_to_ast_with(input: &str, opts: &BodyOptions) -> Page {
     let lines: Vec<&str> = input.lines().collect();
     let arena = Arena::new();
     let root = parse_document(&arena, input, &options(true));
@@ -252,14 +252,14 @@ pub fn page_to_ast_with(input: &str, opts: &BodyOptions) -> String {
     }
     close(open, lines.len(), &mut items);
 
-    let page = Page {
+    Page {
         front_matter,
         items,
-    };
-    serde_json::to_string(&page).unwrap()
+    }
 }
 
-pub fn page_to_ast(input: &str) -> String {
+/// Parses a whole Flat Markdown page with the default options.
+pub fn page_to_ast(input: &str) -> Page {
     page_to_ast_with(input, &BodyOptions::default())
 }
 
@@ -649,7 +649,8 @@ mod tests {
                 prefixes: vec!["../".into()],
             },
         };
-        let v: Value = serde_json::from_str(&page_to_ast_with("#tag [p](../p.md)", &opts)).unwrap();
+        let v: Value =
+            serde_json::from_str(&page_to_ast_with("#tag [p](../p.md)", &opts).to_json()).unwrap();
         let inline = v["items"][0]["ast"]["children"][0]["children"]
             .as_array()
             .unwrap();

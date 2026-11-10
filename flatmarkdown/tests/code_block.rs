@@ -5,7 +5,7 @@ use flatmarkdown::body_to_ast;
 use serde_json::Value;
 
 fn first_block(md: &str) -> Value {
-    let ast: Value = serde_json::from_str(&body_to_ast(md)).unwrap();
+    let ast: Value = serde_json::from_str(&body_to_ast(md).to_json()).unwrap();
     ast["children"][0].clone()
 }
 

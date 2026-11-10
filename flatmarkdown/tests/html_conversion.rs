@@ -42,7 +42,7 @@ fn resolve_links_with_prefix() {
 #[test]
 fn page_items_with_metadata() {
     let input = "<!-- @@ 2026-09-27-15-00-16-W3N8ASY plan=\"2026-09-28\" -->\n- [ ] Task1\n\nPlain paragraph\n";
-    let v: serde_json::Value = serde_json::from_str(&page_to_ast(input)).unwrap();
+    let v: serde_json::Value = serde_json::from_str(&page_to_ast(input).to_json()).unwrap();
     let items = v["items"].as_array().unwrap();
     assert_eq!(items.len(), 2);
     assert_eq!(items[0]["level"], 2);

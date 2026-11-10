@@ -19,7 +19,7 @@ mod test_support {
     use serde_json::Value;
 
     pub(crate) fn page(input: &str) -> Value {
-        serde_json::from_str(&page_to_ast(input)).unwrap()
+        serde_json::from_str(&page_to_ast(input).to_json()).unwrap()
     }
 }
 

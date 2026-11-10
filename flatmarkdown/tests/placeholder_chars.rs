@@ -3,7 +3,7 @@
 //! they went in.
 
 use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast, body_to_ast_with};
-use flatmarkdown_ast::{Node, parse};
+use flatmarkdown_ast::Node;
 
 /// Parses with link resolution off, and with it on.
 fn asts(md: &str) -> [Node; 2] {
@@ -12,10 +12,7 @@ fn asts(md: &str) -> [Node; 2] {
             prefixes: vec!["../".to_string(), "./".to_string()],
         },
     };
-    [
-        parse(&body_to_ast(md)).unwrap(),
-        parse(&body_to_ast_with(md, &opts)).unwrap(),
-    ]
+    [body_to_ast(md), body_to_ast_with(md, &opts)]
 }
 
 /// The inline nodes of the first block.
