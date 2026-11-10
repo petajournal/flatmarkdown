@@ -1,6 +1,6 @@
 //! Checks that the types read and write the JSON that SPEC_AST.md defines, and nothing more.
 
-use flatmarkdown_ast::{Node, parse, parse_page};
+use flatmarkdown_ast::{Node, Page, parse, parse_page};
 use serde_json::{Value, json};
 
 /// Reads `json` into the types and writes it back.
@@ -185,10 +185,10 @@ fn the_json_of_a_node_is_read_back_as_the_same_node() {
     assert_eq!(Node::from_json(&node.to_json()).unwrap(), node);
 }
 
-// Page::to_jsonの書き出したJSONは、parse_pageで同じページに戻る。
+// Page::to_jsonの書き出したJSONは、Page::from_jsonで同じページに戻る。
 #[test]
 fn the_json_of_a_page_is_read_back_as_the_same_page() {
-    let page = parse_page(
+    let page = Page::from_json(
         r#"{"type":"page","front_matter":null,"items":[{"level":1,"id":null,"properties":{},"body":"a","ast":{"type":"document"}}]}"#,
     )
     .unwrap();
@@ -196,5 +196,5 @@ fn the_json_of_a_page_is_read_back_as_the_same_page() {
         page.to_json(),
         r#"{"type":"page","front_matter":null,"items":[{"level":1,"id":null,"properties":{},"body":"a","ast":{"type":"document"}}]}"#
     );
-    assert_eq!(parse_page(&page.to_json()).unwrap(), page);
+    assert_eq!(Page::from_json(&page.to_json()).unwrap(), page);
 }
