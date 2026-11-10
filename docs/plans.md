@@ -18,7 +18,8 @@
   - [x] `flatmarkdown-ast2html/`を足し、`ast_to_html`を公開する。`flatmarkdown`から`html.rs`と`body_to_html`を消す
   - [x] HTMLのテストを、新しいクレートへ移す。`Node`を入力にするテストを足す
   - [x] 3つのクレートのREADME、リポジトリのREADME、`SPEC_AST.md`の冒頭を直す
-  - [ ] 公開する版を決める（ユーザーが決める）。3つのクレートを同じ版で公開する
+  - [x] 公開する版を決める。2026-11-10に、ユーザーが0.6.0と決めた
+  - [ ] `cargo publish`で、`flatmarkdown-ast`、`flatmarkdown`、`flatmarkdown-ast2html`の順に公開する（ユーザーが行う）
   - [ ] 使っている側を直す: peta-journalのjournal-server、`shell-leptos`、`fm-leptos`のテスト、そして`flatmarkdown-java`
 - [x] `body_to_html`が、文字として扱う値をエスケープせずにHTMLへ入れる不具合を直す
   - [x] コードフェンスの言語名は、`class`属性の中でエスケープされる
