@@ -205,6 +205,7 @@
   - [x] CIに、npmのパッケージをビルドしてテストするジョブを足す
   - [x] READMEのリリースの手順に、npmへの公開を足す
   - この層には、Rustのテストがない。動きは`npm test`で確かめる。そのため、cargo-mutantsの対象にならない
-  - [ ] `npm publish`で、0.6.0を公開する（ユーザーが行う）
+  - [x] `npm publish`で、0.6.0を公開する。2026-11-10に、ユーザーが公開した
   - [ ] リポジトリ`petajournal/flatmarkdown-ast2html`のREADMEに移動先を書き、アーカイブする（ユーザーが行う）
-  - [ ] 使っている側を直す: peta-journalの付箋紙アプリ
+  - [x] 使っている側を直す: peta-journalの付箋紙アプリ（peta-journalの#226）
+    - 実際のWebView2で試して、URLのない文書（`about:blank`）では.jsが読み込めない問題を見つけた。.jsの中で`document`を隠して直した
