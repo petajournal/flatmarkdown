@@ -1,7 +1,7 @@
 //! Checks that reading is tolerant: unknown nodes, missing fields, and what is still an error.
 //! No Markdown parser is used.
 
-use flatmarkdown_ast::{Node, extract_text, parse};
+use flatmarkdown_ast::{Node, extract_text};
 
 /// All type names in the tree, depth first.
 fn type_names(root: &Node) -> Vec<&str> {
@@ -23,7 +23,7 @@ fn unknown_type_is_tolerated_and_keeps_children() {
             {"type":"insert","children":[{"type":"text","value":"b"}]},
             {"type":"text","value":"c","extra_field":1}
         ]}]}"#;
-    let root = parse(json).unwrap();
+    let root = Node::from_json(json).unwrap();
     let para = first_block(&root);
     match &para.children()[1] {
         Node::Unknown {
@@ -45,35 +45,37 @@ fn unknown_type_is_tolerated_and_keeps_children() {
 // 既知の型でフィールドの型が合わないノード、type のないノード、JSON でない文字列の解析はエラーになる。
 #[test]
 fn malformed_known_node_is_an_error() {
-    assert!(parse(r#"{"type":"heading","level":"two"}"#).is_err());
-    assert!(parse(r#"{"children":[]}"#).is_err());
-    assert!(parse("not json").is_err());
+    assert!(Node::from_json(r#"{"type":"heading","level":"two"}"#).is_err());
+    assert!(Node::from_json(r#"{"children":[]}"#).is_err());
+    assert!(Node::from_json("not json").is_err());
 }
 
 // 省略された任意フィールドは既定値になる。children は空、info と literal は空文字列、fenced は true、header は false である。
 #[test]
 fn missing_optional_fields_default() {
-    let root = parse(r#"{"type":"document"}"#).unwrap();
+    let root = Node::from_json(r#"{"type":"document"}"#).unwrap();
     assert!(root.children().is_empty());
-    let cb = parse(r#"{"type":"code_block"}"#).unwrap();
+    let cb = Node::from_json(r#"{"type":"code_block"}"#).unwrap();
     assert!(
         matches!(cb, Node::CodeBlock { fenced: true, info, literal } if info.is_empty() && literal.is_empty())
     );
-    let row = parse(r#"{"type":"table_row"}"#).unwrap();
+    let row = Node::from_json(r#"{"type":"table_row"}"#).unwrap();
     assert!(matches!(row, Node::TableRow { header: false, .. }));
 }
 
 // 古いASTの item にある tight は、無視して読める。
 #[test]
 fn tight_on_an_item_of_an_old_ast_is_ignored() {
-    let item = parse(r#"{"type":"item","list_type":"bullet","start":1,"tight":false}"#).unwrap();
+    let item =
+        Node::from_json(r#"{"type":"item","list_type":"bullet","start":1,"tight":false}"#).unwrap();
     assert!(matches!(item, Node::Item { start: 1, .. }));
 }
 
 // 古いASTの front_matter ノードは、未知のノードとして読める。front matter はページの文字列の項目であり、ノードではない。
 #[test]
 fn a_front_matter_node_of_an_old_ast_is_read_as_unknown() {
-    let node = parse(r#"{"type":"front_matter","value":"---\nkey: value\n---\n"}"#).unwrap();
+    let node =
+        Node::from_json(r#"{"type":"front_matter","value":"---\nkey: value\n---\n"}"#).unwrap();
     assert!(matches!(node, Node::Unknown { node_type, .. } if node_type == "front_matter"));
 }
 
@@ -85,7 +87,7 @@ fn raw_escaped_and_escaped_tag_of_an_old_ast_are_read_as_unknown() {
         (r#"{"type":"escaped"}"#, "escaped"),
         (r#"{"type":"escaped_tag","value":"script"}"#, "escaped_tag"),
     ] {
-        let node = parse(json).unwrap();
+        let node = Node::from_json(json).unwrap();
         assert!(
             matches!(&node, Node::Unknown { node_type, .. } if node_type == name),
             "{name}: {node:?}"

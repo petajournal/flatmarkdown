@@ -1,11 +1,11 @@
 //! Checks that the types read and write the JSON that SPEC_AST.md defines, and nothing more.
 
-use flatmarkdown_ast::{Node, Page, parse, parse_page};
+use flatmarkdown_ast::{Node, Page};
 use serde_json::{Value, json};
 
 /// Reads `json` into the types and writes it back.
 fn rewritten(json: &Value) -> Value {
-    let node = parse(&json.to_string()).unwrap();
+    let node = Node::from_json(&json.to_string()).unwrap();
     serde_json::to_value(&node).unwrap()
 }
 
@@ -85,7 +85,7 @@ fn a_node_that_the_spec_does_not_define_is_read_as_unknown() {
         "insert",
     ] {
         let json = json!({"type": node_type, "children": [{"type": "text", "value": "x"}]});
-        let node = parse(&json.to_string()).unwrap();
+        let node = Node::from_json(&json.to_string()).unwrap();
         match &node {
             Node::Unknown {
                 node_type: read,
@@ -126,7 +126,7 @@ fn a_page_is_read_as_front_matter_and_items() {
             {"level": 1, "id": null, "properties": {}, "body": "", "ast": {"type": "document"}}
         ]
     });
-    let page = parse_page(&json.to_string()).unwrap();
+    let page = Page::from_json(&json.to_string()).unwrap();
     assert_eq!(
         page.front_matter.as_deref(),
         Some("---\nkey: value\n---\n\n")
@@ -159,16 +159,18 @@ fn a_page_is_written_back_as_the_same_json() {
              "ast": {"type": "document", "children": [{"type": "paragraph", "children": [{"type": "text", "value": "x"}]}]}}
         ]
     });
-    let page = parse_page(&json.to_string()).unwrap();
+    let page = Page::from_json(&json.to_string()).unwrap();
     assert_eq!(serde_json::to_value(&page).unwrap(), json);
 }
 
 // ページでないJSONと、必須の項目を欠く項目は、エラーになる。
 #[test]
 fn a_malformed_page_is_an_error() {
-    assert!(parse_page("not json").is_err());
-    assert!(parse_page(r#"{"type":"page","front_matter":null}"#).is_err());
-    assert!(parse_page(r#"{"type":"page","front_matter":null,"items":[{"level":1}]}"#).is_err());
+    assert!(Page::from_json("not json").is_err());
+    assert!(Page::from_json(r#"{"type":"page","front_matter":null}"#).is_err());
+    assert!(
+        Page::from_json(r#"{"type":"page","front_matter":null,"items":[{"level":1}]}"#).is_err()
+    );
 }
 
 // Node::to_jsonの書き出したJSONは、Node::from_jsonで同じノードに戻る。
