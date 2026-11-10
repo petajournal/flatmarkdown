@@ -38,8 +38,8 @@ When `Off`, these links remain as `link` nodes and `#tag` text remains as plain 
 
 | Function | Description |
 |---|---|
-| `page_to_ast(input)` | Split a page into items with metadata, as a `Page` ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
-| `page_to_ast_with(input, opts)` | Same, with explicit `BodyOptions` |
+| `parse_page(input)` | Split a page into items with metadata, as a `Page` ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
+| `parse_page_with(input, opts)` | Same, with explicit `BodyOptions` |
 | `parse_body(input)` | Parse an item body to the AST, as a `Node` ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
 | `parse_body_with(input, opts)` | Same, with explicit `BodyOptions` |
 
@@ -53,11 +53,11 @@ The functions return the types of the [flatmarkdown-ast](https://crates.io/crate
 ### Examples
 
 ```rust
-use flatmarkdown::{parse_body, parse_body_with, page_to_ast, BodyOptions, LinkResolution};
+use flatmarkdown::{parse_body, parse_body_with, parse_page, BodyOptions, LinkResolution};
 
 // Split a page into items. Each top-level block is one item.
 // A `<!-- @@ ID key="value" -->` line above a block is its metadata.
-let page = page_to_ast("<!-- @@ 2026-09-27-15-00-16-W3N8ASY plan=\"2026-09-28\" -->\n- [ ] Task1\n\nParagraph");
+let page = parse_page("<!-- @@ 2026-09-27-15-00-16-W3N8ASY plan=\"2026-09-28\" -->\n- [ ] Task1\n\nParagraph");
 assert_eq!(page.items.len(), 2);
 
 // Parse one item body (link resolution off)

@@ -2,11 +2,11 @@
 
 The basic specification is based on the Flat Markdown specification v0.2: [SPEC.md](SPEC.md)
 
-`page_to_ast(input)` parses a whole Flat Markdown page. `parse_body(input)` parses the body of one item into an AST. This document defines the JSON of both results. In Rust, the functions return the types of the `flatmarkdown-ast` crate, and `to_json()` of a type writes this JSON.
+`parse_page(input)` parses a whole Flat Markdown page. `parse_body(input)` parses the body of one item into an AST. This document defines the JSON of both results. In Rust, the functions return the types of the `flatmarkdown-ast` crate, and `to_json()` of a type writes this JSON.
 
 ## Page Structure
 
-The JSON of the result of `page_to_ast(input)` is the following object:
+The JSON of the result of `parse_page(input)` is the following object:
 
 ```json
 {

@@ -8,16 +8,16 @@ mod links;
 mod page;
 
 pub use body::{BodyOptions, LinkResolution, parse_body, parse_body_with};
-pub use page::{page_to_ast, page_to_ast_with};
+pub use page::{parse_page, parse_page_with};
 
 /// Helpers that the tests of more than one module use.
 #[cfg(test)]
 mod test_support {
-    use crate::page_to_ast;
+    use crate::parse_page;
     use serde_json::Value;
 
     pub(crate) fn page(input: &str) -> Value {
-        serde_json::from_str(&page_to_ast(input).to_json()).unwrap()
+        serde_json::from_str(&parse_page(input).to_json()).unwrap()
     }
 }
 
