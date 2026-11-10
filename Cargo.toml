@@ -1,9 +1,15 @@
 [workspace]
 resolver = "3"
-members = ["flatmarkdown", "flatmarkdown-ast", "flatmarkdown-ast2html"]
+members = [
+    "flatmarkdown",
+    "flatmarkdown-ast",
+    "flatmarkdown-ast2html",
+    "flatmarkdown-ast2html-wasm",
+]
 
-# All three crates always have the same version (ADR 012 and ADR 020 of peta-journal), so it
-# is written only here.
+# All crates always have the same version (ADR 012 and ADR 020 of peta-journal), so it is
+# written only here. The npm package made from flatmarkdown-ast2html-wasm has this version too
+# (ADR 023 of peta-journal); its package.json repeats it, and a test compares the two.
 [workspace.package]
 version = "0.6.0"
 edition = "2024"
@@ -17,6 +23,7 @@ repository = "https://github.com/petajournal/flatmarkdown"
 # flatmarkdown builds its AST with the types of flatmarkdown-ast (ADR 014 of peta-journal).
 # flatmarkdown-ast2html renders that AST (ADR 020 of peta-journal).
 # Keep this version the same as `version` above: a release always has all three crates.
+# flatmarkdown-ast2html-wasm names the version of flatmarkdown-ast2html in its own Cargo.toml.
 [workspace.dependencies]
 flatmarkdown-ast = { version = "=0.6.0", path = "flatmarkdown-ast" }
 
@@ -36,3 +43,12 @@ debug = "line-tables-only"
 
 [profile.dev.package."*"]
 debug = false
+
+# The profile of the wasm file in the npm package. The file is sent to every user, so it is
+# built for size. `npm run build` in flatmarkdown-ast2html-wasm uses this profile.
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"

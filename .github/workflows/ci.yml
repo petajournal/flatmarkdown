@@ -27,7 +27,30 @@ jobs:
       - run: cargo test --workspace --locked
       # Builds each crate from its packaged files, as crates.io would. The tests above cannot
       # show a file that is missing from the package.
-      - run: cargo package --workspace --locked
+      # flatmarkdown-ast2html-wasm does not go to crates.io. The `npm` job below builds it.
+      - run: cargo package --workspace --exclude flatmarkdown-ast2html-wasm --locked
+
+  npm:
+    name: build and test the npm package
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flatmarkdown-ast2html-wasm
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@0.15.1
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      # The package has no dependencies, so there is nothing to install.
+      - run: npm run build
+      - run: npm test
 
   msrv:
     name: build with the oldest supported Rust

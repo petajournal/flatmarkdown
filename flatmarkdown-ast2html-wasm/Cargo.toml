@@ -1,0 +1,27 @@
+[package]
+name = "flatmarkdown-ast2html-wasm"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "The wasm build of flatmarkdown-ast2html, for the npm package of the same name"
+# This crate is the source of the npm package `flatmarkdown-ast2html`. It does not go to
+# crates.io (ADR 023 of peta-journal).
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+flatmarkdown-ast.workspace = true
+flatmarkdown-ast2html = { version = "=0.6.0", path = "../flatmarkdown-ast2html" }
+wasm-bindgen = "0.2.130"
+[lints]
+workspace = true
+
+# wasm-pack reads this table for every profile that is not dev, release or profiling.
+# The profile itself must not strip the file: wasm-opt reads from it which wasm features are
+# on, and refuses the file without them. wasm-opt strips it afterwards.
+[package.metadata.wasm-pack.profile.custom]
+wasm-opt = ["-Oz", "--strip-debug", "--strip-producers"]
