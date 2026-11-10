@@ -2,7 +2,7 @@
 //! A body can come from outside and can hold these characters itself. They must come out as
 //! they went in.
 
-use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast, body_to_ast_with};
+use flatmarkdown::{BodyOptions, LinkResolution, parse_body, parse_body_with};
 use flatmarkdown_ast::Node;
 
 /// Parses with link resolution off, and with it on.
@@ -12,7 +12,7 @@ fn asts(md: &str) -> [Node; 2] {
             prefixes: vec!["../".to_string(), "./".to_string()],
         },
     };
-    [body_to_ast(md), body_to_ast_with(md, &opts)]
+    [parse_body(md), parse_body_with(md, &opts)]
 }
 
 /// The inline nodes of the first block.

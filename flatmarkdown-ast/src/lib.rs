@@ -2,7 +2,7 @@
 //!
 //! The AST is defined in `SPEC_AST.md` of the flatmarkdown repository, and the types hold
 //! what that specification defines. The `flatmarkdown` crate builds these types
-//! (`body_to_ast*` and `page_to_ast*`). In the JSON, every node is an object discriminated by
+//! (`parse_body*` and `page_to_ast*`). In the JSON, every node is an object discriminated by
 //! its `type` field (snake_case), with a `children` array when it has children.
 //!
 //! Deserialization is tolerant: unknown fields are ignored, scalar fields the producer

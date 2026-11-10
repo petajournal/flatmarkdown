@@ -1,11 +1,11 @@
 //! Tight or loose is a property of a whole list in CommonMark. These tests check that the AST
 //! says it on the list only, and not on each item.
 
-use flatmarkdown::body_to_ast;
+use flatmarkdown::parse_body;
 use serde_json::Value;
 
 fn first_block(md: &str) -> Value {
-    let ast: Value = serde_json::from_str(&body_to_ast(md).to_json()).unwrap();
+    let ast: Value = serde_json::from_str(&parse_body(md).to_json()).unwrap();
     ast["children"][0].clone()
 }
 

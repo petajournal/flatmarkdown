@@ -7,7 +7,7 @@ mod hashtags;
 mod links;
 mod page;
 
-pub use body::{BodyOptions, LinkResolution, body_to_ast, body_to_ast_with};
+pub use body::{BodyOptions, LinkResolution, parse_body, parse_body_with};
 pub use page::{page_to_ast, page_to_ast_with};
 
 /// Helpers that the tests of more than one module use.

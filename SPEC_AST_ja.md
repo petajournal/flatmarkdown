@@ -2,7 +2,7 @@
 
 基本仕様は、Flat Markdown仕様書v0.2（[SPEC_ja.md](SPEC_ja.md)）に基づく。
 
-`page_to_ast(input)` はFlat Markdownのページ全体を解析する。`body_to_ast(input)` は項目の本文（body）を解析し、ASTを返す。この文書は、2つの結果のJSONを定義する。Rustでは、これらの関数は`flatmarkdown-ast`クレートの型を返す。型の`to_json()`が、このJSONを書き出す。
+`page_to_ast(input)` はFlat Markdownのページ全体を解析する。`parse_body(input)` は項目の本文（body）を解析し、ASTを返す。この文書は、2つの結果のJSONを定義する。Rustでは、これらの関数は`flatmarkdown-ast`クレートの型を返す。型の`to_json()`が、このJSONを書き出す。
 
 ## ページ構造
 
@@ -37,7 +37,7 @@
 | `id`         | string \| null | メタデータ行のHMTID。存在しない場合は`null`。形式は`YYYY-MM-DD-hh-mm-ss-XXXXXXX`（27文字）。日時の部分は数字である。末尾の7文字は、CrockfordのBase32（`0123456789ABCDEFGHJKMNPQRSTVWXYZ`）である。小文字と、`I`、`L`、`O`、`U`は使えない。IDがこの形式でない行は、メタデータ行ではない。 |
 | `properties` | object         | メタデータ行の`key: value`の組。値は常に文字列。存在しない場合は空オブジェクト。 |
 | `body`       | string         | 項目のMarkdownソース。先頭と末尾の空行は除去される。 |
-| `ast`        | object         | `body`を`body_to_ast`で解析した結果。 |
+| `ast`        | object         | `body`を`parse_body`で解析した結果。 |
 
 **項目の区切り**: Markdown文書の最も浅いレベルのブロックが1項目になる。入れ子のブロックは外側のブロックの本文に含まれる。ブロックの区切りはMarkdownパーサーが決める。空行は区切りの条件ではない。
 

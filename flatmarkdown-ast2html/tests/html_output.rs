@@ -1,17 +1,17 @@
 //! The HTML that `ast_to_html` writes for each kind of node, starting from Markdown. Every test compares the whole
 //! output, so a change of one character is noticed.
 
-use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast, body_to_ast_with};
+use flatmarkdown::{BodyOptions, LinkResolution, parse_body, parse_body_with};
 use flatmarkdown_ast2html::ast_to_html;
 
 /// Parses `md` with the default options and renders its AST.
 fn body_to_html(md: &str) -> String {
-    ast_to_html(&body_to_ast(md))
+    ast_to_html(&parse_body(md))
 }
 
 /// Parses `md` with `opts` and renders its AST.
 fn body_to_html_with(md: &str, opts: &BodyOptions) -> String {
-    ast_to_html(&body_to_ast_with(md, opts))
+    ast_to_html(&parse_body_with(md, opts))
 }
 // ── Lists ──
 

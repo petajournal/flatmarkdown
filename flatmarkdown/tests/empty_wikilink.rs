@@ -1,11 +1,11 @@
 //! A wikilink without a page name is not a wikilink. `[[]]` stays text, so that a `wikilink`
 //! node never has an empty `url`.
 
-use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast, body_to_ast_with};
+use flatmarkdown::{BodyOptions, LinkResolution, parse_body, parse_body_with};
 use flatmarkdown_ast::Node;
 
 fn ast(md: &str) -> Node {
-    body_to_ast(md)
+    parse_body(md)
 }
 
 /// The inline nodes of the first block.
@@ -56,7 +56,7 @@ fn a_hashtag_after_an_empty_wikilink_is_still_a_hashtag() {
             prefixes: vec!["./".to_string()],
         },
     };
-    let root = body_to_ast_with("[[]] #tag", &opts);
+    let root = parse_body_with("[[]] #tag", &opts);
     assert_eq!(
         inlines(&root),
         [

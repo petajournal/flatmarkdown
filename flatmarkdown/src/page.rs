@@ -1,7 +1,7 @@
 //! Parses a whole page: the front matter, the metadata lines, and the items.
 
 use crate::ast::options;
-use crate::body::{BodyOptions, body_to_ast_with};
+use crate::body::{BodyOptions, parse_body_with};
 use comrak::nodes::NodeValue;
 use comrak::{Arena, parse_document};
 use flatmarkdown_ast::{Item, Page};
@@ -150,7 +150,7 @@ fn item(meta: Option<ItemMetadata>, body: String, opts: &BodyOptions) -> Item {
         id: None,
         properties: Vec::new(),
     });
-    let ast = body_to_ast_with(&body, opts);
+    let ast = parse_body_with(&body, opts);
     Item {
         level: meta.level as u32,
         id: meta.id,

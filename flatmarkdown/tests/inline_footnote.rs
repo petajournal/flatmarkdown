@@ -1,11 +1,11 @@
 //! An inline footnote is written as `^[content]`. These tests check that it becomes a
 //! reference and a definition in the same body, as SPEC_AST.md says.
 
-use flatmarkdown::{body_to_ast, page_to_ast};
+use flatmarkdown::{page_to_ast, parse_body};
 use serde_json::{Value, json};
 
 fn ast(md: &str) -> Value {
-    serde_json::from_str(&body_to_ast(md).to_json()).unwrap()
+    serde_json::from_str(&parse_body(md).to_json()).unwrap()
 }
 
 fn text(value: &str) -> Value {

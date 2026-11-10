@@ -2,12 +2,12 @@
 //! These tests check that the single pipes stay in the output, and that a spoiler is still a
 //! spoiler.
 
-use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast, body_to_ast_with};
+use flatmarkdown::{BodyOptions, LinkResolution, parse_body, parse_body_with};
 use serde_json::{Value, json};
 
 /// The inline nodes of the first block.
 fn inlines(md: &str) -> Value {
-    let ast: Value = serde_json::from_str(&body_to_ast(md).to_json()).unwrap();
+    let ast: Value = serde_json::from_str(&parse_body(md).to_json()).unwrap();
     ast["children"][0]["children"].clone()
 }
 
@@ -86,6 +86,6 @@ fn a_hash_right_after_a_single_pipe_is_not_a_hashtag() {
             prefixes: vec!["./".to_string()],
         },
     };
-    let ast: Value = serde_json::from_str(&body_to_ast_with("|#tag|", &opts).to_json()).unwrap();
+    let ast: Value = serde_json::from_str(&parse_body_with("|#tag|", &opts).to_json()).unwrap();
     assert_eq!(ast["children"][0]["children"], json!([text("|#tag|")]));
 }

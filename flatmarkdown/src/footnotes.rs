@@ -180,7 +180,7 @@ fn set_footnote_numbers(node: &mut Node, numbers: &[u32]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::body::body_to_ast;
+    use crate::body::parse_body;
     use crate::test_support::page;
     use serde_json::Value;
 
@@ -206,7 +206,7 @@ mod tests {
     // 定義のない脚注の参照は、footnote_referenceとして残る。
     #[test]
     fn ast_footnote_reference_without_definition_is_kept() {
-        let v: Value = serde_json::from_str(&body_to_ast("Text[^note].").to_json()).unwrap();
+        let v: Value = serde_json::from_str(&parse_body("Text[^note].").to_json()).unwrap();
         assert_eq!(footnote_nodes(&v, "footnote_reference"), vec!["note"]);
         assert!(footnote_nodes(&v, "footnote_definition").is_empty());
         assert_eq!(v["children"].as_array().unwrap().len(), 1);
@@ -216,7 +216,7 @@ mod tests {
     // 参照のない脚注の定義は、footnote_definitionとして残る。
     #[test]
     fn ast_footnote_definition_without_reference_is_kept() {
-        let v: Value = serde_json::from_str(&body_to_ast("[^note]: The note.").to_json()).unwrap();
+        let v: Value = serde_json::from_str(&parse_body("[^note]: The note.").to_json()).unwrap();
         assert_eq!(footnote_nodes(&v, "footnote_definition"), vec!["note"]);
         assert!(footnote_nodes(&v, "footnote_reference").is_empty());
         let blocks = v["children"].as_array().unwrap();
@@ -232,7 +232,7 @@ mod tests {
     #[test]
     fn ast_footnote_paired_in_one_body_is_unchanged() {
         let v: Value =
-            serde_json::from_str(&body_to_ast("Text[^1].\n\n[^1]: Footnote.").to_json()).unwrap();
+            serde_json::from_str(&parse_body("Text[^1].\n\n[^1]: Footnote.").to_json()).unwrap();
         assert_eq!(v["children"].as_array().unwrap().len(), 2);
         assert_eq!(footnote_nodes(&v, "footnote_reference"), vec!["1"]);
         assert_eq!(footnote_nodes(&v, "footnote_definition"), vec!["1"]);
@@ -242,7 +242,7 @@ mod tests {
     // 脚注の定義の中で、別の脚注を参照できる。
     #[test]
     fn ast_footnote_definition_may_reference_another_footnote() {
-        let v: Value = serde_json::from_str(&body_to_ast("[^a]: See [^b].").to_json()).unwrap();
+        let v: Value = serde_json::from_str(&parse_body("[^a]: See [^b].").to_json()).unwrap();
         assert_eq!(footnote_nodes(&v, "footnote_definition"), vec!["a"]);
         assert_eq!(footnote_nodes(&v, "footnote_reference"), vec!["b"]);
         assert!(!contains_placeholder(&v));
@@ -252,7 +252,7 @@ mod tests {
     #[test]
     fn ast_footnote_syntax_in_code_stays_text() {
         let v: Value =
-            serde_json::from_str(&body_to_ast("`[^1]`\n\n```\n[^2]: x\n```").to_json()).unwrap();
+            serde_json::from_str(&parse_body("`[^1]`\n\n```\n[^2]: x\n```").to_json()).unwrap();
         assert!(footnote_nodes(&v, "footnote_reference").is_empty());
         assert!(footnote_nodes(&v, "footnote_definition").is_empty());
         assert_eq!(v["children"].as_array().unwrap().len(), 2);
@@ -263,7 +263,7 @@ mod tests {
     #[test]
     fn ast_footnote_reference_before_unclosed_fence() {
         let v: Value =
-            serde_json::from_str(&body_to_ast("Text[^1].\n\n```\ncode").to_json()).unwrap();
+            serde_json::from_str(&parse_body("Text[^1].\n\n```\ncode").to_json()).unwrap();
         assert_eq!(footnote_nodes(&v, "footnote_reference"), vec!["1"]);
         assert_eq!(v["children"][1]["type"], "code_block");
         assert_eq!(v["children"][1]["literal"], "code");
@@ -274,7 +274,7 @@ mod tests {
     #[test]
     fn ast_footnote_definition_before_indented_code() {
         let v: Value =
-            serde_json::from_str(&body_to_ast("    code\n\n[^1]: note").to_json()).unwrap();
+            serde_json::from_str(&parse_body("    code\n\n[^1]: note").to_json()).unwrap();
         assert_eq!(v["children"][0]["type"], "code_block");
         assert_eq!(v["children"][0]["literal"], "code\n");
         assert_eq!(footnote_nodes(&v, "footnote_definition"), vec!["1"]);

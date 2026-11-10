@@ -40,8 +40,8 @@ When `Off`, these links remain as `link` nodes and `#tag` text remains as plain 
 |---|---|
 | `page_to_ast(input)` | Split a page into items with metadata, as a `Page` ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
 | `page_to_ast_with(input, opts)` | Same, with explicit `BodyOptions` |
-| `body_to_ast(input)` | Parse an item body to the AST, as a `Node` ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
-| `body_to_ast_with(input, opts)` | Same, with explicit `BodyOptions` |
+| `parse_body(input)` | Parse an item body to the AST, as a `Node` ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
+| `parse_body_with(input, opts)` | Same, with explicit `BodyOptions` |
 
 ### JSON and HTML
 
@@ -53,7 +53,7 @@ The functions return the types of the [flatmarkdown-ast](https://crates.io/crate
 ### Examples
 
 ```rust
-use flatmarkdown::{body_to_ast, body_to_ast_with, page_to_ast, BodyOptions, LinkResolution};
+use flatmarkdown::{parse_body, parse_body_with, page_to_ast, BodyOptions, LinkResolution};
 
 // Split a page into items. Each top-level block is one item.
 // A `<!-- @@ ID key="value" -->` line above a block is its metadata.
@@ -61,13 +61,13 @@ let page = page_to_ast("<!-- @@ 2026-09-27-15-00-16-W3N8ASY plan=\"2026-09-28\" 
 assert_eq!(page.items.len(), 2);
 
 // Parse one item body (link resolution off)
-let ast = body_to_ast("Hello **world**");
+let ast = parse_body("Hello **world**");
 let json = ast.to_json();
 
 // With link resolution enabled
 let opts = BodyOptions {
     link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] },
 };
-let ast = body_to_ast_with("#tag text", &opts);
+let ast = parse_body_with("#tag text", &opts);
 ```
 

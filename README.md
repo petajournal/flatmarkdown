@@ -22,7 +22,7 @@ So the types are the only place where the shape of the AST is written in Rust.
 They do not depend on each other. Only the tests of `flatmarkdown-ast2html` use the parser.
 
 ``rust
-let html = flatmarkdown_ast2html::ast_to_html(&flatmarkdown::body_to_ast("Hello **world**"));
+let html = flatmarkdown_ast2html::ast_to_html(&flatmarkdown::parse_body("Hello **world**"));
 ``
 
 The AST is defined in [SPEC_AST.md](SPEC_AST.md) ([日本語](SPEC_AST_ja.md)).

@@ -2,7 +2,7 @@
 //! rules of a tag name. The name of a `.md` file can come from outside, so a link must not
 //! make a hashtag that could not be written as `#name` in text.
 
-use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast_with};
+use flatmarkdown::{BodyOptions, LinkResolution, parse_body_with};
 use flatmarkdown_ast::Node;
 
 /// Parses with link resolution on.
@@ -12,7 +12,7 @@ fn ast(md: &str) -> Node {
             prefixes: vec!["../".to_string(), "./".to_string()],
         },
     };
-    body_to_ast_with(md, &opts)
+    parse_body_with(md, &opts)
 }
 
 /// The inline nodes of the first block.

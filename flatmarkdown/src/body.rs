@@ -27,7 +27,7 @@ pub struct BodyOptions {
 
 /// Parses a flatmarkdown item body into the AST using the given options.
 /// The root is a [`Node::Document`]. [`Node::to_json`] writes it as JSON.
-pub fn body_to_ast_with(input: &str, opts: &BodyOptions) -> Node {
+pub fn parse_body_with(input: &str, opts: &BodyOptions) -> Node {
     // `\#` is replaced before comrak sees it so that the hashtag pass cannot
     // mistake the escaped `#` for a tag start.
     let preprocessed = mark_escaped_hashes(input);
@@ -50,8 +50,8 @@ pub fn body_to_ast_with(input: &str, opts: &BodyOptions) -> Node {
 }
 
 /// Parses a flatmarkdown item body into the AST with the default options.
-pub fn body_to_ast(input: &str) -> Node {
-    body_to_ast_with(input, &BodyOptions::default())
+pub fn parse_body(input: &str) -> Node {
+    parse_body_with(input, &BodyOptions::default())
 }
 
 #[cfg(test)]
@@ -72,7 +72,7 @@ mod tests {
     // >>>で囲んだ複数行の引用は、multiline_block_quoteになる。中の段落は子になる。
     #[test]
     fn ast_multiline_block_quote() {
-        let result = body_to_ast(">>>\nq1\n\nq2\n>>>");
+        let result = parse_body(">>>\nq1\n\nq2\n>>>");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         assert_eq!(v["children"][0]["type"], "multiline_block_quote");
         assert_eq!(v["children"][0]["children"].as_array().unwrap().len(), 2);
@@ -81,7 +81,7 @@ mod tests {
     // [[page]]はwikilinkになる。urlと表示する文字は、どちらもページ名である。
     #[test]
     fn wikilink_ast_basic() {
-        let result = body_to_ast("[[page]]");
+        let result = parse_body("[[page]]");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let wl = &v["children"][0]["children"][0];
         assert_eq!(wl["type"], "wikilink");
@@ -93,7 +93,7 @@ mod tests {
     // [[url|ラベル]]は、|の前がurlに、後ろが表示する文字になる。
     #[test]
     fn wikilink_ast_with_label() {
-        let result = body_to_ast("[[url|link label]]");
+        let result = parse_body("[[url|link label]]");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let wl = &v["children"][0]["children"][0];
         assert_eq!(wl["type"], "wikilink");
@@ -104,7 +104,7 @@ mod tests {
     // リンク解決がOnのとき、#tagはhashtagになる。valueに#は含まない。
     #[test]
     fn ast_hashtag_basic() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "#tag",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -121,7 +121,7 @@ mod tests {
     // 日本語のハッシュタグもhashtagになる。
     #[test]
     fn ast_hashtag_japanese() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "#日記",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -138,7 +138,7 @@ mod tests {
     // ハッシュタグの名前には、_と-と/を使える。
     #[test]
     fn ast_hashtag_with_special_chars() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "#my_tag-name/sub",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -155,7 +155,7 @@ mod tests {
     // 文の途中のハッシュタグは、前後の文字と分かれてhashtagになる。
     #[test]
     fn ast_hashtag_in_text() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "hello #tag world",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -176,7 +176,7 @@ mod tests {
     // 1つの段落に、複数のハッシュタグを書ける。
     #[test]
     fn ast_hashtag_multiple() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "#tag1 #tag2",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -197,7 +197,7 @@ mod tests {
     // 単語の途中の#は、ハッシュタグにならない。
     #[test]
     fn ast_hashtag_not_in_middle_of_word() {
-        let result = body_to_ast_with("foo#bar", &with_link_resolution());
+        let result = parse_body_with("foo#bar", &with_link_resolution());
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -207,7 +207,7 @@ mod tests {
     // ハッシュタグは、句読点の前で終わる。
     #[test]
     fn ast_hashtag_terminated_by_punctuation() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "#タグ。本文",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -227,7 +227,7 @@ mod tests {
     #[test]
     fn ast_hashtag_leading_slash_not_hashtag() {
         // "#/tag" must not be recognized as a hashtag (leading '/' is invalid)
-        let result = body_to_ast_with("#/tag", &with_link_resolution());
+        let result = parse_body_with("#/tag", &with_link_resolution());
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -238,7 +238,7 @@ mod tests {
     #[test]
     fn ast_hashtag_trailing_slash_trimmed() {
         // "#tag/" must be recognized as hashtag "tag" (trailing '/' is trimmed)
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "#tag/",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -258,7 +258,7 @@ mod tests {
     #[test]
     fn ast_hashtag_leading_and_trailing_slash_not_hashtag() {
         // "#/tag/" must not be recognized as a hashtag (leading '/' is invalid)
-        let result = body_to_ast_with("#/tag/", &with_link_resolution());
+        let result = parse_body_with("#/tag/", &with_link_resolution());
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -268,7 +268,7 @@ mod tests {
     // #と空白だけの行は見出しである。ハッシュタグではない。
     #[test]
     fn ast_hash_only_not_hashtag() {
-        let result = body_to_ast("# ");
+        let result = parse_body("# ");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         // "# " is a heading, not a hashtag
         assert_eq!(v["children"][0]["type"], "heading");
@@ -277,7 +277,7 @@ mod tests {
     // \#tagはハッシュタグにならない。\は取り除かれ、#tagという文字になる。
     #[test]
     fn ast_escaped_hashtag_basic() {
-        let result = body_to_ast_with(r"\#tag", &with_link_resolution());
+        let result = parse_body_with(r"\#tag", &with_link_resolution());
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -287,7 +287,7 @@ mod tests {
     // \をつけた#と、つけない#を、同じ段落に書ける。つけない方だけがhashtagになる。
     #[test]
     fn ast_escaped_hashtag_with_real_hashtag() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             r"\#notag #real",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -306,7 +306,7 @@ mod tests {
     // \をつけた#が複数あっても、どれもハッシュタグにならない。
     #[test]
     fn ast_escaped_hashtag_multiple() {
-        let result = body_to_ast_with(r"\#a \#b", &with_link_resolution());
+        let result = parse_body_with(r"\#a \#b", &with_link_resolution());
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert_eq!(children[0]["type"], "text");
@@ -316,7 +316,7 @@ mod tests {
     // 画像の記法はembedになる。URLに#がなければ、propsはnullである。
     #[test]
     fn ast_embed_no_props() {
-        let result = body_to_ast("![alt text](img.png)");
+        let result = parse_body("![alt text](img.png)");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let embed = &v["children"][0]["children"][0];
         assert_eq!(embed["type"], "embed");
@@ -328,7 +328,7 @@ mod tests {
     // URLの#のあとのkey=valueは、propsに入る。urlには含まない。
     #[test]
     fn ast_embed_with_kv_props() {
-        let result = body_to_ast("![alt](img.png#w=300&h=240)");
+        let result = parse_body("![alt](img.png#w=300&h=240)");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let embed = &v["children"][0]["children"][0];
         assert_eq!(embed["type"], "embed");
@@ -340,7 +340,7 @@ mod tests {
     // 値のないキーは、propsでtrueになる。
     #[test]
     fn ast_embed_with_boolean_flag() {
-        let result = body_to_ast("![alt](video.mp4#w=640&autoplay)");
+        let result = parse_body("![alt](video.mp4#w=640&autoplay)");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let embed = &v["children"][0]["children"][0];
         assert_eq!(embed["type"], "embed");
@@ -352,7 +352,7 @@ mod tests {
     // URLの?のクエリはurlに残る。#のあとだけがpropsになる。
     #[test]
     fn ast_embed_url_with_query_and_fragment() {
-        let result = body_to_ast("![alt](https://youtube.com/watch?v=xxx#w=640&start=30)");
+        let result = parse_body("![alt](https://youtube.com/watch?v=xxx#w=640&start=30)");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let embed = &v["children"][0]["children"][0];
         assert_eq!(embed["type"], "embed");
@@ -364,7 +364,7 @@ mod tests {
     // ==text==はhighlightになる。
     #[test]
     fn ast_highlight() {
-        let result = body_to_ast("==highlighted==");
+        let result = parse_body("==highlighted==");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "highlight");
@@ -374,7 +374,7 @@ mod tests {
     // ^text^はsuperscriptになる。
     #[test]
     fn ast_superscript() {
-        let result = body_to_ast("^super^");
+        let result = parse_body("^super^");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "superscript");
@@ -384,7 +384,7 @@ mod tests {
     // ~text~はsubscriptになる。
     #[test]
     fn ast_subscript() {
-        let result = body_to_ast("~sub~");
+        let result = parse_body("~sub~");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "subscript");
@@ -394,7 +394,7 @@ mod tests {
     // ||text||はspoilered_textになる。
     #[test]
     fn ast_spoilered_text() {
-        let result = body_to_ast("||spoiler||");
+        let result = parse_body("||spoiler||");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "spoilered_text");
@@ -404,7 +404,7 @@ mod tests {
     // __text__はunderlineになる。strongではない。
     #[test]
     fn ast_underline() {
-        let result = body_to_ast("__underlined__");
+        let result = parse_body("__underlined__");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "underline");
@@ -414,7 +414,7 @@ mod tests {
     // :name:はshortcodeになる。codeに名前が、emojiに絵文字が入る。
     #[test]
     fn ast_shortcode() {
-        let result = body_to_ast(":rabbit:");
+        let result = parse_body(":rabbit:");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "shortcode");
@@ -425,7 +425,7 @@ mod tests {
     // $`式`$はmathになる。literalに式が入る。
     #[test]
     fn ast_math_inline() {
-        let result = body_to_ast("$`x^2`$");
+        let result = parse_body("$`x^2`$");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "math");
@@ -435,7 +435,7 @@ mod tests {
     // > [!NOTE]で始まる引用はalertになる。alert_typeは小文字である。
     #[test]
     fn ast_alert_note() {
-        let result = body_to_ast("> [!NOTE]\n> Content");
+        let result = parse_body("> [!NOTE]\n> Content");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0];
         assert_eq!(node["type"], "alert");
@@ -445,7 +445,7 @@ mod tests {
     // [[page#id]]のurlは、#idを含む。
     #[test]
     fn ast_wikilink_block_link() {
-        let result = body_to_ast("[[page#block-id]]");
+        let result = parse_body("[[page#block-id]]");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let wl = &v["children"][0]["children"][0];
         assert_eq!(wl["type"], "wikilink");
@@ -455,7 +455,7 @@ mod tests {
     // [[page#id|ラベル]]のurlは#idを含み、表示する文字はラベルになる。
     #[test]
     fn ast_wikilink_block_link_with_label() {
-        let result = body_to_ast("[[page#block-id|label]]");
+        let result = parse_body("[[page#block-id|label]]");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let wl = &v["children"][0]["children"][0];
         assert_eq!(wl["type"], "wikilink");
@@ -466,7 +466,7 @@ mod tests {
     // リンク解決がOnのとき、../で始まる.mdへのリンクはwikilinkになる。urlは.mdを除いたページ名である。
     #[test]
     fn ast_md_link_to_wikilink_no_label() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "[pagename](../pagename.md)",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -484,7 +484,7 @@ mod tests {
     // wikilinkになったリンクの表示する文字は、元のリンクの文字である。
     #[test]
     fn ast_md_link_to_wikilink_with_label() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "[display label](../pagename.md)",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -502,7 +502,7 @@ mod tests {
     // フォルダを含むパスは、接頭辞と.mdだけを除いてurlになる。
     #[test]
     fn ast_md_link_to_wikilink_with_path() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "[label](../journal/2024-01-01.md)",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -520,7 +520,7 @@ mod tests {
     // .mdのあとの#idは、wikilinkのurlに残る。
     #[test]
     fn ast_md_link_to_wikilink_with_fragment() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "[label](../page.md#block-id)",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -538,7 +538,7 @@ mod tests {
     // ./で始まる.mdへのリンクもwikilinkになる。
     #[test]
     fn ast_md_link_dotslash_to_wikilink() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "[pagename](./pagename.md)",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -556,7 +556,7 @@ mod tests {
     // ./で始まるリンクでも、フォルダを含むパスはurlに残る。
     #[test]
     fn ast_md_link_dotslash_with_path() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "[label](./journal/2024-01-01.md)",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -574,7 +574,7 @@ mod tests {
     // ./で始まるリンクでも、#idはurlに残る。
     #[test]
     fn ast_md_link_dotslash_with_fragment() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "[label](./page.md#block-id)",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -592,7 +592,7 @@ mod tests {
     // 文字が#で始まる./のリンクは、hashtagになる。urlと子は持たない。
     #[test]
     fn ast_md_tag_link_dotslash_to_hashtag() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "[#mytag](./mytag.md)",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -611,7 +611,7 @@ mod tests {
     // 文字が#で始まる../のリンクは、hashtagになる。日本語の名前でも同じである。
     #[test]
     fn ast_md_tag_link_to_hashtag() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "[#日記](../日記.md)",
             &BodyOptions {
                 link_resolution: LinkResolution::On {
@@ -630,7 +630,7 @@ mod tests {
     // リンク解決がOffのとき、#tagは文字のままである。
     #[test]
     fn ast_no_resolve_hashtag_stays_text() {
-        let result = body_to_ast("#tag");
+        let result = parse_body("#tag");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let children = v["children"][0]["children"].as_array().unwrap();
         assert!(children.iter().all(|c| c["type"] != "hashtag"));
@@ -639,7 +639,7 @@ mod tests {
     // リンク解決がOffのとき、文字が#で始まるリンクはlinkのままである。
     #[test]
     fn ast_no_resolve_tag_link_stays_link() {
-        let result = body_to_ast("[#tag](../tag.md)");
+        let result = parse_body("[#tag](../tag.md)");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "link");
@@ -648,7 +648,7 @@ mod tests {
     // リンク解決がOffのとき、.mdへのリンクはlinkのままである。
     #[test]
     fn ast_no_resolve_md_link_stays_link() {
-        let result = body_to_ast("[text](../page.md)");
+        let result = parse_body("[text](../page.md)");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "link");
@@ -657,7 +657,7 @@ mod tests {
     // リンク解決がOnでも、接頭辞が1つもなければ、リンクはwikilinkにならない。
     #[test]
     fn ast_on_empty_prefixes_md_link_stays_link() {
-        let result = body_to_ast_with(
+        let result = parse_body_with(
             "[text](../page.md)",
             &BodyOptions {
                 link_resolution: LinkResolution::On { prefixes: vec![] },
@@ -671,7 +671,7 @@ mod tests {
     // リンク解決がOnでも、外部のURLへのリンクはlinkのままである。
     #[test]
     fn ast_external_link_not_converted_to_wikilink() {
-        let result = body_to_ast_with("[text](https://example.com)", &with_link_resolution());
+        let result = parse_body_with("[text](https://example.com)", &with_link_resolution());
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "link");
@@ -680,7 +680,7 @@ mod tests {
     // リンク解決がOnでも、.mdで終わらない相対リンクはlinkのままである。
     #[test]
     fn ast_non_md_relative_link_not_converted() {
-        let result = body_to_ast_with("[text](../page.html)", &with_link_resolution());
+        let result = parse_body_with("[text](../page.html)", &with_link_resolution());
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let node = &v["children"][0]["children"][0];
         assert_eq!(node["type"], "link");
@@ -689,7 +689,7 @@ mod tests {
     // 項目の間に空行のあるリストは、1つのlistのままである。tightはfalseになる。
     #[test]
     fn ast_blank_line_between_list_items_keeps_one_list() {
-        let result = body_to_ast("- a\n\n- b");
+        let result = parse_body("- a\n\n- b");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let blocks = v["children"].as_array().unwrap();
         assert_eq!(blocks.len(), 1);
@@ -700,7 +700,7 @@ mod tests {
     // コードフェンスの中の空行は、literalに残る。
     #[test]
     fn ast_blank_line_in_code_fence_preserved() {
-        let result = body_to_ast("```\ncode\n\nmore code\n```");
+        let result = parse_body("```\ncode\n\nmore code\n```");
         let v: Value = serde_json::from_str(&result.to_json()).unwrap();
         let cb = &v["children"][0];
         assert_eq!(cb["type"], "code_block");

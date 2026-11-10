@@ -27,10 +27,10 @@ assert_eq!(ast_to_html(&ast), "<p>Hello</p>\n");
 From Markdown, with the `flatmarkdown` crate:
 
 ```rust
-use flatmarkdown::body_to_ast;
+use flatmarkdown::parse_body;
 use flatmarkdown_ast2html::ast_to_html;
 
-let html = ast_to_html(&body_to_ast("Hello **world**"));
+let html = ast_to_html(&parse_body("Hello **world**"));
 assert_eq!(html, "<p>Hello <strong>world</strong></p>\n");
 ```
 
