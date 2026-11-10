@@ -62,6 +62,19 @@ fn a_table_has_its_header_row_in_thead_and_the_other_rows_in_tbody() {
     );
 }
 
+// 列ぞろえは、GFMと同じくalign属性になる。ぞろえのない列には付かない。
+#[test]
+fn the_alignment_of_a_column_is_an_align_attribute() {
+    assert_eq!(
+        body_to_html("| a | b | c | d |\n|:--|:-:|--:|---|\n| 1 | 2 | 3 | 4 |"),
+        "<table>\n<thead>\n\
+         <tr><th align=\"left\">a</th><th align=\"center\">b</th><th align=\"right\">c</th><th>d</th></tr>\n\
+         </thead>\n<tbody>\n\
+         <tr><td align=\"left\">1</td><td align=\"center\">2</td><td align=\"right\">3</td><td>4</td></tr>\n\
+         </tbody>\n</table>\n"
+    );
+}
+
 // 見出しの行だけの表は、tbodyを持たない。
 #[test]
 fn a_table_with_only_a_header_row_has_no_tbody() {
