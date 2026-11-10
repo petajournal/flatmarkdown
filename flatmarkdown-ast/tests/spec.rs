@@ -171,10 +171,10 @@ fn a_malformed_page_is_an_error() {
     assert!(parse_page(r#"{"type":"page","front_matter":null,"items":[{"level":1}]}"#).is_err());
 }
 
-// Node::to_jsonの書き出したJSONは、parseで同じノードに戻る。
+// Node::to_jsonの書き出したJSONは、Node::from_jsonで同じノードに戻る。
 #[test]
 fn the_json_of_a_node_is_read_back_as_the_same_node() {
-    let node = parse(
+    let node = Node::from_json(
         r#"{"type":"document","children":[{"type":"paragraph","children":[{"type":"text","value":"a"}]}]}"#,
     )
     .unwrap();
@@ -182,7 +182,7 @@ fn the_json_of_a_node_is_read_back_as_the_same_node() {
         node.to_json(),
         r#"{"type":"document","children":[{"type":"paragraph","children":[{"type":"text","value":"a"}]}]}"#
     );
-    assert_eq!(parse(&node.to_json()).unwrap(), node);
+    assert_eq!(Node::from_json(&node.to_json()).unwrap(), node);
 }
 
 // Page::to_jsonの書き出したJSONは、parse_pageで同じページに戻る。
