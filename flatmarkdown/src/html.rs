@@ -176,7 +176,6 @@ fn node_to_html(node: &Node) -> String {
             format!("<blockquote>\n{}</blockquote>\n", render_all(children))
         }
 
-        // Page metadata is not part of the rendered content.
         Node::List {
             list_type,
             start,
