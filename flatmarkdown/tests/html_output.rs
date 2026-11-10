@@ -134,10 +134,14 @@ fn a_thematic_break_is_an_hr() {
     assert_eq!(body_to_html("---"), "<hr />\n");
 }
 
-// subtextはsubになる。
+// subtextは、comrakと同じく、pで包んだsubになる。ブロックなので、行の終わりに改行がある。
 #[test]
-fn a_subtext_is_a_sub_element() {
-    assert_eq!(body_to_html("-# small"), "<sub>small</sub>");
+fn a_subtext_is_a_sub_element_in_a_paragraph() {
+    assert_eq!(body_to_html("-# small"), "<p><sub>small</sub></p>\n");
+    assert_eq!(
+        body_to_html("-# small\n\nnext"),
+        "<p><sub>small</sub></p>\n<p>next</p>\n"
+    );
 }
 
 // 引用はblockquoteになる。
