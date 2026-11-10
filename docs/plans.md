@@ -11,7 +11,7 @@
   - [x] 2つのクレートのREADMEと、リポジトリのREADMEを書く
   - [ ] 公開する版を決める（ユーザーが決める）
   - [ ] `cargo publish --dry-run`で確かめてから、`flatmarkdown`、`flatmarkdown-ast`の順に公開する（ユーザーが行う）
-- [ ] HTMLを作るコードを、`flatmarkdown-ast2html`クレートに分ける（peta-journalのADR 020）
+- [x] HTMLを作るコードを、`flatmarkdown-ast2html`クレートに分ける（peta-journalのADR 020）
   - 関数の名前の「ast」は、常に`flatmarkdown-ast`の型を指す。破壊的変更である
   - [x] `flatmarkdown-ast`に、`Node::to_json`と`Page::to_json`を足す
   - [x] `body_to_ast`は`Node`を、`page_to_ast`は`Page`を返す。テストは、`to_json`を通してJSONを確かめる
@@ -19,8 +19,8 @@
   - [x] HTMLのテストを、新しいクレートへ移す。`Node`を入力にするテストを足す
   - [x] 3つのクレートのREADME、リポジトリのREADME、`SPEC_AST.md`の冒頭を直す
   - [x] 公開する版を決める。2026-11-10に、ユーザーが0.6.0と決めた
-  - [ ] `cargo publish`で、`flatmarkdown-ast`、`flatmarkdown`、`flatmarkdown-ast2html`の順に公開する（ユーザーが行う）
-  - [ ] 使っている側を直す: peta-journalのjournal-server、`shell-leptos`、`fm-leptos`のテスト、そして`flatmarkdown-java`
+  - [x] `cargo publish`で、`flatmarkdown-ast`、`flatmarkdown`、`flatmarkdown-ast2html`の順に公開する。2026-11-10に、ユーザーが0.6.0を公開した
+  - [x] 使っている側を直す: peta-journalのjournal-server、`shell-leptos`、`fm-leptos`のテスト（peta-journalの#221）、そして`flatmarkdown-java`（#3）
 - [x] `body_to_html`が、文字として扱う値をエスケープせずにHTMLへ入れる不具合を直す
   - [x] コードフェンスの言語名は、`class`属性の中でエスケープされる
   - [x] アラートの題名は、文字としてエスケープされる
@@ -205,6 +205,7 @@
   - [x] CIに、npmのパッケージをビルドしてテストするジョブを足す
   - [x] READMEのリリースの手順に、npmへの公開を足す
   - この層には、Rustのテストがない。動きは`npm test`で確かめる。そのため、cargo-mutantsの対象にならない
-  - [ ] `npm publish`で、0.6.0を公開する（ユーザーが行う）
+  - [x] `npm publish`で、0.6.0を公開する。2026-11-10に、ユーザーが公開した
   - [ ] リポジトリ`petajournal/flatmarkdown-ast2html`のREADMEに移動先を書き、アーカイブする（ユーザーが行う）
-  - [ ] 使っている側を直す: peta-journalの付箋紙アプリ
+  - [x] 使っている側を直す: peta-journalの付箋紙アプリ（peta-journalの#226）
+    - 実際のWebView2で試して、URLのない文書（`about:blank`）では.jsが読み込めない問題を見つけた。.jsの中で`document`を隠して直した
