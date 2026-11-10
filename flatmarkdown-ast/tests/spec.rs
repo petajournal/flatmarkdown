@@ -99,6 +99,16 @@ fn a_node_that_the_spec_does_not_define_is_read_as_unknown() {
     }
 }
 
+// 仕様にないノードを書き戻すと、元のtypeの名前が残る。子も残る。子のないときはchildrenを書かない。
+#[test]
+fn an_unknown_node_is_written_back_with_its_own_type_name() {
+    let with_children =
+        json!({"type": "description_list", "children": [{"type": "text", "value": "x"}]});
+    assert_eq!(rewritten(&with_children), with_children);
+    let without_children = json!({"type": "insert"});
+    assert_eq!(rewritten(&without_children), without_children);
+}
+
 // ページは、front_matterと項目の並びとして読める。項目は、level、id、properties、body、astを持つ。
 #[test]
 fn a_page_is_read_as_front_matter_and_items() {

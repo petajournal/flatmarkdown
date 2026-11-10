@@ -7,11 +7,13 @@
 //!
 //! Deserialization is tolerant: unknown fields are ignored, scalar fields the producer
 //! omits fall back to their defaults, and a node whose `type` is not modelled here becomes
-//! [`Node::Unknown`] (keeping its children) instead of failing the whole parse.
+//! [`Node::Unknown`] (keeping its type name and its children) instead of failing the whole
+//! parse.
 
 use std::collections::BTreeMap;
 
 use serde::de::Error as _;
+use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
@@ -230,8 +232,10 @@ pub enum Node {
     },
 
     /// A node whose `type` this crate does not model. Its children are still parsed.
-    /// Serializes as `{"type":"unknown","children":[...]}`.
+    /// It is written back with its own `type`, so that nothing is lost on the way through.
     Unknown {
+        /// The `type` as it was read. Not a serde field: the derived form would write `unknown`
+        /// as the tag, so `Serialize` writes this node by hand.
         #[serde(skip)]
         node_type: String,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -246,7 +250,20 @@ fn default_fenced() -> bool {
 
 impl Serialize for Node {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        Node::serialize(self, serializer)
+        match self {
+            Node::Unknown {
+                node_type,
+                children,
+            } => {
+                let mut map = serializer.serialize_map(None)?;
+                map.serialize_entry("type", node_type)?;
+                if !children.is_empty() {
+                    map.serialize_entry("children", children)?;
+                }
+                map.end()
+            }
+            _ => Node::serialize(self, serializer),
+        }
     }
 }
 

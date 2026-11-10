@@ -22,3 +22,8 @@ mod test_support {
         serde_json::from_str(&page_to_ast(input)).unwrap()
     }
 }
+
+// Run the code examples in the README as doctests, so that they keep working
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;
