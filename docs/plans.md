@@ -11,6 +11,15 @@
   - [x] 2つのクレートのREADMEと、リポジトリのREADMEを書く
   - [ ] 公開する版を決める（ユーザーが決める）
   - [ ] `cargo publish --dry-run`で確かめてから、`flatmarkdown`、`flatmarkdown-ast`の順に公開する（ユーザーが行う）
+- [ ] HTMLを作るコードを、`flatmarkdown-ast2html`クレートに分ける（peta-journalのADR 020）
+  - 関数の名前の「ast」は、常に`flatmarkdown-ast`の型を指す。破壊的変更である
+  - [x] `flatmarkdown-ast`に、`Node::to_json`と`Page::to_json`を足す
+  - [x] `body_to_ast`は`Node`を、`page_to_ast`は`Page`を返す。テストは、`to_json`を通してJSONを確かめる
+  - [x] `flatmarkdown-ast2html/`を足し、`ast_to_html`を公開する。`flatmarkdown`から`html.rs`と`body_to_html`を消す
+  - [x] HTMLのテストを、新しいクレートへ移す。`Node`を入力にするテストを足す
+  - [x] 3つのクレートのREADME、リポジトリのREADME、`SPEC_AST.md`の冒頭を直す
+  - [ ] 公開する版を決める（ユーザーが決める）。3つのクレートを同じ版で公開する
+  - [ ] 使っている側を直す: peta-journalのjournal-server、`shell-leptos`、`fm-leptos`のテスト、そして`flatmarkdown-java`
 - [x] `body_to_html`が、文字として扱う値をエスケープせずにHTMLへ入れる不具合を直す
   - [x] コードフェンスの言語名は、`class`属性の中でエスケープされる
   - [x] アラートの題名は、文字としてエスケープされる
