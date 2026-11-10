@@ -443,10 +443,17 @@ impl Node {
         }
     }
 
-    /// Writes this node and its descendants as the JSON of `SPEC_AST.md`. [`parse`] reads it back.
+    /// Writes this node and its descendants as the JSON of `SPEC_AST.md`.
+    /// [`Node::from_json`] reads it back.
     pub fn to_json(&self) -> String {
         // Every key of the JSON is a string, so serde_json has nothing to refuse.
         serde_json::to_string(self).expect("a node is always valid JSON")
+    }
+
+    /// Reads a node and its descendants from the JSON of `SPEC_AST.md`
+    /// (as written by [`Node::to_json`]). The root is normally a [`Node::Document`].
+    pub fn from_json(json: &str) -> Result<Node, serde_json::Error> {
+        serde_json::from_str(json)
     }
 }
 
