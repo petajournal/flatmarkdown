@@ -75,7 +75,15 @@ fn list_to_html(list_type: &str, start: u32, tight: bool, items: &[Node]) -> Str
     }
 }
 
-fn table_to_html(rows: &[Node]) -> String {
+/// The `align` attribute of a cell, as GFM writes it. A column without an alignment has none.
+fn align_attribute(alignment: Option<&String>) -> String {
+    match alignment.map(String::as_str) {
+        Some(alignment @ ("left" | "center" | "right")) => format!(" align=\"{alignment}\""),
+        _ => String::new(),
+    }
+}
+
+fn table_to_html(alignments: &[String], rows: &[Node]) -> String {
     let mut thead = String::new();
     let mut tbody = String::new();
     for row in rows {
@@ -84,7 +92,11 @@ fn table_to_html(rows: &[Node]) -> String {
         let cells_html: String = row
             .children()
             .iter()
-            .map(|cell| format!("<{tag}>{}</{tag}>", render_children(cell)))
+            .enumerate()
+            .map(|(column, cell)| {
+                let align = align_attribute(alignments.get(column));
+                format!("<{tag}{align}>{}</{tag}>", render_children(cell))
+            })
             .collect();
         let row_html = format!("<tr>{cells_html}</tr>\n");
         if is_header {
@@ -179,7 +191,11 @@ fn node_to_html(node: &Node) -> String {
             format!("<li>{}{}</li>\n", checkbox(symbol), render_all(children))
         }
 
-        Node::Table { children, .. } => table_to_html(children),
+        Node::Table {
+            alignments,
+            children,
+            ..
+        } => table_to_html(alignments, children),
 
         // Fallback — normally rendered inside the table handler
         Node::TableRow { children, .. } | Node::TableCell { children } => render_all(children),
