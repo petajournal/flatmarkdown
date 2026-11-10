@@ -2,11 +2,11 @@
 
 基本仕様は、Flat Markdown仕様書v0.2（[SPEC_ja.md](SPEC_ja.md)）に基づく。
 
-`page_to_ast(input)` はFlat Markdownのページ全体を解析し、JSON文字列を返す。`body_to_ast(input)` は項目の本文（body）を解析し、JSON形式のAST文字列を返す。
+`page_to_ast(input)` はFlat Markdownのページ全体を解析する。`body_to_ast(input)` は項目の本文（body）を解析し、ASTを返す。この文書は、2つの結果のJSONを定義する。Rustでは、これらの関数は`flatmarkdown-ast`クレートの型を返す。型の`to_json()`が、このJSONを書き出す。
 
 ## ページ構造
 
-`page_to_ast(input)` は次のオブジェクトを返す。
+`page_to_ast(input)` の結果のJSONは、次のオブジェクトである。
 
 ```json
 {

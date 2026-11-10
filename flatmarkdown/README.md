@@ -24,11 +24,11 @@ pub struct BodyOptions {
 
 `link_resolution` (default: `Off`) — when `On`, enables link and hashtag resolution:
 
-| Input | AST node | HTML output |
-|---|---|---|
-| `[label](<prefix>page.md)`, or with `#id` | `wikilink` | `<a href="page" data-wikilink="true">label</a>` |
-| `[#tag](<prefix>tag.md)` | `hashtag` | `<a href="tag" class="hashtag">#tag</a>` |
-| `#tag` in text | `hashtag` | `<a href="tag" class="hashtag">#tag</a>` |
+| Input | AST node |
+|---|---|
+| `[label](<prefix>page.md)`, or with `#id` | `wikilink` |
+| `[#tag](<prefix>tag.md)` | `hashtag` |
+| `#tag` in text | `hashtag` |
 
 Relative links are matched when the URL starts with one of `prefixes` (for example `../` or `./`) and ends with `.md`. When more than one prefix matches, the longest one is used.
 
@@ -38,57 +38,36 @@ When `Off`, these links remain as `link` nodes and `#tag` text remains as plain 
 
 | Function | Description |
 |---|---|
-| `page_to_ast(input)` | Split a page into items with metadata ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
+| `page_to_ast(input)` | Split a page into items with metadata, as a `Page` ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
 | `page_to_ast_with(input, opts)` | Same, with explicit `BodyOptions` |
-| `body_to_ast(input)` | Parse an item body to JSON AST ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
+| `body_to_ast(input)` | Parse an item body to the AST, as a `Node` ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
 | `body_to_ast_with(input, opts)` | Same, with explicit `BodyOptions` |
-| `body_to_html(input)` | Render an item body to HTML |
-| `body_to_html_with(input, opts)` | Same, with explicit `BodyOptions` |
 
-### HTML output
+### JSON and HTML
 
-The HTML follows comrak where comrak has a form. These are the choices of this crate:
+The functions return the types of the [flatmarkdown-ast](https://crates.io/crates/flatmarkdown-ast) crate: a `Node` for an item body, and a `Page` for a page.
 
-- A task item is a checkbox. Any character in the brackets counts as checked: `[x]` and `[-]` are both checked.
-- A table cell has the `align` attribute of its column (`left`, `center`, or `right`), as in GFM. A column without an alignment has none.
-- An `embed` is an `<img>` with `src`, `alt`, and, when it has one, `title`. The `props` of the URL fragment (`#w=100`) are not written: how an app uses them is up to the app.
-- A `subtext` (`-# text`) is `<p><sub>text</sub></p>`, as in comrak.
-- A hashtag is `<a href="<name>" class="hashtag">#<name></a>`. A wikilink is `<a href="<url>" data-wikilink="true">`.
-
-A footnote shows its name: `[^memo]` is shown as `[memo]`. An inline footnote (`^[content]`) has no name of its own, so it shows its number: `[1]` for the first one of the body.
-
-A reference has the `id` `fnref-<name>`, and a definition has the `id` `fn-<name>`. The second reference to the same footnote has the `id` `fnref-<name>-2`, the third `fnref-<name>-3`, and so on. The label of the definition links back to the first reference.
-
-### HTML output is for trusted content
-
-`body_to_html` is made for content that you trust, such as your own notes.
-
-- Raw HTML in the body is written as it is. `<script>` and event attributes such as `onerror` are not removed.
-- The URL of a link is not checked. A `javascript:` link stays a link.
-
-This is on purpose. Flat Markdown lets you write HTML in a note.
-
-Do not show the HTML of Markdown that you do not trust without a sanitizer.
-
-Values that are text are escaped: the text itself, the info of a code fence, the title of an alert, the name of a hashtag, and the `alt` of an image.
-The `alt` of an image holds only the text of the image description, without tags.
+- `to_json()` of a `Node` or a `Page` writes the JSON of the specification.
+- `ast_to_html` of the [flatmarkdown-ast2html](https://crates.io/crates/flatmarkdown-ast2html) crate renders a `Node` to HTML. This crate does not make HTML.
 
 ### Examples
 
 ```rust
-use flatmarkdown::{body_to_ast, body_to_html_with, page_to_ast, BodyOptions, LinkResolution};
+use flatmarkdown::{body_to_ast, body_to_ast_with, page_to_ast, BodyOptions, LinkResolution};
 
 // Split a page into items. Each top-level block is one item.
 // A `<!-- @@ ID key="value" -->` line above a block is its metadata.
 let page = page_to_ast("<!-- @@ 2026-09-27-15-00-16-W3N8ASY plan=\"2026-09-28\" -->\n- [ ] Task1\n\nParagraph");
+assert_eq!(page.items.len(), 2);
 
 // Parse one item body (link resolution off)
 let ast = body_to_ast("Hello **world**");
+let json = ast.to_json();
 
 // With link resolution enabled
 let opts = BodyOptions {
     link_resolution: LinkResolution::On { prefixes: vec!["../".into(), "./".into()] },
 };
-let html = body_to_html_with("#tag text", &opts);
+let ast = body_to_ast_with("#tag text", &opts);
 ```
 

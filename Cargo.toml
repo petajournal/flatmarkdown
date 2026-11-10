@@ -1,8 +1,9 @@
 [workspace]
 resolver = "3"
-members = ["flatmarkdown", "flatmarkdown-ast"]
+members = ["flatmarkdown", "flatmarkdown-ast", "flatmarkdown-ast2html"]
 
-# Both crates always have the same version (ADR 012 of peta-journal), so it is written only here.
+# All three crates always have the same version (ADR 012 and ADR 020 of peta-journal), so it
+# is written only here.
 [workspace.package]
 version = "0.5.0"
 edition = "2024"
@@ -14,7 +15,8 @@ repository = "https://github.com/petajournal/flatmarkdown"
 
 # Less debug info makes linking faster. A panic still shows the file name and the line number.
 # flatmarkdown builds its AST with the types of flatmarkdown-ast (ADR 014 of peta-journal).
-# Keep this version the same as `version` above: a release always has both crates.
+# flatmarkdown-ast2html renders that AST (ADR 020 of peta-journal).
+# Keep this version the same as `version` above: a release always has all three crates.
 [workspace.dependencies]
 flatmarkdown-ast = { version = "=0.5.0", path = "flatmarkdown-ast" }
 

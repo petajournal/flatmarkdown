@@ -2,7 +2,7 @@
 //! These tests check that the single pipes stay in the output, and that a spoiler is still a
 //! spoiler.
 
-use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast, body_to_ast_with, body_to_html};
+use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast, body_to_ast_with};
 use serde_json::{Value, json};
 
 /// The inline nodes of the first block.
@@ -20,12 +20,6 @@ fn text(value: &str) -> Value {
 fn text_between_single_pipes_keeps_its_pipes() {
     assert_eq!(inlines("a |b| c"), json!([text("a |b| c")]));
     assert_eq!(inlines("|x| + |y|"), json!([text("|x| + |y|")]));
-}
-
-// 1本の|で囲んだ文字は、HTMLでも|が残る。
-#[test]
-fn text_between_single_pipes_keeps_its_pipes_in_html() {
-    assert_eq!(body_to_html("a |b| c"), "<p>a |b| c</p>\n");
 }
 
 // 1本の|の中の強調は強調のまま残り、その前後に|の文字が置かれる。
