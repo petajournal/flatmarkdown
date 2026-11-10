@@ -1,7 +1,7 @@
 //! A link is converted when its URL starts with one of the prefixes. When more than one prefix
 //! matches, the longest one is used, so the order of the list does not change the result.
 
-use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast_with};
+use flatmarkdown::{BodyOptions, LinkResolution, parse_body_with};
 use flatmarkdown_ast::Node;
 
 fn ast(md: &str, prefixes: &[&str]) -> Node {
@@ -10,7 +10,7 @@ fn ast(md: &str, prefixes: &[&str]) -> Node {
             prefixes: prefixes.iter().map(|p| p.to_string()).collect(),
         },
     };
-    body_to_ast_with(md, &opts)
+    parse_body_with(md, &opts)
 }
 
 /// The `url` of the wikilink that is the only inline node of the body.

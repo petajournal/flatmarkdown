@@ -41,9 +41,6 @@ for child in root.children() {
 The JSON follows the specification: a node without children has no `children`, and an `embed` without properties has no `props`.
 `Node::from_json` and `Page::from_json` read that JSON back.
 
-The functions `parse` and `parse_page` are the old names of `Node::from_json` and `Page::from_json`.
-They still work, but they are deprecated.
-
 ## Unknown Nodes
 
 Reading is tolerant.

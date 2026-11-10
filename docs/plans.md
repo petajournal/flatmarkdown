@@ -209,7 +209,15 @@
   - [x] リポジトリ`petajournal/flatmarkdown-ast2html`のREADMEに移動先を書き、アーカイブする。2026-11-10に、ユーザーがアーカイブした
   - [x] 使っている側を直す: peta-journalの付箋紙アプリ（peta-journalの#226）
     - 実際のWebView2で試して、URLのない文書（`about:blank`）では.jsが読み込めない問題を見つけた。.jsの中で`document`を隠して直した
-- [x] `flatmarkdown-ast`の`parse`と`parse_page`を、`Node::from_json`と`Page::from_json`に改名する。古い名前は`#[deprecated]`で残す
-  - 理由: `parse`は入力がJSONだと言わず、`to_json`とも対になっていなかった
-  - [ ] 古い名前を消す版を決める（ユーザーが決める）
-  - [ ] peta-journalの呼び出しを、新しい名前に替える。新しい版を公開したあとに行う
+- [ ] 公開する関数の名前を、役割に合わせて替える（2026-11-11にユーザーが決めた。破壊的変更でよい）
+  - JSONを読むのは`from_json`、Markdownを解析するのは`parse_*`と、言葉を分ける
+  - [x] `flatmarkdown-ast`の`parse`と`parse_page`を、`Node::from_json`と`Page::from_json`に替える
+    - 理由: `parse`は入力がJSONだと言わず、`to_json`とも対になっていなかった
+    - 古い名前は、いったん`#[deprecated]`で残したが、消した。`flatmarkdown::parse_page`と名前がぶつかるためである
+  - [x] `flatmarkdown`の`body_to_ast`と`page_to_ast`を、`parse_body`と`parse_page`に替える（`_with`も同じ）。古い名前は残さない
+    - 理由: このクレートはパーサーである。`page_to_ast`が返すのは`Page`で、ASTそのものではなかった
+  - [ ] 公開する版を決める（ユーザーが決める）。破壊的変更なので、0.6.0のままでは公開できない
+  - [ ] 新しい版を公開したあとに、利用側の呼び出しを替える
+    - [ ] peta-journal（`journal-server-rust`と`frontend-rust`）
+    - [ ] `flatmarkdown-java`の`rust/lib.rs`
+    - [ ] `flatmarkdown-ast-ts`のREADMEにある関数名

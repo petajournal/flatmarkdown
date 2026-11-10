@@ -1,7 +1,7 @@
 //! Parses a whole page: the front matter, the metadata lines, and the items.
 
 use crate::ast::options;
-use crate::body::{BodyOptions, body_to_ast_with};
+use crate::body::{BodyOptions, parse_body_with};
 use comrak::nodes::NodeValue;
 use comrak::{Arena, parse_document};
 use flatmarkdown_ast::{Item, Page};
@@ -150,7 +150,7 @@ fn item(meta: Option<ItemMetadata>, body: String, opts: &BodyOptions) -> Item {
         id: None,
         properties: Vec::new(),
     });
-    let ast = body_to_ast_with(&body, opts);
+    let ast = parse_body_with(&body, opts);
     Item {
         level: meta.level as u32,
         id: meta.id,
@@ -180,7 +180,7 @@ struct OpenItem {
 /// consumes without creating a node (link reference definitions) and footnote
 /// definitions therefore stay with the item they follow, which is where the
 /// paragraph that uses them normally is.
-pub fn page_to_ast_with(input: &str, opts: &BodyOptions) -> Page {
+pub fn parse_page_with(input: &str, opts: &BodyOptions) -> Page {
     let lines: Vec<&str> = input.lines().collect();
     let arena = Arena::new();
     let root = parse_document(&arena, input, &options(true));
@@ -259,8 +259,8 @@ pub fn page_to_ast_with(input: &str, opts: &BodyOptions) -> Page {
 }
 
 /// Parses a whole Flat Markdown page with the default options.
-pub fn page_to_ast(input: &str) -> Page {
-    page_to_ast_with(input, &BodyOptions::default())
+pub fn parse_page(input: &str) -> Page {
+    parse_page_with(input, &BodyOptions::default())
 }
 
 #[cfg(test)]
@@ -650,7 +650,7 @@ mod tests {
             },
         };
         let v: Value =
-            serde_json::from_str(&page_to_ast_with("#tag [p](../p.md)", &opts).to_json()).unwrap();
+            serde_json::from_str(&parse_page_with("#tag [p](../p.md)", &opts).to_json()).unwrap();
         let inline = v["items"][0]["ast"]["children"][0]["children"]
             .as_array()
             .unwrap();

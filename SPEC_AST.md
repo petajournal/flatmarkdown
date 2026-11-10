@@ -2,11 +2,11 @@
 
 The basic specification is based on the Flat Markdown specification v0.2: [SPEC.md](SPEC.md)
 
-`page_to_ast(input)` parses a whole Flat Markdown page. `body_to_ast(input)` parses the body of one item into an AST. This document defines the JSON of both results. In Rust, the functions return the types of the `flatmarkdown-ast` crate, and `to_json()` of a type writes this JSON.
+`parse_page(input)` parses a whole Flat Markdown page. `parse_body(input)` parses the body of one item into an AST. This document defines the JSON of both results. In Rust, the functions return the types of the `flatmarkdown-ast` crate, and `to_json()` of a type writes this JSON.
 
 ## Page Structure
 
-The JSON of the result of `page_to_ast(input)` is the following object:
+The JSON of the result of `parse_page(input)` is the following object:
 
 ```json
 {
@@ -37,7 +37,7 @@ Each item has:
 | `id`         | string \| null | The HMTID from the metadata line. `null` when absent. It has the form `YYYY-MM-DD-hh-mm-ss-XXXXXXX` (27 characters). The date part is digits. The tail is 7 characters of Crockford's Base32 (`0123456789ABCDEFGHJKMNPQRSTVWXYZ`): no lower case, and no `I`, `L`, `O`, or `U`. A line whose ID does not have this form is not a metadata line. |
 | `properties` | object         | `key: value` pairs from the metadata line. Values are always strings. Empty when absent. |
 | `body`       | string         | The item's Markdown source. Leading and trailing blank lines are removed. |
-| `ast`        | object         | The result of parsing `body` with `body_to_ast`. |
+| `ast`        | object         | The result of parsing `body` with `parse_body`. |
 
 **Item delimiters**: every block at the shallowest level of the Markdown document is one item. Nested blocks belong to the body of the outer block. Block boundaries are decided by the Markdown parser, not by blank lines.
 

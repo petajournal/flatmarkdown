@@ -2,7 +2,7 @@
 //!
 //! The AST is defined in `SPEC_AST.md` of the flatmarkdown repository, and the types hold
 //! what that specification defines. The `flatmarkdown` crate builds these types
-//! (`body_to_ast*` and `page_to_ast*`). In the JSON, every node is an object discriminated by
+//! (`parse_body*` and `parse_page*`). In the JSON, every node is an object discriminated by
 //! its `type` field (snake_case), with a `children` array when it has children.
 //!
 //! Deserialization is tolerant: unknown fields are ignored, scalar fields the producer
@@ -457,7 +457,7 @@ impl Node {
     }
 }
 
-/// A whole page, as `flatmarkdown::page_to_ast` returns it.
+/// A whole page, as `flatmarkdown::parse_page` returns it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename = "page")]
 pub struct Page {
@@ -495,20 +495,6 @@ impl Page {
     pub fn from_json(json: &str) -> Result<Page, serde_json::Error> {
         serde_json::from_str(json)
     }
-}
-
-/// The old name of [`Node::from_json`].
-// Kept so that code written for 0.6.0 still builds. The name did not say that the input is
-// JSON, and it had no pair with `Node::to_json`.
-#[deprecated(note = "use `Node::from_json`")]
-pub fn parse(json: &str) -> Result<Node, serde_json::Error> {
-    Node::from_json(json)
-}
-
-/// The old name of [`Page::from_json`].
-#[deprecated(note = "use `Page::from_json`")]
-pub fn parse_page(json: &str) -> Result<Page, serde_json::Error> {
-    Page::from_json(json)
 }
 
 /// Concatenates the `text` values of a node and its descendants, in document order.

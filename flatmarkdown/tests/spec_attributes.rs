@@ -1,11 +1,11 @@
 //! Attributes and rules of SPEC_AST.md that no other test of the parser checked. A review of
 //! the specification against the tests found them on 2026-11-10.
 
-use flatmarkdown::{BodyOptions, LinkResolution, body_to_ast, body_to_ast_with};
+use flatmarkdown::{BodyOptions, LinkResolution, parse_body, parse_body_with};
 use flatmarkdown_ast::Node;
 
 fn ast(md: &str) -> Node {
-    body_to_ast(md)
+    parse_body(md)
 }
 
 /// Parses with link resolution on, which also turns hashtags on.
@@ -15,7 +15,7 @@ fn ast_with_hashtags(md: &str) -> Node {
             prefixes: vec!["./".to_string()],
         },
     };
-    body_to_ast_with(md, &opts)
+    parse_body_with(md, &opts)
 }
 
 fn text(value: &str) -> Node {

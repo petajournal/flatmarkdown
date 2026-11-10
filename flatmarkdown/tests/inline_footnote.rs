@@ -1,11 +1,11 @@
 //! An inline footnote is written as `^[content]`. These tests check that it becomes a
 //! reference and a definition in the same body, as SPEC_AST.md says.
 
-use flatmarkdown::{body_to_ast, page_to_ast};
+use flatmarkdown::{parse_body, parse_page};
 use serde_json::{Value, json};
 
 fn ast(md: &str) -> Value {
-    serde_json::from_str(&body_to_ast(md).to_json()).unwrap()
+    serde_json::from_str(&parse_body(md).to_json()).unwrap()
 }
 
 fn text(value: &str) -> Value {
@@ -52,7 +52,7 @@ fn inline_footnotes_are_numbered_from_one_in_a_body() {
 #[test]
 fn the_names_of_inline_footnotes_restart_in_every_item_of_a_page() {
     let page: Value =
-        serde_json::from_str(&page_to_ast("first^[one]\n\nsecond^[two]\n").to_json()).unwrap();
+        serde_json::from_str(&parse_page("first^[one]\n\nsecond^[two]\n").to_json()).unwrap();
     for item in page["items"].as_array().unwrap() {
         assert_eq!(
             item["ast"]["children"][0]["children"][1]["name"],

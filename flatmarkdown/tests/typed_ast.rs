@@ -15,7 +15,7 @@ fn options() -> BodyOptions {
 
 /// Parses `md` and asserts no node fell back to `Unknown`.
 fn ast(md: &str) -> Node {
-    let json = flatmarkdown::body_to_ast_with(md, &options()).to_json();
+    let json = flatmarkdown::parse_body_with(md, &options()).to_json();
     let root =
         Node::from_json(&json).unwrap_or_else(|e| panic!("parse failed for {md:?}: {e}\n{json}"));
     let mut unknown = Vec::new();

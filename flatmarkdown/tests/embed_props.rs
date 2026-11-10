@@ -1,12 +1,12 @@
 //! The properties of an embed come from the fragment of its URL (`#key=value&flag`). These
 //! tests check what the parser does with the unusual forms.
 
-use flatmarkdown::body_to_ast;
+use flatmarkdown::parse_body;
 use serde_json::{Value, json};
 
 /// The `embed` node of a body that holds only one image.
 fn embed(md: &str) -> Value {
-    let root: Value = serde_json::from_str(&body_to_ast(md).to_json()).unwrap();
+    let root: Value = serde_json::from_str(&parse_body(md).to_json()).unwrap();
     let node = root["children"][0]["children"][0].clone();
     assert_eq!(node["type"], "embed", "{md:?}");
     node
