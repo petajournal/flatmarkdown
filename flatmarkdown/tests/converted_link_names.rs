@@ -87,3 +87,20 @@ fn a_noncharacter_in_a_page_path_is_not_read_as_an_escaped_hash() {
         [wikilink("\u{FDD0}\u{FDD1}", "x")]
     );
 }
+
+// #のあとにIDがなければ、#は落とす。
+#[test]
+fn a_hash_sign_without_an_id_is_dropped_from_a_converted_page_path() {
+    assert_eq!(inlines(&ast("[x](../a.md#)")), [wikilink("a", "x")]);
+}
+
+// IDのない#のあるタグのリンクも、hashtagになる。
+#[test]
+fn a_tag_link_with_a_hash_sign_without_an_id_is_a_hashtag() {
+    assert_eq!(
+        inlines(&ast("[#a](../a.md#)")),
+        [Node::Hashtag {
+            value: "a".to_string()
+        }]
+    );
+}
