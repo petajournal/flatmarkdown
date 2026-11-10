@@ -196,7 +196,8 @@ fn node_to_html(node: &Node) -> String {
             children,
         } => alert_to_html(alert_type, title, children),
 
-        Node::Subtext { children } => format!("<sub>{}</sub>", render_all(children)),
+        // The same HTML as comrak writes for `-# text`.
+        Node::Subtext { children } => format!("<p><sub>{}</sub></p>\n", render_all(children)),
 
         Node::Text { value } => escape_html(value),
 
