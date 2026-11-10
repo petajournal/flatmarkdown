@@ -200,22 +200,3 @@ fn the_json_of_a_page_is_read_back_as_the_same_page() {
     );
     assert_eq!(Page::from_json(&page.to_json()).unwrap(), page);
 }
-
-// 古い名前のparseとparse_pageは、from_jsonと同じ結果を返す。0.6.0向けに書かれたコードが動き続ける。
-#[test]
-#[allow(deprecated)]
-fn the_old_names_read_the_same_node_and_page() {
-    let node = r#"{"type":"document","children":[{"type":"paragraph"}]}"#;
-    assert_eq!(
-        flatmarkdown_ast::parse(node).unwrap(),
-        Node::from_json(node).unwrap()
-    );
-    assert!(flatmarkdown_ast::parse("not json").is_err());
-
-    let page = r#"{"type":"page","front_matter":null,"items":[{"level":1,"id":null,"properties":{},"body":"a","ast":{"type":"document"}}]}"#;
-    assert_eq!(
-        flatmarkdown_ast::parse_page(page).unwrap(),
-        Page::from_json(page).unwrap()
-    );
-    assert!(flatmarkdown_ast::parse_page("not json").is_err());
-}

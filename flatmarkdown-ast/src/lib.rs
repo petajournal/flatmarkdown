@@ -497,20 +497,6 @@ impl Page {
     }
 }
 
-/// The old name of [`Node::from_json`].
-// Kept so that code written for 0.6.0 still builds. The name did not say that the input is
-// JSON, and it had no pair with `Node::to_json`.
-#[deprecated(note = "use `Node::from_json`")]
-pub fn parse(json: &str) -> Result<Node, serde_json::Error> {
-    Node::from_json(json)
-}
-
-/// The old name of [`Page::from_json`].
-#[deprecated(note = "use `Page::from_json`")]
-pub fn parse_page(json: &str) -> Result<Page, serde_json::Error> {
-    Page::from_json(json)
-}
-
 /// Concatenates the `text` values of a node and its descendants, in document order.
 pub fn extract_text(node: &Node) -> String {
     fn collect(node: &Node, out: &mut String) {
