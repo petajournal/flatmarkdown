@@ -41,6 +41,21 @@ for child in root.children() {
 The JSON follows the specification: a node without children has no `children`, and an `embed` without properties has no `props`.
 `Node::from_json` and `Page::from_json` read that JSON back.
 
+## Binary Formats and Other Languages
+
+serde writes the JSON above only for a human-readable format, such as `serde_json`.
+A binary format, such as `bincode`, gets the plain form of serde: each variant by its index in the order of the type, and each field in order, with nothing left out.
+The value of a property of an `embed` is the enum `PropValue` there, and in JSON it is the string or the boolean itself.
+
+The `facet` feature adds the derive of [facet](https://crates.io/crates/facet) to `Node` and the types in it.
+A program generates types of other languages from it (Swift, Kotlin, C#), and they read and write the plain form.
+So a program in another language can take the AST as types instead of JSON, and a `switch` over the kinds of node is checked by its compiler.
+Rust code that uses the AST does not need the feature.
+
+```toml
+flatmarkdown-ast = { version = "0.8", features = ["facet"] }
+```
+
 ## Unknown Nodes
 
 Reading is tolerant.

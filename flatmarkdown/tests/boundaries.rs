@@ -2,7 +2,7 @@
 //! could be changed at these places without any test failing.
 
 use flatmarkdown::{BodyOptions, LinkResolution, parse_body, parse_body_with};
-use flatmarkdown_ast::Node;
+use flatmarkdown_ast::{Alignment, Node};
 
 fn ast(md: &str) -> Node {
     parse_body(md)
@@ -64,7 +64,15 @@ fn the_alignment_of_a_table_column_is_none_unless_it_is_given() {
             num_columns,
             ..
         } => {
-            assert_eq!(alignments, &["none", "left", "center", "right"]);
+            assert_eq!(
+                alignments,
+                &[
+                    Alignment::None,
+                    Alignment::Left,
+                    Alignment::Center,
+                    Alignment::Right
+                ]
+            );
             assert_eq!(*num_columns, 4);
         }
         other => panic!("expected table, got {other:?}"),

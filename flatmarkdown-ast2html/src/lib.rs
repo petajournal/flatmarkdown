@@ -7,7 +7,7 @@
 //! The HTML is made for content that you trust. Raw HTML of the AST is written as it is, and
 //! the URL of a link is not checked.
 
-use flatmarkdown_ast::Node;
+use flatmarkdown_ast::{AlertType, Alignment, ListType, Node};
 
 fn escape_html(s: &str) -> String {
     s.replace('&', "&amp;")
@@ -57,7 +57,7 @@ fn checkbox(symbol: &Option<String>) -> &'static str {
     }
 }
 
-fn list_to_html(list_type: &str, start: u32, tight: bool, items: &[Node]) -> String {
+fn list_to_html(list_type: ListType, start: u32, tight: bool, items: &[Node]) -> String {
     let items_html: String = items
         .iter()
         .map(|item| {
@@ -70,7 +70,7 @@ fn list_to_html(list_type: &str, start: u32, tight: bool, items: &[Node]) -> Str
             }
         })
         .collect();
-    if list_type == "ordered" {
+    if list_type == ListType::Ordered {
         if start == 1 {
             format!("<ol>\n{items_html}</ol>\n")
         } else {
@@ -82,14 +82,17 @@ fn list_to_html(list_type: &str, start: u32, tight: bool, items: &[Node]) -> Str
 }
 
 /// The `align` attribute of a cell, as GFM writes it. A column without an alignment has none.
-fn align_attribute(alignment: Option<&String>) -> String {
-    match alignment.map(String::as_str) {
-        Some(alignment @ ("left" | "center" | "right")) => format!(" align=\"{alignment}\""),
-        _ => String::new(),
-    }
+fn align_attribute(alignment: Option<&Alignment>) -> String {
+    let name = match alignment {
+        Some(Alignment::Left) => "left",
+        Some(Alignment::Center) => "center",
+        Some(Alignment::Right) => "right",
+        Some(Alignment::None) | None => return String::new(),
+    };
+    format!(" align=\"{name}\"")
 }
 
-fn table_to_html(alignments: &[String], rows: &[Node]) -> String {
+fn table_to_html(alignments: &[Alignment], rows: &[Node]) -> String {
     let mut thead = String::new();
     let mut tbody = String::new();
     for row in rows {
@@ -144,14 +147,15 @@ fn footnote_definition_to_html(name: &str, children: &[Node]) -> String {
     format!("<div id=\"fn-{name}\" class=\"footnote\">\n{body}</div>\n")
 }
 
-fn alert_to_html(alert_type: &str, title: &Option<String>, children: &[Node]) -> String {
-    let title = title.as_deref().unwrap_or(match alert_type {
-        "tip" => "Tip",
-        "important" => "Important",
-        "warning" => "Warning",
-        "caution" => "Caution",
-        _ => "Note",
-    });
+fn alert_to_html(alert_type: AlertType, title: &Option<String>, children: &[Node]) -> String {
+    let (alert_type, shown) = match alert_type {
+        AlertType::Note => ("note", "Note"),
+        AlertType::Tip => ("tip", "Tip"),
+        AlertType::Important => ("important", "Important"),
+        AlertType::Warning => ("warning", "Warning"),
+        AlertType::Caution => ("caution", "Caution"),
+    };
+    let title = title.as_deref().unwrap_or(shown);
     format!(
         "<blockquote class=\"alert alert-{alert_type}\">\n<p class=\"alert-title\">{}</p>\n{}</blockquote>\n",
         escape_html(title),
@@ -191,7 +195,7 @@ pub fn ast_to_html(node: &Node) -> String {
             tight,
             children,
             ..
-        } => list_to_html(list_type, *start, *tight, children),
+        } => list_to_html(*list_type, *start, *tight, children),
 
         // Fallback — normally rendered inside the list handler
         Node::Item { children, .. } => format!("<li>{}</li>\n", render_all(children)),
@@ -218,7 +222,7 @@ pub fn ast_to_html(node: &Node) -> String {
             alert_type,
             title,
             children,
-        } => alert_to_html(alert_type, title, children),
+        } => alert_to_html(*alert_type, title, children),
 
         // The same HTML as comrak writes for `-# text`.
         Node::Subtext { children } => format!("<p><sub>{}</sub></p>\n", render_all(children)),

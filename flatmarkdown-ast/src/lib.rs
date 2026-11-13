@@ -9,12 +9,18 @@
 //! omits fall back to their defaults, and a node whose `type` is not modelled here becomes
 //! [`Node::Unknown`] (keeping its type name and its children) instead of failing the whole
 //! parse.
+//!
+//! The JSON form is for a human-readable format (`serde_json`). A binary format (`bincode`)
+//! gets the plain form of serde instead: every variant by its index and every field in order,
+//! with nothing left out. That is the form that types generated with `facet` from these types
+//! read and write (the `facet` feature), so that a program in another language can take the
+//! AST as types rather than as JSON.
 
 use std::collections::BTreeMap;
 
 use serde::de::Error as _;
 use serde::ser::SerializeMap;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 
 /// One node of the Flat Markdown AST.
@@ -23,6 +29,7 @@ use serde_json::Value;
 /// `children`; leaf nodes do not. An empty `children` is not written to the JSON.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", remote = "Self")]
+#[cfg_attr(feature = "facet", derive(facet::Facet), repr(C))]
 pub enum Node {
     // ── Block nodes ──
     Document {
@@ -60,22 +67,20 @@ pub enum Node {
         children: Vec<Node>,
     },
     List {
-        /// `"bullet"` or `"ordered"`.
         #[serde(default)]
-        list_type: String,
+        list_type: ListType,
         #[serde(default)]
         start: u32,
         #[serde(default)]
         tight: bool,
-        /// `"period"` or `"paren"`.
         #[serde(default)]
-        delimiter: String,
+        delimiter: ListDelimiter,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
     Item {
         #[serde(default)]
-        list_type: String,
+        list_type: ListType,
         #[serde(default)]
         start: u32,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -89,13 +94,13 @@ pub enum Node {
         children: Vec<Node>,
     },
     Table {
-        /// One of `"none"`, `"left"`, `"center"`, `"right"` per column.
+        /// The alignment of each column.
         #[serde(default)]
-        alignments: Vec<String>,
+        alignments: Vec<Alignment>,
         #[serde(default)]
-        num_columns: usize,
+        num_columns: u32,
         #[serde(default)]
-        num_rows: usize,
+        num_rows: u32,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
@@ -124,7 +129,7 @@ pub enum Node {
     },
     Alert {
         #[serde(default)]
-        alert_type: String,
+        alert_type: AlertType,
         #[serde(default)]
         title: Option<String>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -166,6 +171,9 @@ pub enum Node {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
+    /// Generated Swift names it `subscriptText`: `subscript` is a keyword of Swift, and the
+    /// generator of Crux does not escape it.
+    #[cfg_attr(feature = "facet", facet(rename = "SubscriptText"))]
     Subscript {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
@@ -194,7 +202,7 @@ pub enum Node {
         #[serde(default)]
         title: String,
         #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-        props: BTreeMap<String, Value>,
+        props: BTreeMap<String, PropValue>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         children: Vec<Node>,
     },
@@ -234,8 +242,9 @@ pub enum Node {
     /// A node whose `type` this crate does not model. Its children are still parsed.
     /// It is written back with its own `type`, so that nothing is lost on the way through.
     Unknown {
-        /// The `type` as it was read. Not a serde field: the derived form would write `unknown`
-        /// as the tag, so `Serialize` writes this node by hand.
+        /// The `type` as it was read. Not a field of the JSON: the derived form would write
+        /// `unknown` as the tag, so `Serialize` writes this node by hand. The plain form of a
+        /// binary format has it as a field.
         #[serde(skip)]
         node_type: String,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -248,8 +257,258 @@ fn default_fenced() -> bool {
     true
 }
 
+/// The kind of a list, or of an item of a list.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "facet", derive(facet::Facet), repr(C))]
+pub enum ListType {
+    /// `- item`, `* item`, `+ item`.
+    #[default]
+    Bullet,
+    /// `1. item`, `1) item`.
+    Ordered,
+}
+
+/// The character after the number of an ordered list. A bullet list has the default.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "facet", derive(facet::Facet), repr(C))]
+pub enum ListDelimiter {
+    /// `1.`
+    #[default]
+    Period,
+    /// `1)`
+    Paren,
+}
+
+/// The alignment of a column of a table, from the colons of its delimiter row.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "facet", derive(facet::Facet), repr(C))]
+pub enum Alignment {
+    /// `---`
+    #[default]
+    None,
+    /// `:--`
+    Left,
+    /// `:-:`
+    Center,
+    /// `--:`
+    Right,
+}
+
+/// The kind of an alert (`> [!NOTE]`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "facet", derive(facet::Facet), repr(C))]
+pub enum AlertType {
+    #[default]
+    Note,
+    Tip,
+    Important,
+    Warning,
+    Caution,
+}
+
+/// The value of a property of an embed. `#w=120` gives the text `"120"`, and a flag without
+/// `=` (`#inline`) gives `true`. In JSON the value is written as it is, without a tag.
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "facet", derive(facet::Facet), repr(C))]
+pub enum PropValue {
+    Text(String),
+    Flag(bool),
+}
+
+impl Serialize for PropValue {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        if !serializer.is_human_readable() {
+            return plain::PlainPropValue::serialize(self, serializer);
+        }
+        match self {
+            PropValue::Text(text) => serializer.serialize_str(text),
+            PropValue::Flag(flag) => serializer.serialize_bool(*flag),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for PropValue {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        if !deserializer.is_human_readable() {
+            return plain::PlainPropValue::deserialize(deserializer);
+        }
+        match Value::deserialize(deserializer)? {
+            Value::String(text) => Ok(PropValue::Text(text)),
+            Value::Bool(flag) => Ok(PropValue::Flag(flag)),
+            other => Err(D::Error::custom(format!(
+                "a property of an embed is a string or a boolean, not {other}"
+            ))),
+        }
+    }
+}
+
+/// The plain serde form of the types, for a binary format: each variant by its index and each
+/// field in order, with nothing left out. The generated types of other languages read this
+/// form. serde checks that the variants and the fields here are those of the types, but not
+/// their order: the order is the order of the types, and a test checks it.
+mod plain {
+    use super::{AlertType, Alignment, ListDelimiter, ListType, Node, PropValue};
+    use serde::{Deserialize, Serialize};
+    use std::collections::BTreeMap;
+
+    #[derive(Serialize, Deserialize)]
+    #[serde(remote = "Node")]
+    pub(super) enum Plain {
+        Document {
+            children: Vec<Node>,
+        },
+        Paragraph {
+            children: Vec<Node>,
+        },
+        Heading {
+            level: u8,
+            children: Vec<Node>,
+        },
+        CodeBlock {
+            fenced: bool,
+            info: String,
+            literal: String,
+        },
+        BlockQuote {
+            children: Vec<Node>,
+        },
+        MultilineBlockQuote {
+            children: Vec<Node>,
+        },
+        List {
+            list_type: ListType,
+            start: u32,
+            tight: bool,
+            delimiter: ListDelimiter,
+            children: Vec<Node>,
+        },
+        Item {
+            list_type: ListType,
+            start: u32,
+            children: Vec<Node>,
+        },
+        TaskItem {
+            symbol: Option<String>,
+            children: Vec<Node>,
+        },
+        Table {
+            alignments: Vec<Alignment>,
+            num_columns: u32,
+            num_rows: u32,
+            children: Vec<Node>,
+        },
+        TableRow {
+            header: bool,
+            children: Vec<Node>,
+        },
+        TableCell {
+            children: Vec<Node>,
+        },
+        ThematicBreak,
+        HtmlBlock {
+            block_type: u8,
+            literal: String,
+        },
+        FootnoteDefinition {
+            name: String,
+            children: Vec<Node>,
+        },
+        Alert {
+            alert_type: AlertType,
+            title: Option<String>,
+            children: Vec<Node>,
+        },
+        Subtext {
+            children: Vec<Node>,
+        },
+        Text {
+            value: String,
+        },
+        Softbreak,
+        Linebreak,
+        Emph {
+            children: Vec<Node>,
+        },
+        Strong {
+            children: Vec<Node>,
+        },
+        Strikethrough {
+            children: Vec<Node>,
+        },
+        Underline {
+            children: Vec<Node>,
+        },
+        Highlight {
+            children: Vec<Node>,
+        },
+        Superscript {
+            children: Vec<Node>,
+        },
+        Subscript {
+            children: Vec<Node>,
+        },
+        SpoileredText {
+            children: Vec<Node>,
+        },
+        Code {
+            literal: String,
+        },
+        Link {
+            url: String,
+            title: String,
+            children: Vec<Node>,
+        },
+        Embed {
+            url: String,
+            title: String,
+            props: BTreeMap<String, PropValue>,
+            children: Vec<Node>,
+        },
+        FootnoteReference {
+            name: String,
+            ref_num: u32,
+            ix: u32,
+        },
+        Shortcode {
+            code: String,
+            emoji: String,
+        },
+        Math {
+            literal: String,
+        },
+        HtmlInline {
+            value: String,
+        },
+        Wikilink {
+            url: String,
+            children: Vec<Node>,
+        },
+        Hashtag {
+            value: String,
+        },
+        Unknown {
+            node_type: String,
+            children: Vec<Node>,
+        },
+    }
+
+    #[derive(Serialize, Deserialize)]
+    #[serde(remote = "PropValue")]
+    pub(super) enum PlainPropValue {
+        Text(String),
+        Flag(bool),
+    }
+}
+
 impl Serialize for Node {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        if !serializer.is_human_readable() {
+            return plain::Plain::serialize(self, serializer);
+        }
         match self {
             Node::Unknown {
                 node_type,
@@ -269,6 +528,9 @@ impl Serialize for Node {
 
 impl<'de> Deserialize<'de> for Node {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        if !deserializer.is_human_readable() {
+            return plain::Plain::deserialize(deserializer);
+        }
         let value = Value::deserialize(deserializer)?;
         Node::from_value(&value).map_err(D::Error::custom)
     }
