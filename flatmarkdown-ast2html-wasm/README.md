@@ -15,7 +15,7 @@ The WebAssembly code is inside that file, so a page needs no second file.
 Load the file with a `<script>` tag.
 
 ```html
-<script src="https://unpkg.com/flatmarkdown-ast2html@0.7.0"></script>
+<script src="https://unpkg.com/flatmarkdown-ast2html@0.8.0"></script>
 <script>
   const html = FmAst2Html.renderToHtml(
     '{"type":"paragraph","children":[{"type":"text","value":"Hello"}]}',
