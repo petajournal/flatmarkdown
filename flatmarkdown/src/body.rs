@@ -25,6 +25,22 @@ pub struct BodyOptions {
     pub link_resolution: LinkResolution,
 }
 
+impl BodyOptions {
+    /// The options for pages that are `.md` files linked to each other by relative paths:
+    /// a link to `./page.md` or `../page.md` is a wikilink, and `#tag` is a hashtag.
+    ///
+    /// Every program that parses the same pages takes these options, so that the same body
+    /// always gives the same AST. Pages laid out another way give their own prefixes with
+    /// [`LinkResolution::On`].
+    pub fn relative_page_links() -> BodyOptions {
+        BodyOptions {
+            link_resolution: LinkResolution::On {
+                prefixes: vec!["./".to_string(), "../".to_string()],
+            },
+        }
+    }
+}
+
 /// Parses a flatmarkdown item body into the AST using the given options.
 /// The root is a [`Node::Document`]. [`Node::to_json`] writes it as JSON.
 pub fn parse_body_with(input: &str, opts: &BodyOptions) -> Node {
