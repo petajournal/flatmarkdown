@@ -32,6 +32,10 @@ pub struct BodyOptions {
 
 Relative links are matched when the URL starts with one of `prefixes` (for example `../` or `./`) and ends with `.md`. When more than one prefix matches, the longest one is used.
 
+`BodyOptions::relative_page_links()` gives the options for pages that are `.md` files linked to each other by relative paths: the prefixes are `./` and `../`.
+Every program that parses the same pages should take the same options, so that the same body always gives the same AST.
+Pages laid out another way give their own prefixes.
+
 When `Off`, these links remain as `link` nodes and `#tag` text remains as plain text.
 
 ### Functions

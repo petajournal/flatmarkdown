@@ -1,6 +1,6 @@
 //! Finds `#tag` in text nodes, and restores the escaped `\#`.
 
-use flatmarkdown_ast::Node;
+use flatmarkdown_ast::{Node, PropValue};
 
 /// Opens every mark that the parser puts into a body before comrak reads it.
 ///
@@ -171,7 +171,7 @@ pub(crate) fn restore_escaped_hashes(node: &mut Node) {
                 .into_iter()
                 .map(|(mut key, mut value)| {
                     restore_as_hash(&mut key);
-                    if let serde_json::Value::String(text) = &mut value {
+                    if let PropValue::Text(text) = &mut value {
                         restore_as_hash(text);
                     }
                     (key, value)

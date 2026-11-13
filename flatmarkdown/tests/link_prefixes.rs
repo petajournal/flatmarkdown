@@ -39,6 +39,30 @@ fn a_shorter_prefix_is_used_when_the_longer_one_does_not_match() {
     }
 }
 
+// 相対パスでつながるページのオプションでは、./と../で始まる.mdへのリンクがwikilinkになり、#tagがハッシュタグになる。ほかのリンクはlinkのままである。
+#[test]
+fn the_options_of_pages_linked_by_relative_paths_resolve_both_prefixes() {
+    let root = parse_body_with(
+        "[a](./a.md) [b](../b.md) [c](c.md) #t",
+        &BodyOptions::relative_page_links(),
+    );
+    let inlines: Vec<String> = root.children()[0]
+        .children()
+        .iter()
+        .filter(|node| !matches!(node, Node::Text { .. }))
+        .map(|node| match node {
+            Node::Wikilink { url, .. } => format!("wikilink {url}"),
+            Node::Link { url, .. } => format!("link {url}"),
+            Node::Hashtag { value } => format!("hashtag {value}"),
+            other => panic!("unexpected {other:?}"),
+        })
+        .collect();
+    assert_eq!(
+        inlines,
+        ["wikilink a", "wikilink b", "link c.md", "hashtag t"]
+    );
+}
+
 // どの接頭辞にも合わないリンクは、linkのままである。
 #[test]
 fn a_link_that_matches_no_prefix_stays_a_link() {

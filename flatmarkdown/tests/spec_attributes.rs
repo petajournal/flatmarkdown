@@ -2,7 +2,7 @@
 //! the specification against the tests found them on 2026-11-10.
 
 use flatmarkdown::{BodyOptions, LinkResolution, parse_body, parse_body_with};
-use flatmarkdown_ast::Node;
+use flatmarkdown_ast::{ListDelimiter, Node};
 
 fn ast(md: &str) -> Node {
     parse_body(md)
@@ -35,9 +35,12 @@ fn hashtag(value: &str) -> Node {
 // 番号のあとが)の番号付きリストは、delimiterがparenである。.ならperiodである。
 #[test]
 fn the_delimiter_of_an_ordered_list_is_paren_or_period() {
-    for (md, expected) in [("1) a", "paren"), ("1. a", "period")] {
+    for (md, expected) in [
+        ("1) a", ListDelimiter::Paren),
+        ("1. a", ListDelimiter::Period),
+    ] {
         match &ast(md).children()[0] {
-            Node::List { delimiter, .. } => assert_eq!(delimiter, expected, "{md:?}"),
+            Node::List { delimiter, .. } => assert_eq!(*delimiter, expected, "{md:?}"),
             other => panic!("expected list, got {other:?}"),
         }
     }

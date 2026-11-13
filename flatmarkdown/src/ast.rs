@@ -2,9 +2,8 @@
 
 use crate::hashtags::restored_as_hash;
 use comrak::Options;
-use comrak::nodes::{ListDelimType, ListType, NodeValue, TableAlignment};
-use flatmarkdown_ast::Node;
-use serde_json::Value;
+use comrak::nodes::{self, ListDelimType, NodeValue, TableAlignment};
+use flatmarkdown_ast::{AlertType, Alignment, ListDelimiter, ListType, Node, PropValue};
 use std::collections::BTreeMap;
 
 /// Builds the comrak options shared by body and page parsing.
@@ -170,7 +169,7 @@ fn merge_adjacent_texts(nodes: Vec<Node>) -> Vec<Node> {
 /// Splits the URL of an image into the URL without its fragment and the properties that
 /// the fragment holds (`#key=value&flag`). A flag without `=` is `true`. A key written twice
 /// keeps its last value.
-fn parse_embed_url(url: &str) -> (String, BTreeMap<String, Value>) {
+fn parse_embed_url(url: &str) -> (String, BTreeMap<String, PropValue>) {
     match url.find('#') {
         Some(pos) => {
             let base = url[..pos].to_string();
@@ -180,9 +179,9 @@ fn parse_embed_url(url: &str) -> (String, BTreeMap<String, Value>) {
                 .map(|kv| match kv.find('=') {
                     Some(eq) => (
                         kv[..eq].to_string(),
-                        Value::String(kv[eq + 1..].to_string()),
+                        PropValue::Text(kv[eq + 1..].to_string()),
                     ),
-                    None => (kv.to_string(), Value::Bool(true)),
+                    None => (kv.to_string(), PropValue::Flag(true)),
                 })
                 // A property without a name cannot be read by a renderer, so `=value` is dropped.
                 .filter(|(key, _)| !key.is_empty())
@@ -193,12 +192,26 @@ fn parse_embed_url(url: &str) -> (String, BTreeMap<String, Value>) {
     }
 }
 
-fn list_type(list_type: ListType) -> String {
+fn list_type(list_type: nodes::ListType) -> ListType {
     match list_type {
-        ListType::Bullet => "bullet",
-        ListType::Ordered => "ordered",
+        nodes::ListType::Bullet => ListType::Bullet,
+        nodes::ListType::Ordered => ListType::Ordered,
     }
-    .to_string()
+}
+
+fn alert_type(alert_type: nodes::AlertType) -> AlertType {
+    match alert_type {
+        nodes::AlertType::Note => AlertType::Note,
+        nodes::AlertType::Tip => AlertType::Tip,
+        nodes::AlertType::Important => AlertType::Important,
+        nodes::AlertType::Warning => AlertType::Warning,
+        nodes::AlertType::Caution => AlertType::Caution,
+    }
+}
+
+/// A count of comrak as a number of the AST. A table has never that many rows or columns.
+fn count(n: usize) -> u32 {
+    u32::try_from(n).unwrap_or(u32::MAX)
 }
 
 /// A comrak node that SPEC_AST.md does not define. The parser turns none of the extensions
@@ -221,10 +234,9 @@ fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
             start: nl.start as u32,
             tight: nl.tight,
             delimiter: match nl.delimiter {
-                ListDelimType::Period => "period",
-                ListDelimType::Paren => "paren",
-            }
-            .to_string(),
+                ListDelimType::Period => ListDelimiter::Period,
+                ListDelimType::Paren => ListDelimiter::Paren,
+            },
             children,
         },
         NodeValue::Item(nl) => Node::Item {
@@ -255,18 +267,15 @@ fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
             alignments: t
                 .alignments
                 .iter()
-                .map(|a| {
-                    match a {
-                        TableAlignment::None => "none",
-                        TableAlignment::Left => "left",
-                        TableAlignment::Center => "center",
-                        TableAlignment::Right => "right",
-                    }
-                    .to_string()
+                .map(|a| match a {
+                    TableAlignment::None => Alignment::None,
+                    TableAlignment::Left => Alignment::Left,
+                    TableAlignment::Center => Alignment::Center,
+                    TableAlignment::Right => Alignment::Right,
                 })
                 .collect(),
-            num_columns: t.num_columns,
-            num_rows: t.num_rows,
+            num_columns: count(t.num_columns),
+            num_rows: count(t.num_rows),
             children,
         },
         NodeValue::TableRow(header) => Node::TableRow {
@@ -337,7 +346,7 @@ fn to_node(value: &NodeValue, children: Vec<Node>) -> Node {
         NodeValue::Subscript => Node::Subscript { children },
         NodeValue::SpoileredText => Node::SpoileredText { children },
         NodeValue::Alert(a) => Node::Alert {
-            alert_type: format!("{:?}", a.alert_type).to_lowercase(),
+            alert_type: alert_type(a.alert_type),
             title: a.title.clone(),
             children,
         },

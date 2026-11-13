@@ -15,7 +15,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 flatmarkdown-ast.workspace = true
-flatmarkdown-ast2html = { version = "=0.7.0", path = "../flatmarkdown-ast2html" }
+flatmarkdown-ast2html = { version = "=0.8.0", path = "../flatmarkdown-ast2html" }
 wasm-bindgen = "0.2.130"
 [lints]
 workspace = true

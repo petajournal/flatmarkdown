@@ -25,6 +25,8 @@ jobs:
       # [workspace.lints] of Cargo.toml do.
       - run: cargo clippy --workspace --all-targets --locked
       - run: cargo test --workspace --locked
+      # The derive of facet is only built with its feature
+      - run: cargo clippy -p flatmarkdown-ast --features facet --all-targets --locked
       # Builds each crate from its packaged files, as crates.io would. The tests above cannot
       # show a file that is missing from the package.
       # flatmarkdown-ast2html-wasm does not go to crates.io. The `npm` job below builds it.

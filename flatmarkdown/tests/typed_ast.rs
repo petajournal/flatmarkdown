@@ -1,16 +1,11 @@
-//! Parses Flat Markdown bodies (with the options of the PetaJournal journal server) and checks the
+//! Parses Flat Markdown bodies (with the options of pages linked by relative paths) and checks the
 //! typed nodes that the parser makes: their kinds, their attributes, and the text they hold.
 
-use flatmarkdown::{BodyOptions, LinkResolution};
-use flatmarkdown_ast::{Node, extract_text};
+use flatmarkdown::BodyOptions;
+use flatmarkdown_ast::{Alignment, ListDelimiter, ListType, Node, extract_text};
 
-/// The same options as the PetaJournal journal server: link resolution on.
 fn options() -> BodyOptions {
-    BodyOptions {
-        link_resolution: LinkResolution::On {
-            prefixes: vec!["./".to_string(), "../".to_string()],
-        },
-    }
+    BodyOptions::relative_page_links()
 }
 
 /// Parses `md` and asserts no node fell back to `Unknown`.
@@ -101,10 +96,12 @@ fn tight_and_loose_lists() {
             children,
             ..
         } => {
-            assert_eq!(list_type, "bullet");
+            assert_eq!(*list_type, ListType::Bullet);
             assert!(*tight);
             assert_eq!(children.len(), 2);
-            assert!(matches!(&children[0], Node::Item { list_type, .. } if list_type == "bullet"));
+            assert!(
+                matches!(&children[0], Node::Item { list_type, .. } if *list_type == ListType::Bullet)
+            );
         }
         other => panic!("expected list, got {other:?}"),
     }
@@ -117,10 +114,10 @@ fn tight_and_loose_lists() {
             delimiter,
             ..
         } => {
-            assert_eq!(list_type, "ordered");
+            assert_eq!(*list_type, ListType::Ordered);
             assert!(!*tight);
             assert_eq!(*start, 1);
-            assert_eq!(delimiter, "period");
+            assert_eq!(*delimiter, ListDelimiter::Period);
         }
         other => panic!("expected list, got {other:?}"),
     }
@@ -153,7 +150,10 @@ fn table_with_alignment() {
             num_rows,
             children,
         } => {
-            assert_eq!(alignments, &["left", "center", "right"]);
+            assert_eq!(
+                alignments,
+                &[Alignment::Left, Alignment::Center, Alignment::Right]
+            );
             assert_eq!(*num_columns, 3);
             assert_eq!(*num_rows, 2);
             assert!(matches!(&children[0], Node::TableRow { header: true, .. }));

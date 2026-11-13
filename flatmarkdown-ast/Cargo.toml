@@ -16,3 +16,12 @@ workspace = true
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# The derive of facet, for a program that generates the types of other languages from the
+# AST (Swift, Kotlin, C#). Rust code that uses the AST does not need it.
+facet = { version = "0.46", optional = true }
+
+[features]
+facet = ["dep:facet"]
+
+[dev-dependencies]
+bincode = "1"
