@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1224 1150" width="1224" height="1150" role="img" aria-labelledby="title desc">
   <title id="title">flatmarkdown workspace: crate dependencies, public functions, and the structure of a page</title>
-  <desc id="desc">Four crates. flatmarkdown and flatmarkdown-ast2html depend on flatmarkdown-ast. flatmarkdown-ast2html-wasm depends on flatmarkdown-ast2html and flatmarkdown-ast. flatmarkdown-ast2html uses flatmarkdown only in its tests. A page is optional page metadata and a list of items. An item is optional item metadata and a body.</desc>
+  <desc id="desc">Four crates. flatmarkdown and flatmarkdown-ast2html depend on flatmarkdown-ast. flatmarkdown-ast2html-wasm depends on flatmarkdown-ast2html and flatmarkdown-ast. flatmarkdown-ast2html uses flatmarkdown only in its tests. flatmarkdown-ast uses facet only with its facet feature, for the types of other languages. A page is optional page metadata and a list of items. An item is optional item metadata and a body.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#334155"/>
@@ -26,10 +26,10 @@
   </defs>
 
   <rect width="1224" height="1150" fill="#ffffff"/>
-  <text class="heading" x="40" y="38">flatmarkdown workspace 0.7.0: crate dependencies and public functions</text>
+  <text class="heading" x="40" y="38">flatmarkdown workspace 0.8.0: crate dependencies and public functions</text>
 
   <!-- Dependency arrows: from the crate that depends to the crate it uses -->
-  <path class="dep" d="M300,326 L300,466"/>
+  <path class="dep" d="M300,368 L300,466"/>
   <path class="dep" d="M900,406 L900,466"/>
   <path class="dep" d="M900,214 L900,264"/>
   <path class="dep" d="M1160,140 L1190,140 L1190,596 L1160,596"/>
@@ -37,7 +37,7 @@
   <text class="devtext" x="600" y="291" text-anchor="middle">dev</text>
 
   <!-- flatmarkdown -->
-  <rect class="box" x="40" y="64" width="520" height="262" rx="8"/>
+  <rect class="box" x="40" y="64" width="520" height="304" rx="8"/>
   <text class="crate" x="60" y="92">flatmarkdown</text>
   <text class="sub" x="60" y="112">Parser: Flat Markdown text to the AST</text>
   <line class="sep" x1="40" y1="124" x2="560" y2="124"/>
@@ -46,9 +46,11 @@
   <text class="code" x="60" y="190"><tspan class="name">parse_body_with</tspan>(input: &amp;str, opts: &amp;BodyOptions) -&gt; Node</text>
   <text class="code" x="60" y="212"><tspan class="name">parse_page</tspan>(input: &amp;str) -&gt; Page</text>
   <text class="code" x="60" y="234"><tspan class="name">parse_page_with</tspan>(input: &amp;str, opts: &amp;BodyOptions) -&gt; Page</text>
-  <text class="label" x="60" y="260">PUBLIC TYPES</text>
-  <text class="code" x="60" y="280">struct BodyOptions, enum LinkResolution</text>
-  <text class="ext" x="60" y="308">External crates: comrak 0.51, serde_json 1</text>
+  <text class="label" x="60" y="260">PUBLIC METHODS</text>
+  <text class="code" x="60" y="282"><tspan class="name">BodyOptions::relative_page_links</tspan>() -&gt; BodyOptions</text>
+  <text class="label" x="60" y="308">PUBLIC TYPES</text>
+  <text class="code" x="60" y="328">struct BodyOptions, enum LinkResolution</text>
+  <text class="ext" x="60" y="352">External crates: comrak 0.51, serde_json 1</text>
 
   <!-- flatmarkdown-ast2html-wasm -->
   <rect class="box" x="640" y="64" width="520" height="150" rx="8"/>
@@ -77,16 +79,18 @@
   <text class="label" x="60" y="548">PUBLIC FUNCTIONS</text>
   <text class="code" x="60" y="570"><tspan class="name">extract_text</tspan>(node: &amp;Node) -&gt; String</text>
   <text class="code" x="60" y="592"><tspan class="name">heading_level</tspan>(root: &amp;Node) -&gt; Option&lt;u8&gt;</text>
-  <text class="label" x="60" y="662">PUBLIC TYPES</text>
-  <text class="code" x="60" y="682">enum Node, struct Page, struct Item</text>
-  <text class="ext" x="60" y="708">External crates: serde 1, serde_json 1</text>
+  <text class="label" x="60" y="620">PUBLIC TYPES</text>
+  <text class="code" x="60" y="640">enum Node, struct Page, struct Item</text>
+  <text class="code" x="60" y="660">enum ListType, enum ListDelimiter, enum Alignment</text>
+  <text class="code" x="60" y="680">enum AlertType, enum PropValue</text>
+  <text class="ext" x="60" y="708">External crates: serde 1, serde_json 1, facet 0.46 (optional: the facet feature)</text>
   <text class="label" x="620" y="548">PUBLIC METHODS</text>
   <text class="code" x="620" y="568"><tspan class="name">Node::from_json</tspan>(json: &amp;str) -&gt; Result&lt;Node, serde_json::Error&gt;</text>
   <text class="code" x="620" y="588"><tspan class="name">Node::to_json</tspan>(&amp;self) -&gt; String</text>
   <text class="code" x="620" y="608"><tspan class="name">Node::children</tspan>(&amp;self) -&gt; &amp;[Node]</text>
   <text class="code" x="620" y="628"><tspan class="name">Node::children_mut</tspan>(&amp;mut self) -&gt; Option&lt;&amp;mut Vec&lt;Node&gt;&gt;</text>
   <text class="code" x="620" y="648"><tspan class="name">Node::type_name</tspan>(&amp;self) -&gt; &amp;str</text>
-  <text class="code" x="620" y="668"><tspan class="name">Node::walk</tspan>(&amp;self, visit: &amp;mut dyn FnMut(&amp;Node))</text>
+  <text class="code" x="620" y="668"><tspan class="name">Node::walk</tspan>&lt;'a&gt;(&amp;'a self, visit: &amp;mut dyn FnMut(&amp;'a Node))</text>
   <text class="code" x="620" y="688"><tspan class="name">Page::from_json</tspan>(json: &amp;str) -&gt; Result&lt;Page, serde_json::Error&gt;</text>
   <text class="code" x="620" y="708"><tspan class="name">Page::to_json</tspan>(&amp;self) -&gt; String</text>
 
