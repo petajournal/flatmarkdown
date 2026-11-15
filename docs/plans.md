@@ -16,9 +16,9 @@
   - [x] テンプレートの文字もエスケープされる
   - [x] 設定は、リスト、表、脚注、アラートの中にも届く
   - [x] wikilinkのhrefは、テンプレートの`{}`を`url`に置き換えたものである。中身と`data-wikilink`は変わらない
-  - [ ] READMEの「HTML output」に、`ast_to_html_with`と`HtmlOptions`を書く
-  - [ ] PRの前に、カバレッジとミューテーションテストを回す
-  - [ ] 3つのクレートを0.9.0に上げて、PRにする
+  - [x] READMEの「HTML output」に、`ast_to_html_with`と`HtmlOptions`を書く
+  - [x] PRの前に、カバレッジとミューテーションテストを回す
+  - [x] 3つのクレートを0.9.0に上げて、PRにする
   - [ ] 新しい版を出す（ユーザー）
 - [ ] 0.9.0が出たあと、ほかのリポジトリで使う
   - [ ] sosuisen.netの`fm2html`：`ast_to_html_with`でhashtagを`/tags/{}`にし、`link_hashtags_to_tag_pages`を消す
