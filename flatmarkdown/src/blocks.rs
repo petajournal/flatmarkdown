@@ -53,11 +53,9 @@ struct OpenBlock {
 
 /// `body` with the closing lines of `open`, the innermost first.
 fn closed(body: &str, open: &[OpenBlock]) -> String {
-    let closings: Vec<&str> = open.iter().rev().map(|b| b.closing.as_str()).collect();
-    if closings.is_empty() {
-        return body.to_string();
-    }
-    format!("{body}\n{}", closings.join("\n"))
+    open.iter().rev().fold(body.to_string(), |text, block| {
+        format!("{text}\n{}", block.closing)
+    })
 }
 
 /// The blocks that `body` ends inside, the outermost first.
@@ -147,7 +145,7 @@ fn html_marks(block_type: u8, first_line: &str) -> Option<(String, String)> {
     }
 }
 
-/// The last line of `text` that has a letter.
+/// The last line of `text` that is not blank.
 fn last_line(text: &str) -> &str {
     text.trim_end().rsplit('\n').next().unwrap_or("")
 }
