@@ -3,7 +3,7 @@
 
 use crate::ast::options;
 use crate::parse_page;
-use comrak::nodes::NodeValue;
+use comrak::nodes::{AstNode, NodeValue};
 use comrak::{Arena, parse_document};
 
 /// The metadata line of the item that is put after a body to see whether the body takes it.
@@ -26,18 +26,45 @@ pub fn has_unclosed_block(body: &str) -> bool {
 /// `body` with the closing lines of the blocks it ends inside, so that it takes no item after
 /// it. A body that ends inside no block is given back as it is.
 pub fn close_blocks(body: &str) -> String {
-    let closings = closing_lines(body);
+    closed(body, &open_blocks(body))
+}
+
+/// Splits `body` before its character `at`, as Enter splits an item. When the place is inside
+/// blocks, the part before it gets their closing lines, and the part after it gets their
+/// opening lines: each part is a whole body that takes no item after it.
+pub fn split_body(body: &str, at: usize) -> (String, String) {
+    let place = body.char_indices().nth(at).map_or(body.len(), |(i, _)| i);
+    let (before, after) = body.split_at(place);
+    let open = open_blocks(before);
+    let mut after_lines: Vec<&str> = open.iter().map(|block| block.opening.as_str()).collect();
+    if open.is_empty() {
+        return (before.to_string(), after.to_string());
+    }
+    after_lines.push(after);
+    (closed(before, &open), after_lines.join("\n"))
+}
+
+/// A block that a body ends inside: the line that opened it, and a line that closes it.
+struct OpenBlock {
+    opening: String,
+    closing: String,
+}
+
+/// `body` with the closing lines of `open`, the innermost first.
+fn closed(body: &str, open: &[OpenBlock]) -> String {
+    let closings: Vec<&str> = open.iter().rev().map(|b| b.closing.as_str()).collect();
     if closings.is_empty() {
         return body.to_string();
     }
     format!("{body}\n{}", closings.join("\n"))
 }
 
-/// The lines that close the blocks `body` ends inside, the innermost first.
-fn closing_lines(body: &str) -> Vec<String> {
+/// The blocks that `body` ends inside, the outermost first.
+fn open_blocks(body: &str) -> Vec<OpenBlock> {
     if !has_unclosed_block(body) {
         return Vec::new();
     }
+    let lines: Vec<&str> = body.lines().collect();
     let arena = Arena::new();
     let root = parse_document(&arena, body, &options(false));
     // An open block takes everything after it, so it is the last block of the body
@@ -47,48 +74,72 @@ fn closing_lines(body: &str) -> Vec<String> {
     let value = last.data.borrow().value.clone();
     match value {
         NodeValue::MultilineBlockQuote(quote) => {
+            let marks = ">".repeat(quote.fence_length);
+            let mut open = vec![OpenBlock {
+                opening: marks.clone(),
+                closing: marks,
+            }];
             // A block inside it can be open too. A `>>>` inside it closes it, so no quote is
             // inside another: two levels at most
-            let mut lines: Vec<String> = last
-                .last_child()
-                .and_then(|inner| open_closing(&inner.data.borrow().value))
-                .into_iter()
-                .collect();
-            lines.push(">".repeat(quote.fence_length));
-            lines
+            open.extend(
+                last.last_child()
+                    .and_then(|inner| open_block(inner, &lines)),
+            );
+            open
         }
-        value => open_closing(&value).into_iter().collect(),
+        _ => open_block(last, &lines).into_iter().collect(),
     }
 }
 
-/// The line that closes `value` when it is a block left open, or `None` when it is closed or
-/// is no block that closes with a line.
-fn open_closing(value: &NodeValue) -> Option<String> {
-    match value {
-        NodeValue::CodeBlock(code) if code.fenced && !code.closed => {
-            Some(fence(code.fence_char, code.fence_length))
+/// `node` as an open block, or `None` when it is closed or is no block that closes with a line.
+fn open_block<'a>(node: &'a AstNode<'a>, lines: &[&str]) -> Option<OpenBlock> {
+    let data = node.data.borrow();
+    let first_line = lines
+        .get(data.sourcepos.start.line.saturating_sub(1))
+        .copied()
+        .unwrap_or("");
+    match &data.value {
+        NodeValue::CodeBlock(code) if code.fenced && !code.closed => Some(OpenBlock {
+            opening: first_line.trim_start().to_string(),
+            closing: char::from(code.fence_char)
+                .to_string()
+                .repeat(code.fence_length),
+        }),
+        NodeValue::HtmlBlock(html) => {
+            let (opening, closing) = html_marks(html.block_type, first_line)?;
+            (!last_line(&html.literal).contains(closing.as_str()))
+                .then_some(OpenBlock { opening, closing })
         }
-        NodeValue::HtmlBlock(html) => html_closing(html.block_type, &html.literal)
-            .filter(|closing| !last_line(&html.literal).contains(closing.as_str())),
         _ => None,
     }
 }
 
-/// The text that ends an HTML block of `block_type`, for the kinds that end with a text and
-/// not with a blank line. The tag of the first line names the end of the first kind.
-fn html_closing(block_type: u8, literal: &str) -> Option<String> {
+/// The text that opens an HTML block of `block_type` on its `first_line`, and the text that
+/// ends it, for the kinds that end with a text and not with a blank line.
+fn html_marks(block_type: u8, first_line: &str) -> Option<(String, String)> {
+    let first = first_line.trim_start();
+    let marks = |opening: &str, closing: &str| Some((opening.to_string(), closing.to_string()));
     match block_type {
         1 => {
-            let first = literal.trim_start().to_ascii_lowercase();
-            ["pre", "script", "style", "textarea"]
+            let lower = first.to_ascii_lowercase();
+            let tag = ["pre", "script", "style", "textarea"]
                 .into_iter()
-                .find(|tag| first.starts_with(&format!("<{tag}")))
-                .map(|tag| format!("</{tag}>"))
+                .find(|tag| lower.starts_with(&format!("<{tag}")))?;
+            // The tag with its attributes, without the text after it on the line
+            let opening = first.find('>').map_or(first, |end| &first[..=end]);
+            Some((opening.to_string(), format!("</{tag}>")))
         }
-        2 => Some("-->".into()),
-        3 => Some("?>".into()),
-        4 => Some(">".into()),
-        5 => Some("]]>".into()),
+        2 => marks("<!--", "-->"),
+        3 => marks("<?", "?>"),
+        4 => {
+            let name_end = first
+                .char_indices()
+                .skip(2)
+                .find(|(_, c)| !c.is_ascii_alphabetic())
+                .map_or(first.len(), |(i, _)| i);
+            Some((first[..name_end].to_string(), ">".to_string()))
+        }
+        5 => marks("<![CDATA[", "]]>"),
         _ => None,
     }
 }
@@ -96,9 +147,4 @@ fn html_closing(block_type: u8, literal: &str) -> Option<String> {
 /// The last line of `text` that has a letter.
 fn last_line(text: &str) -> &str {
     text.trim_end().rsplit('\n').next().unwrap_or("")
-}
-
-/// A closing fence of `length` times `char`.
-fn fence(char: u8, length: usize) -> String {
-    char::from(char).to_string().repeat(length)
 }
