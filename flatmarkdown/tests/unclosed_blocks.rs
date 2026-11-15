@@ -103,3 +103,24 @@ fn a_code_block_split_in_two_is_closed_and_opened_again() {
     assert_eq!(before, format!("{FENCE}rust\nco\n{FENCE}"));
     assert_eq!(after, format!("{FENCE}rust\nde\n{FENCE}"));
 }
+
+// 複数行の引用の中のコードブロックで分けると、前は内側から閉じ、後ろは外側から開く。
+#[test]
+fn a_code_block_in_a_quote_split_in_two_closes_and_opens_both() {
+    let body = format!(">>>\n{FENCE}\nab\n{FENCE}\n>>>");
+    let (before, after) = split_body(&body, 9);
+    assert_eq!(before, format!(">>>\n{FENCE}\na\n{FENCE}\n>>>"));
+    assert_eq!(after, format!(">>>\n{FENCE}\nb\n{FENCE}\n>>>"));
+}
+
+// どこで分けても、前の部分と後ろの部分は、どちらも閉じている。どの種類のブロックでも同じである。
+#[test]
+fn both_parts_of_a_split_are_closed_wherever_it_is() {
+    for body in unclosed_bodies().iter().map(|b| close_blocks(b)) {
+        for at in 0..=body.chars().count() {
+            let (before, after) = split_body(&body, at);
+            assert!(!has_unclosed_block(&before), "{body:?} at {at}: {before:?}");
+            assert!(!has_unclosed_block(&after), "{body:?} at {at}: {after:?}");
+        }
+    }
+}
