@@ -15,46 +15,17 @@ fn a_code_block_without_its_closing_fence_is_unclosed() {
 /// A body for each kind of block that closes with a line, each without its closing line.
 fn unclosed_bodies() -> Vec<String> {
     vec![
-        "~~~
-abc"
-        .to_string(),
-        format!(
-            "{FENCE}math
-x^2"
-        ),
-        format!(
-            "````
-abc
-{FENCE}"
-        ),
-        ">>>
-abc"
-        .to_string(),
-        "<!--
-abc"
-        .to_string(),
-        "<pre>
-abc"
-        .to_string(),
-        "<script>
-abc"
-        .to_string(),
-        "<?
-abc"
-        .to_string(),
-        "<![CDATA[
-abc"
-        .to_string(),
-        format!(
-            ">>>
-{FENCE}
-abc"
-        ),
-        format!(
-            ">>>
-<!--
-abc"
-        ),
+        "~~~\nabc".to_string(),
+        format!("{FENCE}math\nx^2"),
+        format!("````\nabc\n{FENCE}"),
+        ">>>\nabc".to_string(),
+        "<!--\nabc".to_string(),
+        "<pre>\nabc".to_string(),
+        "<script>\nabc".to_string(),
+        "<?\nabc".to_string(),
+        "<![CDATA[\nabc".to_string(),
+        format!(">>>\n{FENCE}\nabc"),
+        ">>>\n<!--\nabc".to_string(),
     ]
 }
 
@@ -100,25 +71,10 @@ fn a_closed_block_and_a_lone_closing_line_are_not_unclosed() {
 #[test]
 fn a_code_block_is_closed_with_a_fence_of_its_own_kind() {
     assert_eq!(
-        close_blocks(&format!(
-            "{FENCE}
-abc"
-        )),
-        format!(
-            "{FENCE}
-abc
-{FENCE}"
-        )
+        close_blocks(&format!("{FENCE}\nabc")),
+        format!("{FENCE}\nabc\n{FENCE}")
     );
-    assert_eq!(
-        close_blocks(
-            "~~~~
-abc"
-        ),
-        "~~~~
-abc
-~~~~"
-    );
+    assert_eq!(close_blocks("~~~~\nabc"), "~~~~\nabc\n~~~~");
 }
 
 // どの種類のブロックも、補った本文はもう閉じている。補うのは本文の後ろだけである。
