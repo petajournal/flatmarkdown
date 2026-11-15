@@ -88,12 +88,13 @@ fn every_unclosed_block_is_closed_by_adding_lines_after_it() {
     }
 }
 
-// 複数行の引用の中のブロックが閉じていれば、補うのは引用の終了記号だけである。
+// 複数行の引用の中のブロックが閉じていれば、補うのは引用の終了記号だけである。HTMLのタグは大文字でも閉じる。
 #[test]
 fn a_quote_with_a_closed_block_inside_gets_only_its_own_closing() {
     for inner in [
         format!("{FENCE}\nabc\n{FENCE}"),
         "<!--\nabc\n-->".to_string(),
+        "<PRE>\nabc\n</PRE>".to_string(),
     ] {
         let body = format!(">>>\n{inner}");
         assert_eq!(close_blocks(&body), format!("{body}\n>>>"));
