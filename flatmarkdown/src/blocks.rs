@@ -32,16 +32,17 @@ pub fn close_blocks(body: &str) -> String {
 /// Splits `body` before its character `at`, as Enter splits an item. When the place is inside
 /// blocks, the part before it gets their closing lines, and the part after it gets their
 /// opening lines: each part is a whole body that takes no item after it.
+///
+/// A place inside an opening line, such as between the backticks of a fence, leaves the
+/// closing line of the block alone in the part after it, where it opens a block. That part is
+/// closed too, so the promise holds for any place.
 pub fn split_body(body: &str, at: usize) -> (String, String) {
     let place = body.char_indices().nth(at).map_or(body.len(), |(i, _)| i);
     let (before, after) = body.split_at(place);
     let open = open_blocks(before);
     let mut after_lines: Vec<&str> = open.iter().map(|block| block.opening.as_str()).collect();
-    if open.is_empty() {
-        return (before.to_string(), after.to_string());
-    }
     after_lines.push(after);
-    (closed(before, &open), after_lines.join("\n"))
+    (closed(before, &open), close_blocks(&after_lines.join("\n")))
 }
 
 /// A block that a body ends inside: the line that opened it, and a line that closes it.
@@ -66,7 +67,9 @@ fn open_blocks(body: &str) -> Vec<OpenBlock> {
     }
     let lines: Vec<&str> = body.lines().collect();
     let arena = Arena::new();
-    let root = parse_document(&arena, body, &options(false));
+    // A page has a line break after the body. Without it, a line such as `<pre` at the end is
+    // read as a paragraph, and not as the HTML block it is in the page
+    let root = parse_document(&arena, &format!("{body}\n"), &options(false));
     // An open block takes everything after it, so it is the last block of the body
     let Some(last) = root.last_child() else {
         return Vec::new();
