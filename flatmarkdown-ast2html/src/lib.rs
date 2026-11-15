@@ -9,8 +9,8 @@
 
 use flatmarkdown_ast::{AlertType, Alignment, ListType, Node};
 
-/// The part of [`HtmlOptions::hashtag_href`] that is replaced by the tag name.
-const TAG_NAME: &str = "{}";
+/// The part of an href template that is replaced by the name of the page or the tag.
+const NAME: &str = "{}";
 
 /// How [`ast_to_html_with`] writes the HTML.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,10 +26,15 @@ pub struct HtmlOptions {
 impl Default for HtmlOptions {
     fn default() -> Self {
         HtmlOptions {
-            hashtag_href: TAG_NAME.to_string(),
-            wikilink_href: TAG_NAME.to_string(),
+            hashtag_href: NAME.to_string(),
+            wikilink_href: NAME.to_string(),
         }
     }
+}
+
+/// The escaped href that `template` makes for `name`.
+fn href(template: &str, name: &str) -> String {
+    escape_html(&template.replace(NAME, name))
 }
 
 fn escape_html(s: &str) -> String {
@@ -328,13 +333,13 @@ pub fn ast_to_html_with(node: &Node, o: &HtmlOptions) -> String {
 
         Node::Wikilink { url, children } => format!(
             "<a href=\"{}\" data-wikilink=\"true\">{}</a>",
-            escape_html(&o.wikilink_href.replace(TAG_NAME, url)),
+            href(&o.wikilink_href, url),
             render_all(children, o)
         ),
 
         Node::Hashtag { value } => format!(
             "<a href=\"{}\" class=\"hashtag\">#{}</a>",
-            escape_html(&o.hashtag_href.replace(TAG_NAME, value)),
+            href(&o.hashtag_href, value),
             escape_html(value)
         ),
 
