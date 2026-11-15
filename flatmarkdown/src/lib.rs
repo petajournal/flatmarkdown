@@ -8,7 +8,7 @@ mod hashtags;
 mod links;
 mod page;
 
-pub use blocks::has_unclosed_block;
+pub use blocks::{close_blocks, has_unclosed_block};
 pub use body::{BodyOptions, LinkResolution, parse_body, parse_body_with};
 pub use page::{parse_page, parse_page_with};
 
