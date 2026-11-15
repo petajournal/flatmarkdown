@@ -46,6 +46,18 @@ When `Off`, these links remain as `link` nodes and `#tag` text remains as plain 
 | `parse_page_with(input, opts)` | Same, with explicit `BodyOptions` |
 | `parse_body(input)` | Parse an item body to the AST, as a `Node` ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
 | `parse_body_with(input, opts)` | Same, with explicit `BodyOptions` |
+| `has_unclosed_block(body)` | Whether an item body ends inside a block that is not closed |
+| `close_blocks(body)` | The body with the closing lines of the blocks it ends inside |
+| `split_body(body, at)` | Split a body in two before a character, as Enter does. Both parts are closed |
+
+### Unclosed blocks
+
+Some blocks open with a line and close with a line: fenced code blocks, math blocks, multiline quotes (`>>>`), and some HTML blocks, such as `<pre>` and `<!--`.
+While such a block is not closed, it runs to the end of the page and takes the items after it.
+A program that writes an item body into a page should check it with `has_unclosed_block` first.
+
+`close_blocks` adds the closing lines after the body. A code block is closed with a fence of the same character and length.
+`split_body` closes the part before the place. It copies the opening lines of the open blocks to the part after it.
 
 ### JSON and HTML
 
