@@ -26,10 +26,10 @@
   </defs>
 
   <rect width="1224" height="1150" fill="#ffffff"/>
-  <text class="heading" x="40" y="38">flatmarkdown workspace 0.8.0: crate dependencies and public functions</text>
+  <text class="heading" x="40" y="38">flatmarkdown workspace 0.8.1: crate dependencies and public functions</text>
 
   <!-- Dependency arrows: from the crate that depends to the crate it uses -->
-  <path class="dep" d="M300,368 L300,466"/>
+  <path class="dep" d="M300,434 L300,466"/>
   <path class="dep" d="M900,406 L900,466"/>
   <path class="dep" d="M900,214 L900,264"/>
   <path class="dep" d="M1160,140 L1190,140 L1190,596 L1160,596"/>
@@ -37,7 +37,7 @@
   <text class="devtext" x="600" y="291" text-anchor="middle">dev</text>
 
   <!-- flatmarkdown -->
-  <rect class="box" x="40" y="64" width="520" height="304" rx="8"/>
+  <rect class="box" x="40" y="64" width="520" height="370" rx="8"/>
   <text class="crate" x="60" y="92">flatmarkdown</text>
   <text class="sub" x="60" y="112">Parser: Flat Markdown text to the AST</text>
   <line class="sep" x1="40" y1="124" x2="560" y2="124"/>
@@ -46,11 +46,14 @@
   <text class="code" x="60" y="190"><tspan class="name">parse_body_with</tspan>(input: &amp;str, opts: &amp;BodyOptions) -&gt; Node</text>
   <text class="code" x="60" y="212"><tspan class="name">parse_page</tspan>(input: &amp;str) -&gt; Page</text>
   <text class="code" x="60" y="234"><tspan class="name">parse_page_with</tspan>(input: &amp;str, opts: &amp;BodyOptions) -&gt; Page</text>
-  <text class="label" x="60" y="260">PUBLIC METHODS</text>
-  <text class="code" x="60" y="282"><tspan class="name">BodyOptions::relative_page_links</tspan>() -&gt; BodyOptions</text>
-  <text class="label" x="60" y="308">PUBLIC TYPES</text>
-  <text class="code" x="60" y="328">struct BodyOptions, enum LinkResolution</text>
-  <text class="ext" x="60" y="352">External crates: comrak 0.51, serde_json 1</text>
+  <text class="code" x="60" y="256"><tspan class="name">has_unclosed_block</tspan>(body: &amp;str) -&gt; bool</text>
+  <text class="code" x="60" y="278"><tspan class="name">close_blocks</tspan>(body: &amp;str) -&gt; String</text>
+  <text class="code" x="60" y="300"><tspan class="name">split_body</tspan>(body: &amp;str, at: usize) -&gt; (String, String)</text>
+  <text class="label" x="60" y="326">PUBLIC METHODS</text>
+  <text class="code" x="60" y="348"><tspan class="name">BodyOptions::relative_page_links</tspan>() -&gt; BodyOptions</text>
+  <text class="label" x="60" y="374">PUBLIC TYPES</text>
+  <text class="code" x="60" y="394">struct BodyOptions, enum LinkResolution</text>
+  <text class="ext" x="60" y="418">External crates: comrak 0.51, serde_json 1</text>
 
   <!-- flatmarkdown-ast2html-wasm -->
   <rect class="box" x="640" y="64" width="520" height="150" rx="8"/>

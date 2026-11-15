@@ -1,12 +1,14 @@
 //! Flat Markdown parser: an item body or a whole page to the AST of the `flatmarkdown-ast` crate.
 
 mod ast;
+mod blocks;
 mod body;
 mod footnotes;
 mod hashtags;
 mod links;
 mod page;
 
+pub use blocks::{close_blocks, has_unclosed_block, split_body};
 pub use body::{BodyOptions, LinkResolution, parse_body, parse_body_with};
 pub use page::{parse_page, parse_page_with};
 
