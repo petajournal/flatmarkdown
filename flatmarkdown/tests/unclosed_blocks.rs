@@ -24,6 +24,7 @@ fn unclosed_bodies() -> Vec<String> {
         "<script>\nabc".to_string(),
         "<?\nabc".to_string(),
         "<![CDATA[\nabc".to_string(),
+        "<!DOCTYPE\nabc".to_string(),
         format!(">>>\n{FENCE}\nabc"),
         ">>>\n<!--\nabc".to_string(),
     ]
@@ -87,6 +88,18 @@ fn every_unclosed_block_is_closed_by_adding_lines_after_it() {
     }
 }
 
+// 複数行の引用の中のブロックが閉じていれば、補うのは引用の終了記号だけである。
+#[test]
+fn a_quote_with_a_closed_block_inside_gets_only_its_own_closing() {
+    for inner in [
+        format!("{FENCE}\nabc\n{FENCE}"),
+        "<!--\nabc\n-->".to_string(),
+    ] {
+        let body = format!(">>>\n{inner}");
+        assert_eq!(close_blocks(&body), format!("{body}\n>>>"));
+    }
+}
+
 // ブロックの外で分けると、前と後ろはそのまま分かれる。位置は文字で数える。
 #[test]
 fn a_body_split_outside_a_block_is_split_as_it_is() {
@@ -102,6 +115,25 @@ fn a_code_block_split_in_two_is_closed_and_opened_again() {
     let (before, after) = split_body(&format!("{FENCE}rust\ncode\n{FENCE}"), 10);
     assert_eq!(before, format!("{FENCE}rust\nco\n{FENCE}"));
     assert_eq!(after, format!("{FENCE}rust\nde\n{FENCE}"));
+}
+
+// HTMLのブロックの中で分けると、後ろの部分には、開始行のうち開始の記号の部分が写される。属性も写される。
+#[test]
+fn an_html_block_split_in_two_is_opened_again_with_its_opening_text() {
+    assert_eq!(
+        split_body("<!DOCTYPE html\nab\n>", 16),
+        (
+            "<!DOCTYPE html\na\n>".to_string(),
+            "<!DOCTYPE\nb\n>".to_string()
+        )
+    );
+    assert_eq!(
+        split_body("<pre class=\"x\">\nab\n</pre>", 17),
+        (
+            "<pre class=\"x\">\na\n</pre>".to_string(),
+            "<pre class=\"x\">\nb\n</pre>".to_string()
+        )
+    );
 }
 
 // 複数行の引用の中のコードブロックで分けると、前は内側から閉じ、後ろは外側から開く。
