@@ -12,21 +12,56 @@ fn a_code_block_without_its_closing_fence_is_unclosed() {
     assert!(!has_unclosed_block(&format!("{FENCE}\nabc\n{FENCE}")));
 }
 
+/// A body for each kind of block that closes with a line, each without its closing line.
+fn unclosed_bodies() -> Vec<String> {
+    vec![
+        "~~~
+abc"
+        .to_string(),
+        format!(
+            "{FENCE}math
+x^2"
+        ),
+        format!(
+            "````
+abc
+{FENCE}"
+        ),
+        ">>>
+abc"
+        .to_string(),
+        "<!--
+abc"
+        .to_string(),
+        "<pre>
+abc"
+        .to_string(),
+        "<script>
+abc"
+        .to_string(),
+        "<?
+abc"
+        .to_string(),
+        "<![CDATA[
+abc"
+        .to_string(),
+        format!(
+            ">>>
+{FENCE}
+abc"
+        ),
+        format!(
+            ">>>
+<!--
+abc"
+        ),
+    ]
+}
+
 // 行で開いて行で閉じるブロックは、どれも閉じていなければ見つかる。コードブロック、数式のブロック、複数行の引用、HTMLのブロックである。
 #[test]
 fn every_block_that_closes_with_a_line_is_found_unclosed() {
-    for body in [
-        "~~~\nabc".to_string(),
-        format!("{FENCE}math\nx^2"),
-        format!("````\nabc\n{FENCE}"),
-        ">>>\nabc".to_string(),
-        "<!--\nabc".to_string(),
-        "<pre>\nabc".to_string(),
-        "<script>\nabc".to_string(),
-        "<?\nabc".to_string(),
-        "<![CDATA[\nabc".to_string(),
-        format!(">>>\n{FENCE}\nabc"),
-    ] {
+    for body in unclosed_bodies() {
         assert!(has_unclosed_block(&body), "{body:?}");
     }
 }
@@ -64,12 +99,34 @@ fn a_closed_block_and_a_lone_closing_line_are_not_unclosed() {
 // 閉じていないコードブロックは、開始記号と同じ記号と長さの行で閉じる。
 #[test]
 fn a_code_block_is_closed_with_a_fence_of_its_own_kind() {
-    assert_eq!(close_blocks(&format!("{FENCE}
-abc")), format!("{FENCE}
+    assert_eq!(
+        close_blocks(&format!(
+            "{FENCE}
+abc"
+        )),
+        format!(
+            "{FENCE}
 abc
-{FENCE}"));
-    assert_eq!(close_blocks("~~~~
-abc"), "~~~~
+{FENCE}"
+        )
+    );
+    assert_eq!(
+        close_blocks(
+            "~~~~
+abc"
+        ),
+        "~~~~
 abc
-~~~~");
+~~~~"
+    );
+}
+
+// どの種類のブロックも、補った本文はもう閉じている。補うのは本文の後ろだけである。
+#[test]
+fn every_unclosed_block_is_closed_by_adding_lines_after_it() {
+    for body in unclosed_bodies() {
+        let closed = close_blocks(&body);
+        assert!(closed.starts_with(&body), "{closed:?}");
+        assert!(!has_unclosed_block(&closed), "{closed:?}");
+    }
 }
