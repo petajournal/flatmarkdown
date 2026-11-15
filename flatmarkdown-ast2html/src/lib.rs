@@ -19,12 +19,15 @@ pub struct HtmlOptions {
     /// gives `<a href="/tags/Rust" class="hashtag">#Rust</a>`. The default is `"{}"`: the
     /// tag name alone.
     pub hashtag_href: String,
+    /// The href of a wikilink. Every `{}` in it is replaced by the URL of the wikilink.
+    pub wikilink_href: String,
 }
 
 impl Default for HtmlOptions {
     fn default() -> Self {
         HtmlOptions {
             hashtag_href: TAG_NAME.to_string(),
+            wikilink_href: TAG_NAME.to_string(),
         }
     }
 }
@@ -325,7 +328,7 @@ pub fn ast_to_html_with(node: &Node, o: &HtmlOptions) -> String {
 
         Node::Wikilink { url, children } => format!(
             "<a href=\"{}\" data-wikilink=\"true\">{}</a>",
-            escape_html(url),
+            escape_html(&o.wikilink_href.replace(TAG_NAME, url)),
             render_all(children, o)
         ),
 
