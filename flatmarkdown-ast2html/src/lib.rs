@@ -9,6 +9,26 @@
 
 use flatmarkdown_ast::{AlertType, Alignment, ListType, Node};
 
+/// The part of [`HtmlOptions::hashtag_href`] that is replaced by the tag name.
+const TAG_NAME: &str = "{}";
+
+/// How [`ast_to_html_with`] writes the HTML.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HtmlOptions {
+    /// The href of a hashtag. Every `{}` in it is replaced by the tag name, so `"/tags/{}"`
+    /// gives `<a href="/tags/Rust" class="hashtag">#Rust</a>`. The default is `"{}"`: the
+    /// tag name alone.
+    pub hashtag_href: String,
+}
+
+impl Default for HtmlOptions {
+    fn default() -> Self {
+        HtmlOptions {
+            hashtag_href: TAG_NAME.to_string(),
+        }
+    }
+}
+
 fn escape_html(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('<', "&lt;")
@@ -28,22 +48,22 @@ fn plain_text(node: &Node) -> String {
     }
 }
 
-fn render_all(nodes: &[Node]) -> String {
-    nodes.iter().map(ast_to_html).collect()
+fn render_all(nodes: &[Node], o: &HtmlOptions) -> String {
+    nodes.iter().map(|node| ast_to_html_with(node, o)).collect()
 }
 
-fn render_children(node: &Node) -> String {
-    render_all(node.children())
+fn render_children(node: &Node, o: &HtmlOptions) -> String {
+    render_all(node.children(), o)
 }
 
 /// Renders the children of a list item in tight or non-tight mode.
 /// In tight mode, top-level paragraph children are rendered without `<p>` wrappers.
-fn render_item_content(item: &Node, tight: bool) -> String {
+fn render_item_content(item: &Node, tight: bool, o: &HtmlOptions) -> String {
     item.children()
         .iter()
         .map(|child| match child {
-            Node::Paragraph { children } if tight => render_all(children),
-            _ => ast_to_html(child),
+            Node::Paragraph { children } if tight => render_all(children, o),
+            _ => ast_to_html_with(child, o),
         })
         .collect()
 }
@@ -57,11 +77,17 @@ fn checkbox(symbol: &Option<String>) -> &'static str {
     }
 }
 
-fn list_to_html(list_type: ListType, start: u32, tight: bool, items: &[Node]) -> String {
+fn list_to_html(
+    list_type: ListType,
+    start: u32,
+    tight: bool,
+    items: &[Node],
+    o: &HtmlOptions,
+) -> String {
     let items_html: String = items
         .iter()
         .map(|item| {
-            let content = render_item_content(item, tight);
+            let content = render_item_content(item, tight, o);
             match item {
                 Node::TaskItem { symbol, .. } => {
                     format!("<li>{}{content}</li>\n", checkbox(symbol))
@@ -92,7 +118,7 @@ fn align_attribute(alignment: Option<&Alignment>) -> String {
     format!(" align=\"{name}\"")
 }
 
-fn table_to_html(alignments: &[Alignment], rows: &[Node]) -> String {
+fn table_to_html(alignments: &[Alignment], rows: &[Node], o: &HtmlOptions) -> String {
     let mut thead = String::new();
     let mut tbody = String::new();
     for row in rows {
@@ -104,7 +130,7 @@ fn table_to_html(alignments: &[Alignment], rows: &[Node]) -> String {
             .enumerate()
             .map(|(column, cell)| {
                 let align = align_attribute(alignments.get(column));
-                format!("<{tag}{align}>{}</{tag}>", render_children(cell))
+                format!("<{tag}{align}>{}</{tag}>", render_children(cell, o))
             })
             .collect();
         let row_html = format!("<tr>{cells_html}</tr>\n");
@@ -131,7 +157,7 @@ fn footnote_label(name: &str) -> String {
     escape_html(name.strip_prefix("__inline_").unwrap_or(name))
 }
 
-fn footnote_definition_to_html(name: &str, children: &[Node]) -> String {
+fn footnote_definition_to_html(name: &str, children: &[Node], o: &HtmlOptions) -> String {
     let shown = footnote_label(name);
     let name = escape_html(name);
     let label = format!("<a href=\"#fnref-{name}\" class=\"footnote-label\">[{shown}]:</a>");
@@ -140,14 +166,23 @@ fn footnote_definition_to_html(name: &str, children: &[Node]) -> String {
     // block keeps the label in front of it.
     let body = match children.split_first() {
         Some((Node::Paragraph { children: first }, rest)) => {
-            format!("<p>{label} {}</p>\n{}", render_all(first), render_all(rest))
+            format!(
+                "<p>{label} {}</p>\n{}",
+                render_all(first, o),
+                render_all(rest, o)
+            )
         }
-        _ => format!("{label}\n{}", render_all(children)),
+        _ => format!("{label}\n{}", render_all(children, o)),
     };
     format!("<div id=\"fn-{name}\" class=\"footnote\">\n{body}</div>\n")
 }
 
-fn alert_to_html(alert_type: AlertType, title: &Option<String>, children: &[Node]) -> String {
+fn alert_to_html(
+    alert_type: AlertType,
+    title: &Option<String>,
+    children: &[Node],
+    o: &HtmlOptions,
+) -> String {
     let (alert_type, shown) = match alert_type {
         AlertType::Note => ("note", "Note"),
         AlertType::Tip => ("tip", "Tip"),
@@ -159,21 +194,27 @@ fn alert_to_html(alert_type: AlertType, title: &Option<String>, children: &[Node
     format!(
         "<blockquote class=\"alert alert-{alert_type}\">\n<p class=\"alert-title\">{}</p>\n{}</blockquote>\n",
         escape_html(title),
-        render_all(children)
+        render_all(children, o)
     )
 }
 
 /// Renders a node of the AST and its descendants as an HTML string.
 ///
 /// The node is normally the `Node::Document` of an item body, but any node can be given.
+/// It gives the same HTML as [`ast_to_html_with`] with the default [`HtmlOptions`].
 pub fn ast_to_html(node: &Node) -> String {
-    match node {
-        Node::Document { children } => render_all(children),
+    ast_to_html_with(node, &HtmlOptions::default())
+}
 
-        Node::Paragraph { children } => format!("<p>{}</p>\n", render_all(children)),
+/// Renders a node of the AST and its descendants as an HTML string, with `o`.
+pub fn ast_to_html_with(node: &Node, o: &HtmlOptions) -> String {
+    match node {
+        Node::Document { children } => render_all(children, o),
+
+        Node::Paragraph { children } => format!("<p>{}</p>\n", render_all(children, o)),
 
         Node::Heading { level, children } => {
-            format!("<h{level}>{}</h{level}>\n", render_all(children))
+            format!("<h{level}>{}</h{level}>\n", render_all(children, o))
         }
 
         Node::CodeBlock { info, literal, .. } => {
@@ -186,7 +227,7 @@ pub fn ast_to_html(node: &Node) -> String {
         }
 
         Node::BlockQuote { children } | Node::MultilineBlockQuote { children } => {
-            format!("<blockquote>\n{}</blockquote>\n", render_all(children))
+            format!("<blockquote>\n{}</blockquote>\n", render_all(children, o))
         }
 
         Node::List {
@@ -195,52 +236,54 @@ pub fn ast_to_html(node: &Node) -> String {
             tight,
             children,
             ..
-        } => list_to_html(*list_type, *start, *tight, children),
+        } => list_to_html(*list_type, *start, *tight, children, o),
 
         // Fallback — normally rendered inside the list handler
-        Node::Item { children, .. } => format!("<li>{}</li>\n", render_all(children)),
+        Node::Item { children, .. } => format!("<li>{}</li>\n", render_all(children, o)),
         Node::TaskItem { symbol, children } => {
-            format!("<li>{}{}</li>\n", checkbox(symbol), render_all(children))
+            format!("<li>{}{}</li>\n", checkbox(symbol), render_all(children, o))
         }
 
         Node::Table {
             alignments,
             children,
             ..
-        } => table_to_html(alignments, children),
+        } => table_to_html(alignments, children, o),
 
         // Fallback — normally rendered inside the table handler
-        Node::TableRow { children, .. } | Node::TableCell { children } => render_all(children),
+        Node::TableRow { children, .. } | Node::TableCell { children } => render_all(children, o),
 
         Node::ThematicBreak => "<hr />\n".to_string(),
 
         Node::HtmlBlock { literal, .. } => literal.clone(),
 
-        Node::FootnoteDefinition { name, children } => footnote_definition_to_html(name, children),
+        Node::FootnoteDefinition { name, children } => {
+            footnote_definition_to_html(name, children, o)
+        }
 
         Node::Alert {
             alert_type,
             title,
             children,
-        } => alert_to_html(*alert_type, title, children),
+        } => alert_to_html(*alert_type, title, children, o),
 
         // The same HTML as comrak writes for `-# text`.
-        Node::Subtext { children } => format!("<p><sub>{}</sub></p>\n", render_all(children)),
+        Node::Subtext { children } => format!("<p><sub>{}</sub></p>\n", render_all(children, o)),
 
         Node::Text { value } => escape_html(value),
 
         Node::Softbreak => "\n".to_string(),
         Node::Linebreak => "<br />\n".to_string(),
 
-        Node::Emph { children } => format!("<em>{}</em>", render_all(children)),
-        Node::Strong { children } => format!("<strong>{}</strong>", render_all(children)),
-        Node::Strikethrough { children } => format!("<del>{}</del>", render_all(children)),
-        Node::Underline { children } => format!("<u>{}</u>", render_all(children)),
-        Node::Highlight { children } => format!("<mark>{}</mark>", render_all(children)),
-        Node::Superscript { children } => format!("<sup>{}</sup>", render_all(children)),
-        Node::Subscript { children } => format!("<sub>{}</sub>", render_all(children)),
+        Node::Emph { children } => format!("<em>{}</em>", render_all(children, o)),
+        Node::Strong { children } => format!("<strong>{}</strong>", render_all(children, o)),
+        Node::Strikethrough { children } => format!("<del>{}</del>", render_all(children, o)),
+        Node::Underline { children } => format!("<u>{}</u>", render_all(children, o)),
+        Node::Highlight { children } => format!("<mark>{}</mark>", render_all(children, o)),
+        Node::Superscript { children } => format!("<sup>{}</sup>", render_all(children, o)),
+        Node::Subscript { children } => format!("<sub>{}</sub>", render_all(children, o)),
         Node::SpoileredText { children } => {
-            format!("<span class=\"spoiler\">{}</span>", render_all(children))
+            format!("<span class=\"spoiler\">{}</span>", render_all(children, o))
         }
 
         Node::Code { literal } => format!("<code>{}</code>", escape_html(literal)),
@@ -254,14 +297,14 @@ pub fn ast_to_html(node: &Node) -> String {
                 format!(
                     "<a href=\"{}\">{}</a>",
                     escape_html(url),
-                    render_all(children)
+                    render_all(children, o)
                 )
             } else {
                 format!(
                     "<a href=\"{}\" title=\"{}\">{}</a>",
                     escape_html(url),
                     escape_html(title),
-                    render_all(children)
+                    render_all(children, o)
                 )
             }
         }
@@ -283,13 +326,14 @@ pub fn ast_to_html(node: &Node) -> String {
         Node::Wikilink { url, children } => format!(
             "<a href=\"{}\" data-wikilink=\"true\">{}</a>",
             escape_html(url),
-            render_all(children)
+            render_all(children, o)
         ),
 
-        Node::Hashtag { value } => {
-            let name = escape_html(value);
-            format!("<a href=\"{name}\" class=\"hashtag\">#{name}</a>")
-        }
+        Node::Hashtag { value } => format!(
+            "<a href=\"{}\" class=\"hashtag\">#{}</a>",
+            escape_html(&o.hashtag_href.replace(TAG_NAME, value)),
+            escape_html(value)
+        ),
 
         // The label is shown instead of comrak's index: a body is parsed alone, so the
         // index would restart at 1 in every item.
@@ -313,7 +357,7 @@ pub fn ast_to_html(node: &Node) -> String {
 
         Node::HtmlInline { value } => value.clone(),
 
-        Node::Unknown { children, .. } => render_all(children),
+        Node::Unknown { children, .. } => render_all(children, o),
     }
 }
 
