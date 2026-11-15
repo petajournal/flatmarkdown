@@ -13,7 +13,27 @@ fn hashtag(name: &str) -> Node {
 fn hashtag_href(template: &str) -> HtmlOptions {
     HtmlOptions {
         hashtag_href: template.to_string(),
+        ..HtmlOptions::default()
     }
+}
+
+// wikilinkのhrefは、テンプレートの{}をurlに置き換えたものである。中身と目印は変わらない。
+#[test]
+fn the_href_of_a_wikilink_is_the_template_with_the_url_in_place_of_the_braces() {
+    let node = Node::Wikilink {
+        url: "notes/日記".to_string(),
+        children: vec![Node::Text {
+            value: "日記".to_string(),
+        }],
+    };
+    let options = HtmlOptions {
+        wikilink_href: "/pages/{}".to_string(),
+        ..HtmlOptions::default()
+    };
+    assert_eq!(
+        ast_to_html_with(&node, &options),
+        "<a href=\"/pages/notes/日記\" data-wikilink=\"true\">日記</a>"
+    );
 }
 
 // 既定の設定では、ast_to_htmlと同じHTMLになる。
