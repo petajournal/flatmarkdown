@@ -108,8 +108,9 @@ fn open_block<'a>(node: &'a AstNode<'a>, lines: &[&str]) -> Option<OpenBlock> {
         }),
         NodeValue::HtmlBlock(html) => {
             let (opening, closing) = html_marks(html.block_type, first_line)?;
-            (!last_line(&html.literal).contains(closing.as_str()))
-                .then_some(OpenBlock { opening, closing })
+            // The block ends at the first line with its closing text, in any case, as `</PRE>`
+            let literal = html.literal.to_ascii_lowercase();
+            (!literal.contains(closing.as_str())).then_some(OpenBlock { opening, closing })
         }
         _ => None,
     }
@@ -143,9 +144,4 @@ fn html_marks(block_type: u8, first_line: &str) -> Option<(String, String)> {
         5 => marks("<![CDATA[", "]]>"),
         _ => None,
     }
-}
-
-/// The last line of `text` that is not blank.
-fn last_line(text: &str) -> &str {
-    text.trim_end().rsplit('\n').next().unwrap_or("")
 }
