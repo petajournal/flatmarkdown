@@ -44,10 +44,58 @@ fn closing_lines(body: &str) -> Vec<String> {
     let Some(last) = root.last_child() else {
         return Vec::new();
     };
-    match &last.data.borrow().value {
-        NodeValue::CodeBlock(code) => vec![fence(code.fence_char, code.fence_length)],
-        _ => Vec::new(),
+    let value = last.data.borrow().value.clone();
+    match value {
+        NodeValue::MultilineBlockQuote(quote) => {
+            // A block inside it can be open too. A `>>>` inside it closes it, so no quote is
+            // inside another: two levels at most
+            let mut lines: Vec<String> = last
+                .last_child()
+                .and_then(|inner| open_closing(&inner.data.borrow().value))
+                .into_iter()
+                .collect();
+            lines.push(">".repeat(quote.fence_length));
+            lines
+        }
+        value => open_closing(&value).into_iter().collect(),
     }
+}
+
+/// The line that closes `value` when it is a block left open, or `None` when it is closed or
+/// is no block that closes with a line.
+fn open_closing(value: &NodeValue) -> Option<String> {
+    match value {
+        NodeValue::CodeBlock(code) if code.fenced && !code.closed => {
+            Some(fence(code.fence_char, code.fence_length))
+        }
+        NodeValue::HtmlBlock(html) => html_closing(html.block_type, &html.literal)
+            .filter(|closing| !last_line(&html.literal).contains(closing.as_str())),
+        _ => None,
+    }
+}
+
+/// The text that ends an HTML block of `block_type`, for the kinds that end with a text and
+/// not with a blank line. The tag of the first line names the end of the first kind.
+fn html_closing(block_type: u8, literal: &str) -> Option<String> {
+    match block_type {
+        1 => {
+            let first = literal.trim_start().to_ascii_lowercase();
+            ["pre", "script", "style", "textarea"]
+                .into_iter()
+                .find(|tag| first.starts_with(&format!("<{tag}")))
+                .map(|tag| format!("</{tag}>"))
+        }
+        2 => Some("-->".into()),
+        3 => Some("?>".into()),
+        4 => Some(">".into()),
+        5 => Some("]]>".into()),
+        _ => None,
+    }
+}
+
+/// The last line of `text` that has a letter.
+fn last_line(text: &str) -> &str {
+    text.trim_end().rsplit('\n').next().unwrap_or("")
 }
 
 /// A closing fence of `length` times `char`.
