@@ -1,7 +1,7 @@
 //! A block that opens with a line and closes with a line runs to the end of the page while it
 //! is not closed. These tests check that such a block in an item body is found, and closed.
 
-use flatmarkdown::{close_blocks, has_unclosed_block};
+use flatmarkdown::{close_blocks, has_unclosed_block, split_body};
 
 const FENCE: &str = "```";
 
@@ -85,4 +85,21 @@ fn every_unclosed_block_is_closed_by_adding_lines_after_it() {
         assert!(closed.starts_with(&body), "{closed:?}");
         assert!(!has_unclosed_block(&closed), "{closed:?}");
     }
+}
+
+// ブロックの外で分けると、前と後ろはそのまま分かれる。位置は文字で数える。
+#[test]
+fn a_body_split_outside_a_block_is_split_as_it_is() {
+    assert_eq!(
+        split_body("日本語", 1),
+        ("日".to_string(), "本語".to_string())
+    );
+}
+
+// コードブロックの中で分けると、前の部分は閉じ、後ろの部分には情報文字列ごと開始行が写される。
+#[test]
+fn a_code_block_split_in_two_is_closed_and_opened_again() {
+    let (before, after) = split_body(&format!("{FENCE}rust\ncode\n{FENCE}"), 10);
+    assert_eq!(before, format!("{FENCE}rust\nco\n{FENCE}"));
+    assert_eq!(after, format!("{FENCE}rust\nde\n{FENCE}"));
 }
