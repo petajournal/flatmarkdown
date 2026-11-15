@@ -440,7 +440,7 @@ dependencies = [
 
 [[package]]
 name = "flatmarkdown"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "comrak",
  "flatmarkdown-ast",
@@ -449,7 +449,7 @@ dependencies = [
 
 [[package]]
 name = "flatmarkdown-ast"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "bincode",
  "facet",
@@ -459,7 +459,7 @@ dependencies = [
 
 [[package]]
 name = "flatmarkdown-ast2html"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "flatmarkdown",
  "flatmarkdown-ast",
@@ -467,7 +467,7 @@ dependencies = [
 
 [[package]]
 name = "flatmarkdown-ast2html-wasm"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "flatmarkdown-ast",
  "flatmarkdown-ast2html",

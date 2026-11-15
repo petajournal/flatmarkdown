@@ -36,6 +36,29 @@ assert_eq!(html, "<p>Hello <strong>world</strong></p>\n");
 
 `ast_to_html` takes any node. The node is normally the `Node::Document` of an item body.
 
+### Where links lead
+
+`ast_to_html_with` takes `HtmlOptions`. They hold templates for the `href` of a wikilink and of a hashtag.
+Every `{}` in a template is replaced by the URL of the wikilink or by the tag name:
+
+```rust
+use flatmarkdown_ast::Node;
+use flatmarkdown_ast2html::{HtmlOptions, ast_to_html_with};
+
+let options = HtmlOptions {
+    hashtag_href: "/tags/{}.html".to_string(),
+    ..HtmlOptions::default()
+};
+let tag = Node::Hashtag { value: "Rust".to_string() };
+assert_eq!(
+    ast_to_html_with(&tag, &options),
+    "<a href=\"/tags/Rust.html\" class=\"hashtag\">#Rust</a>"
+);
+```
+
+Both templates are `{}` by default, so `ast_to_html` is `ast_to_html_with` with `HtmlOptions::default()`.
+The `href` is escaped for HTML. It is not percent-encoded.
+
 ## HTML output
 
 The HTML follows comrak where comrak has a form. These are the choices of this crate:
@@ -44,7 +67,7 @@ The HTML follows comrak where comrak has a form. These are the choices of this c
 - A table cell has the `align` attribute of its column (`left`, `center`, or `right`), as in GFM. A column without an alignment has none.
 - An `embed` is an `<img>` with `src`, `alt`, and, when it has one, `title`. The `props` of the URL fragment (`#w=100`) are not written: how an app uses them is up to the app.
 - A `subtext` (`-# text`) is `<p><sub>text</sub></p>`, as in comrak.
-- A hashtag is `<a href="<name>" class="hashtag">#<name></a>`. A wikilink is `<a href="<url>" data-wikilink="true">`.
+- A hashtag is `<a href="<name>" class="hashtag">#<name></a>`. A wikilink is `<a href="<url>" data-wikilink="true">`. `HtmlOptions` can change the `href` of both (see "Where links lead").
 - A node with an unknown `type` writes no tag of its own. Its children are rendered.
 
 A footnote shows its name: `[^memo]` is shown as `[memo]`. An inline footnote (`^[content]`) has no name of its own, so it shows its number: `[1]` for the first one of the body.
