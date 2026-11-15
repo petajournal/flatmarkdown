@@ -1,7 +1,7 @@
 //! A block that opens with a line and closes with a line runs to the end of the page while it
 //! is not closed. These tests check that such a block in an item body is found, and closed.
 
-use flatmarkdown::has_unclosed_block;
+use flatmarkdown::{close_blocks, has_unclosed_block};
 
 const FENCE: &str = "```";
 
@@ -59,4 +59,17 @@ fn a_closed_block_and_a_lone_closing_line_are_not_unclosed() {
     ] {
         assert!(!has_unclosed_block(&body), "{body:?}");
     }
+}
+
+// 閉じていないコードブロックは、開始記号と同じ記号と長さの行で閉じる。
+#[test]
+fn a_code_block_is_closed_with_a_fence_of_its_own_kind() {
+    assert_eq!(close_blocks(&format!("{FENCE}
+abc")), format!("{FENCE}
+abc
+{FENCE}"));
+    assert_eq!(close_blocks("~~~~
+abc"), "~~~~
+abc
+~~~~");
 }
