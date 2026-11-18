@@ -26,10 +26,23 @@ Load the file with a `<script>` tag.
 
 The script adds one global object, `FmAst2Html`.
 
-### `FmAst2Html.renderToHtml(ast)`
+### `FmAst2Html.renderToHtml(ast, options)`
 
 `ast` is the AST as a JSON string, or as an object.
 The function returns the HTML as a string. It does not return a promise.
+
+`options` can be left out. It is an object with these settings. A setting that is left out has its default value.
+
+- `wikilinkHref`: the template of the `href` of a wikilink. The default is `{}`.
+- `hashtagHref`: the template of the `href` of a hashtag. The default is `{}`.
+- `wikilinkFragmentPattern`: the pattern of the fragment of a wikilink. The default is empty.
+
+They are the settings of `HtmlOptions` of the crate, and give the same HTML.
+See "Where links lead" in the [README of the crate](https://github.com/petajournal/flatmarkdown/tree/main/flatmarkdown-ast2html#readme).
+
+```js
+FmAst2Html.renderToHtml(ast, { wikilinkHref: '/pages/{}', hashtagHref: '/pages/tags/{}' });
+```
 
 The function throws when `ast` cannot be read as an AST.
 For example, it throws for a string that is not JSON.
@@ -42,10 +55,10 @@ Do not render the AST of Markdown that you do not trust.
 
 Versions 0.1.x were written in TypeScript. From 0.6.0, the package is built from Rust.
 
-- The second argument of `renderToHtml`, the options for wikilinks and hashtags, is removed.
+- The second argument of `renderToHtml`, the options for wikilinks and hashtags, was removed in 0.6.0. From 0.9.0, it is back with other settings.
 - The ES module build, the CommonJS build, and the TypeScript types are removed.
 - The types of the AST are not exported. They are in the npm package [flatmarkdown-ast](https://www.npmjs.com/package/flatmarkdown-ast).
-- The file is about 240KB. It was about 4KB.
+- The file is about 340KB. It was about 4KB.
 
 ## Build
 
