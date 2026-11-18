@@ -152,15 +152,15 @@ fn a_wikilink_with_only_wide_whitespace_as_its_name_stays_text() {
     assert_eq!(inlines(&ast("[[\u{3000}|label]]")), [text("[[|label]]")]);
 }
 
-// #のあとにIDがなければ、#は落とす。[[a#]]は[[a]]と同じである。
+// 末尾の#は、ページ名の一部である。[[C#]]は、C#というページへのリンクである（peta-journalのADR 051）。
 #[test]
-fn a_hash_sign_without_an_id_is_dropped_from_a_page_name() {
-    for md in ["[[a#]]", "[[a# ]]", "[[a#|a]]"] {
+fn a_hash_sign_at_the_end_is_a_part_of_the_page_name() {
+    for (md, label) in [("[[C#]]", "C#"), ("[[C# ]]", "C#"), ("[[C#|C]]", "C")] {
         assert_eq!(
             inlines(&ast(md)),
             [Node::Wikilink {
-                url: "a".to_string(),
-                children: vec![text("a")],
+                url: "C#".to_string(),
+                children: vec![text(label)],
             }],
             "{md:?}"
         );
