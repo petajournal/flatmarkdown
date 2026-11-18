@@ -63,7 +63,7 @@ pub(crate) fn node_to_ast<'a>(
 /// - comrak wraps text in `EscapedTag` when delimiters look like markup but are not. With the
 ///   options of this crate that is a single `|` on each side: `|text|` is not a spoiler, which
 ///   needs `||`.
-/// - A wikilink that names no page: `[[]]`, `[[|label]]`, or `[[#]]`. A `wikilink` node never
+/// - A wikilink that names no page: `[[]]`, `[[|label]]`, `[[#]]`, or `[[##]]`. A `wikilink` node never
 ///   has such a `url`, because nothing can be opened with it.
 fn children_to_ast<'a>(
     node: &'a comrak::arena_tree::Node<'a, std::cell::RefCell<comrak::nodes::Ast>>,
@@ -99,19 +99,18 @@ fn children_to_ast<'a>(
     }
 }
 
-/// True if the URL of a wikilink names no page and no item: it is empty, or only `#`.
+/// True if the URL of a wikilink names no page and no item: it is empty, or only `#` signs.
 /// An escaped `\#` is a `#` here too.
 fn names_no_page(url: &str) -> bool {
-    url.is_empty() || restored_as_hash(url) == "#"
+    restored_as_hash(url).chars().all(|c| c == '#')
 }
 
 /// The `url` of a wikilink, from the URL that comrak read. comrak drops ASCII whitespace
 /// around the page name. Other whitespace is dropped here, such as the full-width space, so
-/// that a name never starts or ends with one. A `#` at the end names no item, so it is dropped
-/// too: `[[a#]]` is `[[a]]`.
+/// that a name never starts or ends with one. A `#` at the end stays: `[[C#]]` links to the
+/// page `C#` (ADR 051 of peta-journal).
 fn page_url(raw: &str) -> &str {
-    let url = raw.trim();
-    url.strip_suffix('#').unwrap_or(url)
+    raw.trim()
 }
 
 /// True if a comrak wikilink has no label of its own. comrak then gives it one text child that
