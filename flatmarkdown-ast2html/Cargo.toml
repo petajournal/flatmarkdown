@@ -15,6 +15,10 @@ workspace = true
 
 [dependencies]
 flatmarkdown-ast.workspace = true
+# The pattern of a fragment is read by regex-lite, not regex. Its `\d` and `\w` match ASCII
+# only, as in the RegExp of JavaScript, which reads the same pattern in the npm renderers. It
+# also keeps the wasm file small.
+regex-lite = "0.1.9"
 
 # Only the tests that start from Markdown use the parser. A path without a version is left out
 # of the published crate, so the renderer never depends on the parser (ADR 020 of peta-journal).

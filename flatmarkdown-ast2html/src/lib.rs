@@ -7,7 +7,10 @@
 //! The HTML is made for content that you trust. Raw HTML of the AST is written as it is, and
 //! the URL of a link is not checked.
 
+use std::cell::RefCell;
+
 use flatmarkdown_ast::{AlertType, Alignment, ListType, Node};
+use regex_lite::Regex;
 
 /// The part of an href template that is replaced by the name of the page or the tag.
 const NAME: &str = "{}";
@@ -19,8 +22,14 @@ pub struct HtmlOptions {
     /// gives `<a href="/tags/Rust" class="hashtag">#Rust</a>`. The default is `"{}"`: the
     /// tag name alone.
     pub hashtag_href: String,
-    /// The href of a wikilink. Every `{}` in it is replaced by the URL of the wikilink.
+    /// The href of a wikilink. Every `{}` in it is replaced by the name in the URL of the
+    /// wikilink. See [`split_wikilink`] for the name.
     pub wikilink_href: String,
+    /// The pattern of the fragment of a wikilink, as a regular expression. It must match the
+    /// whole text after the last `#` of the URL. Then that text goes after the href as
+    /// `#<fragment>`, and the text before the `#` is the name. The default is empty: every
+    /// `#` is a part of the name.
+    pub wikilink_fragment_pattern: String,
 }
 
 impl Default for HtmlOptions {
@@ -28,6 +37,7 @@ impl Default for HtmlOptions {
         HtmlOptions {
             hashtag_href: NAME.to_string(),
             wikilink_href: NAME.to_string(),
+            wikilink_fragment_pattern: String::new(),
         }
     }
 }
@@ -54,6 +64,61 @@ fn encoded(name: &str) -> String {
 /// name, percent-encoded. The URL is not escaped for HTML.
 pub fn fill_href(template: &str, name: &str) -> String {
     template.replace(NAME, &encoded(name))
+}
+
+thread_local! {
+    /// The last pattern of a fragment, and its regular expression. A page renders many
+    /// wikilinks with the same pattern, so it is compiled once. `None` means that the pattern
+    /// is not a regular expression.
+    static FRAGMENT: RefCell<Option<(String, Option<Regex>)>> = const { RefCell::new(None) };
+}
+
+/// Whether `pattern` matches the whole `text`. An empty pattern, and a pattern that is not a
+/// regular expression, match nothing.
+fn is_fragment(pattern: &str, text: &str) -> bool {
+    if pattern.is_empty() {
+        return false;
+    }
+    FRAGMENT.with(|last| {
+        let mut last = last.borrow_mut();
+        if last
+            .as_ref()
+            .is_none_or(|(compiled, _)| compiled != pattern)
+        {
+            let regex = Regex::new(&format!("^(?:{pattern})$")).ok();
+            *last = Some((pattern.to_string(), regex));
+        }
+        last.as_ref()
+            .and_then(|(_, regex)| regex.as_ref())
+            .is_some_and(|regex| regex.is_match(text))
+    })
+}
+
+/// The name and the fragment in the URL of a wikilink.
+///
+/// The fragment is the text after the last `#`, when `fragment_pattern` matches the whole of
+/// it. The name is then the text before that `#`. Otherwise the whole URL is the name, and
+/// there is no fragment. So `C##20260426035700_QZ998PX` is the page `C#` and the fragment
+/// `20260426035700_QZ998PX` when the pattern matches the fragment, and `C#` is always a name.
+///
+/// An empty pattern, or one that is not a regular expression, matches nothing.
+pub fn split_wikilink<'a>(url: &'a str, fragment_pattern: &str) -> (&'a str, Option<&'a str>) {
+    match url.rsplit_once('#') {
+        Some((name, fragment)) if is_fragment(fragment_pattern, fragment) => (name, Some(fragment)),
+        _ => (url, None),
+    }
+}
+
+/// The escaped href of a wikilink to `url`. The fragment goes after the filled template, so
+/// that it ends the URL even when the template has text after `{}`.
+fn wikilink_href(o: &HtmlOptions, url: &str) -> String {
+    let (name, fragment) = split_wikilink(url, &o.wikilink_fragment_pattern);
+    let mut href = fill_href(&o.wikilink_href, name);
+    if let Some(fragment) = fragment {
+        href.push('#');
+        href.push_str(&encoded(fragment));
+    }
+    escape_html(&href)
 }
 
 /// The escaped href that `template` makes for `name`.
@@ -357,7 +422,7 @@ pub fn ast_to_html_with(node: &Node, o: &HtmlOptions) -> String {
 
         Node::Wikilink { url, children } => format!(
             "<a href=\"{}\" data-wikilink=\"true\">{}</a>",
-            href(&o.wikilink_href, url),
+            wikilink_href(o, url),
             render_all(children, o)
         ),
 
