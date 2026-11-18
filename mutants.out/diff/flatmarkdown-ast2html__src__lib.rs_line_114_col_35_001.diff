@@ -1,0 +1,21 @@
+--- flatmarkdown-ast2html/src/lib.rs
++++ replace match guard is_fragment(fragment_pattern, fragment) with false in split_wikilink
+@@ -106,17 +106,17 @@
+ /// The fragment is the text after the last `#`, when `fragment_pattern` matches the whole of
+ /// it. The name is then the text before that `#`. Otherwise the whole URL is the name, and
+ /// there is no fragment. So `C##20260426035700_QZ998PX` is the page `C#` and the fragment
+ /// `20260426035700_QZ998PX` when the pattern matches the fragment, and `C#` is always a name.
+ ///
+ /// An empty pattern, or one that is not a regular expression, matches nothing.
+ pub fn split_wikilink<'a>(url: &'a str, fragment_pattern: &str) -> (&'a str, Option<&'a str>) {
+     match url.rsplit_once('#') {
+-        Some((name, fragment)) if is_fragment(fragment_pattern, fragment) => (name, Some(fragment)),
++        Some((name, fragment)) if false /* ~ changed by cargo-mutants ~ */ => (name, Some(fragment)),
+         _ => (url, None),
+     }
+ }
+ 
+ /// The escaped href of a wikilink to `url`. The fragment goes after the filled template, so
+ /// that it ends the URL even when the template has text after `{}`.
+ fn wikilink_href(o: &HtmlOptions, url: &str) -> String {
+     let (name, fragment) = split_wikilink(url, &o.wikilink_fragment_pattern);

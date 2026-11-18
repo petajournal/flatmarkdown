@@ -1,0 +1,21 @@
+--- flatmarkdown-ast2html/src/lib.rs
++++ replace fill_href -> String with String::new()
+@@ -65,17 +65,17 @@
+ /// take the name.
+ pub fn href_template_from_prefix(prefix: &str) -> String {
+     format!("{}{NAME}", encoded(prefix))
+ }
+ 
+ /// The URL that `template` makes for `name`: every `{}` in the template is replaced by the
+ /// name, percent-encoded. The URL is not escaped for HTML.
+ pub fn fill_href(template: &str, name: &str) -> String {
+-    template.replace(NAME, &encoded(name))
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ thread_local! {
+     /// The last pattern of a fragment, and its regular expression. A page renders many
+     /// wikilinks with the same pattern, so it is compiled once. `None` means that the pattern
+     /// is not a regular expression.
+     static FRAGMENT: RefCell<Option<(String, Option<Regex>)>> = const { RefCell::new(None) };
+ }

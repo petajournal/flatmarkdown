@@ -22,4 +22,4 @@
   - [ ] 新しい版を出す（ユーザー）
 - [ ] 0.9.0が出たあと、ほかのリポジトリで使う
   - [ ] sosuisen.netの`fm2html`：`ast_to_html_with`でhashtagを`/tags/{}`にし、`link_hashtags_to_tag_pages`を消す
-  - [ ] peta-journalのWebのシェル：peta-journalの`docs/plans.md`の「ADR 051」にある
+  - [ ] peta-journal：peta-journalの`docs/plans.md`の「PetaJournalのURLとリンクの生成」にある

@@ -33,14 +33,14 @@ fn an_unknown_node_is_rendered_as_its_children_only() {
     assert_eq!(ast_to_html(&ast), "a &lt; b");
 }
 
-// ハッシュタグの名前は、hrefでも表示する文字でもエスケープされる。
+// ハッシュタグの名前は、hrefでは符号化してからエスケープされ、表示する文字ではエスケープされる。
 #[test]
-fn html_hashtag_name_is_escaped_in_the_href_and_in_the_text() {
+fn html_hashtag_name_is_encoded_and_escaped_in_the_href_and_escaped_in_the_text() {
     let node = Node::Hashtag {
         value: "a<b>&\"c".to_string(),
     };
     assert_eq!(
         ast_to_html(&node),
-        "<a href=\"a&lt;b&gt;&amp;&quot;c\" class=\"hashtag\">#a&lt;b&gt;&amp;&quot;c</a>"
+        "<a href=\"a%3Cb%3E&amp;%22c\" class=\"hashtag\">#a&lt;b&gt;&amp;&quot;c</a>"
     );
 }

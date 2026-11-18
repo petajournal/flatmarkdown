@@ -1,0 +1,386 @@
+[
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace encoded -> String with String::new()\n@@ -44,25 +44,17 @@\n \n /// The characters that stay as they are in an encoded name. They are the characters that\n /// `encodeURI` of JavaScript does not encode, without `?` and `#`. Every other byte of the\n /// UTF-8 text becomes `%XX`.\n const KEPT: &[u8] = b\"-_.!~*'();/:@&=+$,\";\n \n /// `name` with every character outside the letters, the digits and [`KEPT`] percent-encoded.\n fn encoded(name: &str) -> String {\n-    let mut out = String::with_capacity(name.len());\n-    for &byte in name.as_bytes() {\n-        if byte.is_ascii_alphanumeric() || KEPT.contains(&byte) {\n-            out.push(char::from(byte));\n-        } else {\n-            out.push_str(&format!(\"%{byte:02X}\"));\n-        }\n-    }\n-    out\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n /// The href template of the URLs that start with `prefix`. The prefix is percent-encoded as a\n /// name is, so `/pages/` gives `/pages/{}`. Braces in the prefix are encoded too, so they never\n /// take the name.\n pub fn href_template_from_prefix(prefix: &str) -> String {\n     format!(\"{}{NAME}\", encoded(prefix))\n }\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "encoded",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 61
+        },
+        "start": {
+          "column": 1,
+          "line": 50
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:52:5: replace encoded -> String with String::new()",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 60
+      },
+      "start": {
+        "column": 5,
+        "line": 52
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace encoded -> String with \"xyzzy\".into()\n@@ -44,25 +44,17 @@\n \n /// The characters that stay as they are in an encoded name. They are the characters that\n /// `encodeURI` of JavaScript does not encode, without `?` and `#`. Every other byte of the\n /// UTF-8 text becomes `%XX`.\n const KEPT: &[u8] = b\"-_.!~*'();/:@&=+$,\";\n \n /// `name` with every character outside the letters, the digits and [`KEPT`] percent-encoded.\n fn encoded(name: &str) -> String {\n-    let mut out = String::with_capacity(name.len());\n-    for &byte in name.as_bytes() {\n-        if byte.is_ascii_alphanumeric() || KEPT.contains(&byte) {\n-            out.push(char::from(byte));\n-        } else {\n-            out.push_str(&format!(\"%{byte:02X}\"));\n-        }\n-    }\n-    out\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n /// The href template of the URLs that start with `prefix`. The prefix is percent-encoded as a\n /// name is, so `/pages/` gives `/pages/{}`. Braces in the prefix are encoded too, so they never\n /// take the name.\n pub fn href_template_from_prefix(prefix: &str) -> String {\n     format!(\"{}{NAME}\", encoded(prefix))\n }\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "encoded",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 61
+        },
+        "start": {
+          "column": 1,
+          "line": 50
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:52:5: replace encoded -> String with \"xyzzy\".into()",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 60
+      },
+      "start": {
+        "column": 5,
+        "line": 52
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace || with && in encoded\n@@ -46,17 +46,17 @@\n /// `encodeURI` of JavaScript does not encode, without `?` and `#`. Every other byte of the\n /// UTF-8 text becomes `%XX`.\n const KEPT: &[u8] = b\"-_.!~*'();/:@&=+$,\";\n \n /// `name` with every character outside the letters, the digits and [`KEPT`] percent-encoded.\n fn encoded(name: &str) -> String {\n     let mut out = String::with_capacity(name.len());\n     for &byte in name.as_bytes() {\n-        if byte.is_ascii_alphanumeric() || KEPT.contains(&byte) {\n+        if byte.is_ascii_alphanumeric() && /* ~ changed by cargo-mutants ~ */ KEPT.contains(&byte) {\n             out.push(char::from(byte));\n         } else {\n             out.push_str(&format!(\"%{byte:02X}\"));\n         }\n     }\n     out\n }\n \n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "encoded",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 61
+        },
+        "start": {
+          "column": 1,
+          "line": 50
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "flatmarkdown-ast2html/src/lib.rs:54:41: replace || with && in encoded",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 54
+      },
+      "start": {
+        "column": 41,
+        "line": 54
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace href_template_from_prefix -> String with String::new()\n@@ -59,17 +59,17 @@\n     }\n     out\n }\n \n /// The href template of the URLs that start with `prefix`. The prefix is percent-encoded as a\n /// name is, so `/pages/` gives `/pages/{}`. Braces in the prefix are encoded too, so they never\n /// take the name.\n pub fn href_template_from_prefix(prefix: &str) -> String {\n-    format!(\"{}{NAME}\", encoded(prefix))\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n /// The URL that `template` makes for `name`: every `{}` in the template is replaced by the\n /// name, percent-encoded. The URL is not escaped for HTML.\n pub fn fill_href(template: &str, name: &str) -> String {\n     template.replace(NAME, &encoded(name))\n }\n \n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "href_template_from_prefix",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 68
+        },
+        "start": {
+          "column": 1,
+          "line": 63
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:67:5: replace href_template_from_prefix -> String with String::new()",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 41,
+        "line": 67
+      },
+      "start": {
+        "column": 5,
+        "line": 67
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace href_template_from_prefix -> String with \"xyzzy\".into()\n@@ -59,17 +59,17 @@\n     }\n     out\n }\n \n /// The href template of the URLs that start with `prefix`. The prefix is percent-encoded as a\n /// name is, so `/pages/` gives `/pages/{}`. Braces in the prefix are encoded too, so they never\n /// take the name.\n pub fn href_template_from_prefix(prefix: &str) -> String {\n-    format!(\"{}{NAME}\", encoded(prefix))\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n /// The URL that `template` makes for `name`: every `{}` in the template is replaced by the\n /// name, percent-encoded. The URL is not escaped for HTML.\n pub fn fill_href(template: &str, name: &str) -> String {\n     template.replace(NAME, &encoded(name))\n }\n \n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "href_template_from_prefix",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 68
+        },
+        "start": {
+          "column": 1,
+          "line": 63
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:67:5: replace href_template_from_prefix -> String with \"xyzzy\".into()",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 41,
+        "line": 67
+      },
+      "start": {
+        "column": 5,
+        "line": 67
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace fill_href -> String with String::new()\n@@ -65,17 +65,17 @@\n /// take the name.\n pub fn href_template_from_prefix(prefix: &str) -> String {\n     format!(\"{}{NAME}\", encoded(prefix))\n }\n \n /// The URL that `template` makes for `name`: every `{}` in the template is replaced by the\n /// name, percent-encoded. The URL is not escaped for HTML.\n pub fn fill_href(template: &str, name: &str) -> String {\n-    template.replace(NAME, &encoded(name))\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n thread_local! {\n     /// The last pattern of a fragment, and its regular expression. A page renders many\n     /// wikilinks with the same pattern, so it is compiled once. `None` means that the pattern\n     /// is not a regular expression.\n     static FRAGMENT: RefCell<Option<(String, Option<Regex>)>> = const { RefCell::new(None) };\n }\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "fill_href",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 74
+        },
+        "start": {
+          "column": 1,
+          "line": 70
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:73:5: replace fill_href -> String with String::new()",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 73
+      },
+      "start": {
+        "column": 5,
+        "line": 73
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace fill_href -> String with \"xyzzy\".into()\n@@ -65,17 +65,17 @@\n /// take the name.\n pub fn href_template_from_prefix(prefix: &str) -> String {\n     format!(\"{}{NAME}\", encoded(prefix))\n }\n \n /// The URL that `template` makes for `name`: every `{}` in the template is replaced by the\n /// name, percent-encoded. The URL is not escaped for HTML.\n pub fn fill_href(template: &str, name: &str) -> String {\n-    template.replace(NAME, &encoded(name))\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n thread_local! {\n     /// The last pattern of a fragment, and its regular expression. A page renders many\n     /// wikilinks with the same pattern, so it is compiled once. `None` means that the pattern\n     /// is not a regular expression.\n     static FRAGMENT: RefCell<Option<(String, Option<Regex>)>> = const { RefCell::new(None) };\n }\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "fill_href",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 74
+        },
+        "start": {
+          "column": 1,
+          "line": 70
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:73:5: replace fill_href -> String with \"xyzzy\".into()",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 73
+      },
+      "start": {
+        "column": 5,
+        "line": 73
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace is_fragment -> bool with true\n@@ -78,32 +78,17 @@\n     /// wikilinks with the same pattern, so it is compiled once. `None` means that the pattern\n     /// is not a regular expression.\n     static FRAGMENT: RefCell<Option<(String, Option<Regex>)>> = const { RefCell::new(None) };\n }\n \n /// Whether `pattern` matches the whole `text`. An empty pattern, and a pattern that is not a\n /// regular expression, match nothing.\n fn is_fragment(pattern: &str, text: &str) -> bool {\n-    if pattern.is_empty() {\n-        return false;\n-    }\n-    FRAGMENT.with(|last| {\n-        let mut last = last.borrow_mut();\n-        if last\n-            .as_ref()\n-            .is_none_or(|(compiled, _)| compiled != pattern)\n-        {\n-            let regex = Regex::new(&format!(\"^(?:{pattern})$\")).ok();\n-            *last = Some((pattern.to_string(), regex));\n-        }\n-        last.as_ref()\n-            .and_then(|(_, regex)| regex.as_ref())\n-            .is_some_and(|regex| regex.is_match(text))\n-    })\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n /// The name and the fragment in the URL of a wikilink.\n ///\n /// The fragment is the text after the last `#`, when `fragment_pattern` matches the whole of\n /// it. The name is then the text before that `#`. Otherwise the whole URL is the name, and\n /// there is no fragment. So `C##20260426035700_QZ998PX` is the page `C#` and the fragment\n /// `20260426035700_QZ998PX` when the pattern matches the fragment, and `C#` is always a name.\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "is_fragment",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 102
+        },
+        "start": {
+          "column": 1,
+          "line": 83
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:86:5: replace is_fragment -> bool with true",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 7,
+        "line": 101
+      },
+      "start": {
+        "column": 5,
+        "line": 86
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace is_fragment -> bool with false\n@@ -78,32 +78,17 @@\n     /// wikilinks with the same pattern, so it is compiled once. `None` means that the pattern\n     /// is not a regular expression.\n     static FRAGMENT: RefCell<Option<(String, Option<Regex>)>> = const { RefCell::new(None) };\n }\n \n /// Whether `pattern` matches the whole `text`. An empty pattern, and a pattern that is not a\n /// regular expression, match nothing.\n fn is_fragment(pattern: &str, text: &str) -> bool {\n-    if pattern.is_empty() {\n-        return false;\n-    }\n-    FRAGMENT.with(|last| {\n-        let mut last = last.borrow_mut();\n-        if last\n-            .as_ref()\n-            .is_none_or(|(compiled, _)| compiled != pattern)\n-        {\n-            let regex = Regex::new(&format!(\"^(?:{pattern})$\")).ok();\n-            *last = Some((pattern.to_string(), regex));\n-        }\n-        last.as_ref()\n-            .and_then(|(_, regex)| regex.as_ref())\n-            .is_some_and(|regex| regex.is_match(text))\n-    })\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n /// The name and the fragment in the URL of a wikilink.\n ///\n /// The fragment is the text after the last `#`, when `fragment_pattern` matches the whole of\n /// it. The name is then the text before that `#`. Otherwise the whole URL is the name, and\n /// there is no fragment. So `C##20260426035700_QZ998PX` is the page `C#` and the fragment\n /// `20260426035700_QZ998PX` when the pattern matches the fragment, and `C#` is always a name.\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "is_fragment",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 102
+        },
+        "start": {
+          "column": 1,
+          "line": 83
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:86:5: replace is_fragment -> bool with false",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 7,
+        "line": 101
+      },
+      "start": {
+        "column": 5,
+        "line": 86
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace != with == in is_fragment\n@@ -85,17 +85,17 @@\n fn is_fragment(pattern: &str, text: &str) -> bool {\n     if pattern.is_empty() {\n         return false;\n     }\n     FRAGMENT.with(|last| {\n         let mut last = last.borrow_mut();\n         if last\n             .as_ref()\n-            .is_none_or(|(compiled, _)| compiled != pattern)\n+            .is_none_or(|(compiled, _)| compiled == /* ~ changed by cargo-mutants ~ */ pattern)\n         {\n             let regex = Regex::new(&format!(\"^(?:{pattern})$\")).ok();\n             *last = Some((pattern.to_string(), regex));\n         }\n         last.as_ref()\n             .and_then(|(_, regex)| regex.as_ref())\n             .is_some_and(|regex| regex.is_match(text))\n     })\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "is_fragment",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 102
+        },
+        "start": {
+          "column": 1,
+          "line": 83
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "flatmarkdown-ast2html/src/lib.rs:93:50: replace != with == in is_fragment",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 52,
+        "line": 93
+      },
+      "start": {
+        "column": 50,
+        "line": 93
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace split_wikilink -> (&'a str, Option<&'a str>) with (\"\", None)\n@@ -105,20 +105,17 @@\n ///\n /// The fragment is the text after the last `#`, when `fragment_pattern` matches the whole of\n /// it. The name is then the text before that `#`. Otherwise the whole URL is the name, and\n /// there is no fragment. So `C##20260426035700_QZ998PX` is the page `C#` and the fragment\n /// `20260426035700_QZ998PX` when the pattern matches the fragment, and `C#` is always a name.\n ///\n /// An empty pattern, or one that is not a regular expression, matches nothing.\n pub fn split_wikilink<'a>(url: &'a str, fragment_pattern: &str) -> (&'a str, Option<&'a str>) {\n-    match url.rsplit_once('#') {\n-        Some((name, fragment)) if is_fragment(fragment_pattern, fragment) => (name, Some(fragment)),\n-        _ => (url, None),\n-    }\n+    (\"\", None) /* ~ changed by cargo-mutants ~ */\n }\n \n /// The escaped href of a wikilink to `url`. The fragment goes after the filled template, so\n /// that it ends the URL even when the template has text after `{}`.\n fn wikilink_href(o: &HtmlOptions, url: &str) -> String {\n     let (name, fragment) = split_wikilink(url, &o.wikilink_fragment_pattern);\n     let mut href = fill_href(&o.wikilink_href, name);\n     if let Some(fragment) = fragment {\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "split_wikilink",
+      "return_type": "-> (&'a str, Option<&'a str>)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 117
+        },
+        "start": {
+          "column": 1,
+          "line": 104
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:113:5: replace split_wikilink -> (&'a str, Option<&'a str>) with (\"\", None)",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "(\"\", None)",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 116
+      },
+      "start": {
+        "column": 5,
+        "line": 113
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace split_wikilink -> (&'a str, Option<&'a str>) with (\"\", Some(\"\"))\n@@ -105,20 +105,17 @@\n ///\n /// The fragment is the text after the last `#`, when `fragment_pattern` matches the whole of\n /// it. The name is then the text before that `#`. Otherwise the whole URL is the name, and\n /// there is no fragment. So `C##20260426035700_QZ998PX` is the page `C#` and the fragment\n /// `20260426035700_QZ998PX` when the pattern matches the fragment, and `C#` is always a name.\n ///\n /// An empty pattern, or one that is not a regular expression, matches nothing.\n pub fn split_wikilink<'a>(url: &'a str, fragment_pattern: &str) -> (&'a str, Option<&'a str>) {\n-    match url.rsplit_once('#') {\n-        Some((name, fragment)) if is_fragment(fragment_pattern, fragment) => (name, Some(fragment)),\n-        _ => (url, None),\n-    }\n+    (\"\", Some(\"\")) /* ~ changed by cargo-mutants ~ */\n }\n \n /// The escaped href of a wikilink to `url`. The fragment goes after the filled template, so\n /// that it ends the URL even when the template has text after `{}`.\n fn wikilink_href(o: &HtmlOptions, url: &str) -> String {\n     let (name, fragment) = split_wikilink(url, &o.wikilink_fragment_pattern);\n     let mut href = fill_href(&o.wikilink_href, name);\n     if let Some(fragment) = fragment {\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "split_wikilink",
+      "return_type": "-> (&'a str, Option<&'a str>)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 117
+        },
+        "start": {
+          "column": 1,
+          "line": 104
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:113:5: replace split_wikilink -> (&'a str, Option<&'a str>) with (\"\", Some(\"\"))",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "(\"\", Some(\"\"))",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 116
+      },
+      "start": {
+        "column": 5,
+        "line": 113
+      }
+    }
+  }
+]

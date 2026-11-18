@@ -1,0 +1,12 @@
+flatmarkdown-ast2html/src/lib.rs:113:5: replace split_wikilink -> (&'a str, Option<&'a str>) with ("", Some("xyzzy"))
+flatmarkdown-ast2html/src/lib.rs:113:5: replace split_wikilink -> (&'a str, Option<&'a str>) with ("xyzzy", None)
+flatmarkdown-ast2html/src/lib.rs:113:5: replace split_wikilink -> (&'a str, Option<&'a str>) with ("xyzzy", Some(""))
+flatmarkdown-ast2html/src/lib.rs:113:5: replace split_wikilink -> (&'a str, Option<&'a str>) with ("xyzzy", Some("xyzzy"))
+flatmarkdown-ast2html/src/lib.rs:114:35: replace match guard is_fragment(fragment_pattern, fragment) with true in split_wikilink
+flatmarkdown-ast2html/src/lib.rs:114:35: replace match guard is_fragment(fragment_pattern, fragment) with false in split_wikilink
+flatmarkdown-ast2html/src/lib.rs:122:5: replace wikilink_href -> String with String::new()
+flatmarkdown-ast2html/src/lib.rs:122:5: replace wikilink_href -> String with "xyzzy".into()
+flatmarkdown-ast2html/src/lib.rs:133:5: replace href -> String with String::new()
+flatmarkdown-ast2html/src/lib.rs:133:5: replace href -> String with "xyzzy".into()
+flatmarkdown-ast2html/src/lib.rs:315:5: replace ast_to_html_with -> String with String::new()
+flatmarkdown-ast2html/src/lib.rs:315:5: replace ast_to_html_with -> String with "xyzzy".into()

@@ -94,3 +94,49 @@ test('the version of the npm package is the version of the crates', () => {
     const npm = JSON.parse(readFileSync(new URL('package.json', here), 'utf8')).version;
     assert.equal(npm, crates);
 });
+const wikilink = (url) => ({ type: 'wikilink', url, children: [{ type: 'text', value: 'x' }] });
+const hashtag = (value) => ({ type: 'hashtag', value });
+
+// 2つ目の引数を省くと、wikilinkとハッシュタグのhrefは、符号化した名前だけである。
+test('without the options the href of a wikilink and a hashtag is the encoded name', () => {
+    assert.equal(
+        FmAst2Html.renderToHtml({ type: 'paragraph', children: [wikilink('C#'), hashtag('a b')] }),
+        '<p><a href="C%23" data-wikilink="true">x</a><a href="a%20b" class="hashtag">#a b</a></p>\n',
+    );
+});
+
+// 2つ目の引数のテンプレートとフラグメントの形が、hrefを決める。
+test('the templates and the fragment pattern of the options decide the hrefs', () => {
+    const options = {
+        wikilinkHref: '/pages/{}',
+        hashtagHref: '/pages/tags/{}',
+        wikilinkFragmentPattern: '[0-9]+',
+    };
+    assert.equal(
+        FmAst2Html.renderToHtml({ type: 'paragraph', children: [wikilink('C##1'), hashtag('Rust')] }, options),
+        '<p><a href="/pages/C%23#1" data-wikilink="true">x</a><a href="/pages/tags/Rust" class="hashtag">#Rust</a></p>\n',
+    );
+});
+
+// 2つ目の引数で省いた設定は、既定の値になる。
+test('a setting left out of the options has its default value', () => {
+    const html = FmAst2Html.renderToHtml(hashtag('Rust'), { wikilinkHref: '/pages/{}' });
+    assert.equal(html, '<a href="Rust" class="hashtag">#Rust</a>');
+});
+
+const hrefOf = (html) => /href="([^"]*)"/.exec(html)[1];
+const escapeHtml = (s) => s.replaceAll('&', '&amp;').replaceAll('"', '&quot;');
+
+// 表（hrefs.json）のどの行でも、描いたhrefは、表のhrefをHTMLのエスケープにかけたものである。
+test('every href of the shared table is rendered escaped for HTML', () => {
+    const table = JSON.parse(
+        readFileSync(new URL('../flatmarkdown-ast2html/tests/hrefs.json', here), 'utf8'),
+    );
+    for (const c of table.cases) {
+        const [ast, options] =
+            c.kind === 'wikilink'
+                ? [wikilink(c.name), { wikilinkHref: c.template, wikilinkFragmentPattern: c.fragmentPattern }]
+                : [hashtag(c.name), { hashtagHref: c.template }];
+        assert.equal(hrefOf(FmAst2Html.renderToHtml(ast, options)), escapeHtml(c.href), JSON.stringify(c));
+    }
+});

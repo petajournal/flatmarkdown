@@ -1,0 +1,824 @@
+{
+  "outcomes": [
+    {
+      "scenario": "Baseline",
+      "summary": "Success",
+      "log_path": "log/baseline.log",
+      "diff_path": null,
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 23.4005222,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 2.0701101,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "flatmarkdown-ast2html/src/lib.rs:52:5: replace encoded -> String with String::new()",
+          "package": "flatmarkdown-ast2html",
+          "file": "flatmarkdown-ast2html/src/lib.rs",
+          "function": {
+            "function_name": "encoded",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 50,
+                "column": 1
+              },
+              "end": {
+                "line": 61,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 52,
+              "column": 5
+            },
+            "end": {
+              "line": 60,
+              "column": 8
+            }
+          },
+          "replacement": "String::new()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/flatmarkdown-ast2html__src__lib.rs_line_52_col_5.log",
+      "diff_path": "diff/flatmarkdown-ast2html__src__lib.rs_line_52_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.346542,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.4557469,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "flatmarkdown-ast2html/src/lib.rs:52:5: replace encoded -> String with \"xyzzy\".into()",
+          "package": "flatmarkdown-ast2html",
+          "file": "flatmarkdown-ast2html/src/lib.rs",
+          "function": {
+            "function_name": "encoded",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 50,
+                "column": 1
+              },
+              "end": {
+                "line": 61,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 52,
+              "column": 5
+            },
+            "end": {
+              "line": 60,
+              "column": 8
+            }
+          },
+          "replacement": "\"xyzzy\".into()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/flatmarkdown-ast2html__src__lib.rs_line_52_col_5_001.log",
+      "diff_path": "diff/flatmarkdown-ast2html__src__lib.rs_line_52_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.9525213,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 1.4927525,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "flatmarkdown-ast2html/src/lib.rs:54:41: replace || with && in encoded",
+          "package": "flatmarkdown-ast2html",
+          "file": "flatmarkdown-ast2html/src/lib.rs",
+          "function": {
+            "function_name": "encoded",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 50,
+                "column": 1
+              },
+              "end": {
+                "line": 61,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 54,
+              "column": 41
+            },
+            "end": {
+              "line": 54,
+              "column": 43
+            }
+          },
+          "replacement": "&&",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/flatmarkdown-ast2html__src__lib.rs_line_54_col_41.log",
+      "diff_path": "diff/flatmarkdown-ast2html__src__lib.rs_line_54_col_41.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 2.7042951,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.9248067,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "flatmarkdown-ast2html/src/lib.rs:67:5: replace href_template_from_prefix -> String with String::new()",
+          "package": "flatmarkdown-ast2html",
+          "file": "flatmarkdown-ast2html/src/lib.rs",
+          "function": {
+            "function_name": "href_template_from_prefix",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 63,
+                "column": 1
+              },
+              "end": {
+                "line": 68,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 67,
+              "column": 5
+            },
+            "end": {
+              "line": 67,
+              "column": 41
+            }
+          },
+          "replacement": "String::new()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/flatmarkdown-ast2html__src__lib.rs_line_67_col_5.log",
+      "diff_path": "diff/flatmarkdown-ast2html__src__lib.rs_line_67_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.9764717,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.7309274,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "flatmarkdown-ast2html/src/lib.rs:67:5: replace href_template_from_prefix -> String with \"xyzzy\".into()",
+          "package": "flatmarkdown-ast2html",
+          "file": "flatmarkdown-ast2html/src/lib.rs",
+          "function": {
+            "function_name": "href_template_from_prefix",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 63,
+                "column": 1
+              },
+              "end": {
+                "line": 68,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 67,
+              "column": 5
+            },
+            "end": {
+              "line": 67,
+              "column": 41
+            }
+          },
+          "replacement": "\"xyzzy\".into()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/flatmarkdown-ast2html__src__lib.rs_line_67_col_5_001.log",
+      "diff_path": "diff/flatmarkdown-ast2html__src__lib.rs_line_67_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.6272083,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.5063822,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "flatmarkdown-ast2html/src/lib.rs:73:5: replace fill_href -> String with String::new()",
+          "package": "flatmarkdown-ast2html",
+          "file": "flatmarkdown-ast2html/src/lib.rs",
+          "function": {
+            "function_name": "fill_href",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 70,
+                "column": 1
+              },
+              "end": {
+                "line": 74,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 73,
+              "column": 5
+            },
+            "end": {
+              "line": 73,
+              "column": 43
+            }
+          },
+          "replacement": "String::new()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/flatmarkdown-ast2html__src__lib.rs_line_73_col_5.log",
+      "diff_path": "diff/flatmarkdown-ast2html__src__lib.rs_line_73_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.4298527,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.6206075,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "flatmarkdown-ast2html/src/lib.rs:73:5: replace fill_href -> String with \"xyzzy\".into()",
+          "package": "flatmarkdown-ast2html",
+          "file": "flatmarkdown-ast2html/src/lib.rs",
+          "function": {
+            "function_name": "fill_href",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 70,
+                "column": 1
+              },
+              "end": {
+                "line": 74,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 73,
+              "column": 5
+            },
+            "end": {
+              "line": 73,
+              "column": 43
+            }
+          },
+          "replacement": "\"xyzzy\".into()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/flatmarkdown-ast2html__src__lib.rs_line_73_col_5_001.log",
+      "diff_path": "diff/flatmarkdown-ast2html__src__lib.rs_line_73_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.3645694,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 1.2500301999999999,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "flatmarkdown-ast2html/src/lib.rs:86:5: replace is_fragment -> bool with true",
+          "package": "flatmarkdown-ast2html",
+          "file": "flatmarkdown-ast2html/src/lib.rs",
+          "function": {
+            "function_name": "is_fragment",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 83,
+                "column": 1
+              },
+              "end": {
+                "line": 102,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 86,
+              "column": 5
+            },
+            "end": {
+              "line": 101,
+              "column": 7
+            }
+          },
+          "replacement": "true",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/flatmarkdown-ast2html__src__lib.rs_line_86_col_5.log",
+      "diff_path": "diff/flatmarkdown-ast2html__src__lib.rs_line_86_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 2.6081632,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 1.2377797,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "flatmarkdown-ast2html/src/lib.rs:86:5: replace is_fragment -> bool with false",
+          "package": "flatmarkdown-ast2html",
+          "file": "flatmarkdown-ast2html/src/lib.rs",
+          "function": {
+            "function_name": "is_fragment",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 83,
+                "column": 1
+              },
+              "end": {
+                "line": 102,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 86,
+              "column": 5
+            },
+            "end": {
+              "line": 101,
+              "column": 7
+            }
+          },
+          "replacement": "false",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/flatmarkdown-ast2html__src__lib.rs_line_86_col_5_001.log",
+      "diff_path": "diff/flatmarkdown-ast2html__src__lib.rs_line_86_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 2.1036321,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.9630231,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "flatmarkdown-ast2html/src/lib.rs:93:50: replace != with == in is_fragment",
+          "package": "flatmarkdown-ast2html",
+          "file": "flatmarkdown-ast2html/src/lib.rs",
+          "function": {
+            "function_name": "is_fragment",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 83,
+                "column": 1
+              },
+              "end": {
+                "line": 102,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 93,
+              "column": 50
+            },
+            "end": {
+              "line": 93,
+              "column": 52
+            }
+          },
+          "replacement": "==",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/flatmarkdown-ast2html__src__lib.rs_line_93_col_50.log",
+      "diff_path": "diff/flatmarkdown-ast2html__src__lib.rs_line_93_col_50.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.9243475,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.5571834,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "flatmarkdown-ast2html/src/lib.rs:113:5: replace split_wikilink -> (&'a str, Option<&'a str>) with (\"\", None)",
+          "package": "flatmarkdown-ast2html",
+          "file": "flatmarkdown-ast2html/src/lib.rs",
+          "function": {
+            "function_name": "split_wikilink",
+            "return_type": "-> (&'a str, Option<&'a str>)",
+            "span": {
+              "start": {
+                "line": 104,
+                "column": 1
+              },
+              "end": {
+                "line": 117,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 113,
+              "column": 5
+            },
+            "end": {
+              "line": 116,
+              "column": 6
+            }
+          },
+          "replacement": "(\"\", None)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/flatmarkdown-ast2html__src__lib.rs_line_113_col_5.log",
+      "diff_path": "diff/flatmarkdown-ast2html__src__lib.rs_line_113_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.264578,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.4059525,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "flatmarkdown-ast2html/src/lib.rs:113:5: replace split_wikilink -> (&'a str, Option<&'a str>) with (\"\", Some(\"\"))",
+          "package": "flatmarkdown-ast2html",
+          "file": "flatmarkdown-ast2html/src/lib.rs",
+          "function": {
+            "function_name": "split_wikilink",
+            "return_type": "-> (&'a str, Option<&'a str>)",
+            "span": {
+              "start": {
+                "line": 104,
+                "column": 1
+              },
+              "end": {
+                "line": 117,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 113,
+              "column": 5
+            },
+            "end": {
+              "line": 116,
+              "column": 6
+            }
+          },
+          "replacement": "(\"\", Some(\"\"))",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/flatmarkdown-ast2html__src__lib.rs_line_113_col_5_001.log",
+      "diff_path": "diff/flatmarkdown-ast2html__src__lib.rs_line_113_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.3680904,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.5075377,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flatmarkdown-ast2html@0.9.0"
+          ]
+        }
+      ]
+    }
+  ],
+  "total_mutants": 12,
+  "missed": 0,
+  "caught": 12,
+  "timeout": 0,
+  "unviable": 0,
+  "success": 0,
+  "start_time": "2026-11-18T11:54:57.0585059Z",
+  "end_time": "2026-11-18T11:55:54.5727211Z",
+  "cargo_mutants_version": "27.1.0"
+}

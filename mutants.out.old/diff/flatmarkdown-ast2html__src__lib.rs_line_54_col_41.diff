@@ -1,0 +1,21 @@
+--- flatmarkdown-ast2html/src/lib.rs
++++ replace || with && in encoded
+@@ -46,17 +46,17 @@
+ /// `encodeURI` of JavaScript does not encode, without `?` and `#`. Every other byte of the
+ /// UTF-8 text becomes `%XX`.
+ const KEPT: &[u8] = b"-_.!~*'();/:@&=+$,";
+ 
+ /// `name` with every character outside the letters, the digits and [`KEPT`] percent-encoded.
+ fn encoded(name: &str) -> String {
+     let mut out = String::with_capacity(name.len());
+     for &byte in name.as_bytes() {
+-        if byte.is_ascii_alphanumeric() || KEPT.contains(&byte) {
++        if byte.is_ascii_alphanumeric() && /* ~ changed by cargo-mutants ~ */ KEPT.contains(&byte) {
+             out.push(char::from(byte));
+         } else {
+             out.push_str(&format!("%{byte:02X}"));
+         }
+     }
+     out
+ }
+ 

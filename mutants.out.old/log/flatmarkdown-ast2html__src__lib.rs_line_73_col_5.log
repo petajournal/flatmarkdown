@@ -1,0 +1,309 @@
+
+*** flatmarkdown-ast2html/src/lib.rs:73:5: replace fill_href -> String with String::new()
+
+*** mutation diff:
+--- flatmarkdown-ast2html/src/lib.rs
++++ replace fill_href -> String with String::new()
+@@ -65,17 +65,17 @@
+ /// take the name.
+ pub fn href_template_from_prefix(prefix: &str) -> String {
+     format!("{}{NAME}", encoded(prefix))
+ }
+ 
+ /// The URL that `template` makes for `name`: every `{}` in the template is replaced by the
+ /// name, percent-encoded. The URL is not escaped for HTML.
+ pub fn fill_href(template: &str, name: &str) -> String {
+-    template.replace(NAME, &encoded(name))
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ thread_local! {
+     /// The last pattern of a fragment, and its regular expression. A page renders many
+     /// wikilinks with the same pattern, so it is compiled once. `None` means that the pattern
+     /// is not a regular expression.
+     static FRAGMENT: RefCell<Option<(String, Option<Regex>)>> = const { RefCell::new(None) };
+ }
+
+
+*** C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe test --no-run --verbose --package=flatmarkdown-ast2html@0.9.0
+    Blocking waiting for file lock on package cache
+       Fresh unicode-ident v1.0.24
+       Fresh windows-link v0.2.1
+       Fresh siphasher v1.0.2
+       Fresh strsim v0.11.1
+       Fresh shlex v1.3.0
+       Fresh find-msvc-tools v0.1.9
+       Fresh ident_case v1.0.1
+       Fresh pkg-config v0.3.32
+       Fresh once_cell_polyfill v1.70.2
+       Fresh anstyle v1.0.13
+       Fresh proc-macro2 v1.0.106
+       Fresh windows-sys v0.61.2
+       Fresh cc v1.2.56
+       Fresh utf8parse v0.2.2
+       Fresh fastrand v2.3.0
+       Fresh tinyvec_macros v0.1.1
+       Fresh quote v1.0.44
+       Fresh serde_core v1.0.228
+       Fresh windows_x86_64_msvc v0.53.1
+       Fresh anstyle-wincon v3.0.11
+       Fresh winapi-util v0.1.11
+       Fresh anstyle-parse v0.2.7
+       Fresh phf_generator v0.13.1
+       Fresh anstyle-query v1.1.5
+       Fresh cfg-if v1.0.4
+       Fresh colorchoice v1.0.4
+       Fresh simd-adler32 v0.3.8
+       Fresh is_terminal_polyfill v1.70.2
+       Fresh syn v2.0.117
+       Fresh windows-targets v0.53.5
+       Fresh adler2 v2.0.1
+       Fresh rustversion v1.0.22
+       Fresh anstream v0.6.21
+       Fresh crc32fast v1.5.0
+       Fresh zmij v1.0.21
+       Fresh phf_codegen v0.13.1
+       Fresh same-file v1.0.6
+       Fresh tinyvec v1.10.0
+       Fresh libc v0.2.182
+       Fresh phf_shared v0.13.1
+       Fresh entities v1.0.1
+       Fresh clap_lex v1.0.0
+       Fresh serde_derive v1.0.228
+       Fresh darling_core v0.23.0
+       Fresh windows-sys v0.60.2
+       Fresh miniz_oxide v0.8.9
+       Fresh onig_sys v69.9.1
+       Fresh prettyplease v0.2.37
+       Fresh thiserror-impl v2.0.18
+       Fresh heck v0.5.0
+       Fresh bitflags v2.11.0
+       Fresh memchr v2.8.0
+       Fresh once_cell v1.21.3
+       Fresh itoa v1.0.17
+       Fresh phf v0.13.1
+       Fresh unicode-normalization v0.1.25
+       Fresh walkdir v2.5.0
+       Fresh serde v1.0.228
+       Fresh darling_macro v0.23.0
+       Fresh terminal_size v0.4.3
+       Fresh clap_derive v4.5.55
+       Fresh serde_json v1.0.149
+       Fresh flate2 v1.1.9
+       Fresh onig v6.5.1
+       Fresh thiserror v2.0.18
+       Fresh fnv v1.0.7
+       Fresh regex-syntax v0.8.10
+       Fresh emojis v0.8.0
+       Fresh caseless v0.2.2
+       Fresh fmt2io v1.0.0
+       Fresh finl_unicode v1.4.0
+       Fresh rustc-hash v2.1.1
+       Fresh darling v0.23.0
+       Fresh clap_builder v4.5.60
+       Fresh bincode v1.3.3
+       Fresh flatmarkdown-ast v0.9.0 (C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\flatmarkdown-ast)
+       Fresh jetscii v0.5.3
+       Fresh smallvec v1.15.1
+       Fresh typed-arena v2.0.2
+       Fresh shell-words v1.1.1
+       Fresh regex-lite v0.1.9
+       Fresh bon-macros v3.9.0
+       Fresh clap v4.5.60
+       Fresh syntect v5.3.0
+       Dirty flatmarkdown-ast2html v0.9.0 (C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\flatmarkdown-ast2html): the file `flatmarkdown-ast2html\src\lib.rs` has changed (13439476536.401236900s, 2s after last build at 13439476534.750008900s)
+   Compiling flatmarkdown-ast2html v0.9.0 (C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\flatmarkdown-ast2html)
+       Fresh bon v3.9.0
+       Fresh comrak v0.51.0
+       Fresh flatmarkdown v0.9.0 (C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\flatmarkdown)
+     Running `C:\Users\hidek\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe --crate-name flatmarkdown_ast2html --edition=2024 'flatmarkdown-ast2html\src\lib.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=line-tables-only --deny=unused_must_use --forbid=unsafe_code '--deny=clippy::unimplemented' '--deny=clippy::todo' '--deny=clippy::dbg_macro' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=9b53159b7e918f0c -C extra-filename=-545be4aec798b083 --out-dir 'C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' -C linker=rust-lld.exe -C 'incremental=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\incremental' -L 'dependency=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' --extern 'flatmarkdown_ast=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown_ast-72d5dba739666909.rmeta' --extern 'regex_lite=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libregex_lite-cea38742ee5c0922.rmeta'`
+     Running `C:\Users\hidek\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe --crate-name flatmarkdown_ast2html --edition=2024 'flatmarkdown-ast2html\src\lib.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=line-tables-only --deny=unused_must_use --forbid=unsafe_code '--deny=clippy::unimplemented' '--deny=clippy::todo' '--deny=clippy::dbg_macro' --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=8515e27d68eed228 -C extra-filename=-40e1b18d627f349d --out-dir 'C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' -C linker=rust-lld.exe -C 'incremental=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\incremental' -L 'dependency=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' --extern 'flatmarkdown=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown-f2dc87b9bef51028.rlib' --extern 'flatmarkdown_ast=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown_ast-72d5dba739666909.rlib' --extern 'regex_lite=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libregex_lite-cea38742ee5c0922.rlib' --extern 'serde=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libserde-996a252e27e0a740.rlib' --extern 'serde_json=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libserde_json-25b795a4ef5725f5.rlib' -L 'native=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\build\onig_sys-7228310e0235aa46\out' -L 'native=C:\Users\hidek\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows_x86_64_msvc-0.53.1\lib' -L 'native=C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\atlmfc\lib\x64'`
+warning: unused variable: `template`
+  --> flatmarkdown-ast2html\src\lib.rs:72:18
+   |
+72 | pub fn fill_href(template: &str, name: &str) -> String {
+   |                  ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_template`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `name`
+  --> flatmarkdown-ast2html\src\lib.rs:72:34
+   |
+72 | pub fn fill_href(template: &str, name: &str) -> String {
+   |                                  ^^^^ help: if this is intentional, prefix it with an underscore: `_name`
+
+warning: `flatmarkdown-ast2html` (lib test) generated 2 warnings (run `cargo fix --lib -p flatmarkdown-ast2html --tests` to apply 2 suggestions)
+warning: `flatmarkdown-ast2html` (lib) generated 2 warnings (2 duplicates)
+     Running `C:\Users\hidek\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe --crate-name html_conversion --edition=2024 'flatmarkdown-ast2html\tests\html_conversion.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=line-tables-only --deny=unused_must_use --forbid=unsafe_code '--deny=clippy::unimplemented' '--deny=clippy::todo' '--deny=clippy::dbg_macro' --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=f29ef460e106219f -C extra-filename=-0ce396ccc60cf936 --out-dir 'C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' -C linker=rust-lld.exe -C 'incremental=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\incremental' -L 'dependency=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' --extern 'flatmarkdown=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown-f2dc87b9bef51028.rlib' --extern 'flatmarkdown_ast=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown_ast-72d5dba739666909.rlib' --extern 'flatmarkdown_ast2html=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown_ast2html-545be4aec798b083.rlib' --extern 'regex_lite=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libregex_lite-cea38742ee5c0922.rlib' --extern 'serde=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libserde-996a252e27e0a740.rlib' --extern 'serde_json=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libserde_json-25b795a4ef5725f5.rlib' -L 'native=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\build\onig_sys-7228310e0235aa46\out' -L 'native=C:\Users\hidek\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows_x86_64_msvc-0.53.1\lib' -L 'native=C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\atlmfc\lib\x64'`
+     Running `C:\Users\hidek\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe --crate-name nodes --edition=2024 'flatmarkdown-ast2html\tests\nodes.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=line-tables-only --deny=unused_must_use --forbid=unsafe_code '--deny=clippy::unimplemented' '--deny=clippy::todo' '--deny=clippy::dbg_macro' --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=2d139cd426eb529c -C extra-filename=-d1e2b75ba001b061 --out-dir 'C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' -C linker=rust-lld.exe -C 'incremental=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\incremental' -L 'dependency=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' --extern 'flatmarkdown=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown-f2dc87b9bef51028.rlib' --extern 'flatmarkdown_ast=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown_ast-72d5dba739666909.rlib' --extern 'flatmarkdown_ast2html=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown_ast2html-545be4aec798b083.rlib' --extern 'regex_lite=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libregex_lite-cea38742ee5c0922.rlib' --extern 'serde=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libserde-996a252e27e0a740.rlib' --extern 'serde_json=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libserde_json-25b795a4ef5725f5.rlib' -L 'native=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\build\onig_sys-7228310e0235aa46\out' -L 'native=C:\Users\hidek\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows_x86_64_msvc-0.53.1\lib' -L 'native=C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\atlmfc\lib\x64'`
+     Running `C:\Users\hidek\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe --crate-name options --edition=2024 'flatmarkdown-ast2html\tests\options.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=line-tables-only --deny=unused_must_use --forbid=unsafe_code '--deny=clippy::unimplemented' '--deny=clippy::todo' '--deny=clippy::dbg_macro' --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=6ff4b930d68f7ca2 -C extra-filename=-48b83fa3ca14a493 --out-dir 'C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' -C linker=rust-lld.exe -C 'incremental=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\incremental' -L 'dependency=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' --extern 'flatmarkdown=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown-f2dc87b9bef51028.rlib' --extern 'flatmarkdown_ast=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown_ast-72d5dba739666909.rlib' --extern 'flatmarkdown_ast2html=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown_ast2html-545be4aec798b083.rlib' --extern 'regex_lite=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libregex_lite-cea38742ee5c0922.rlib' --extern 'serde=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libserde-996a252e27e0a740.rlib' --extern 'serde_json=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libserde_json-25b795a4ef5725f5.rlib' -L 'native=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\build\onig_sys-7228310e0235aa46\out' -L 'native=C:\Users\hidek\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows_x86_64_msvc-0.53.1\lib' -L 'native=C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\atlmfc\lib\x64'`
+     Running `C:\Users\hidek\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe --crate-name hrefs --edition=2024 'flatmarkdown-ast2html\tests\hrefs.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=line-tables-only --deny=unused_must_use --forbid=unsafe_code '--deny=clippy::unimplemented' '--deny=clippy::todo' '--deny=clippy::dbg_macro' --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=866ea920f317b147 -C extra-filename=-1450be8b2c177259 --out-dir 'C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' -C linker=rust-lld.exe -C 'incremental=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\incremental' -L 'dependency=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' --extern 'flatmarkdown=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown-f2dc87b9bef51028.rlib' --extern 'flatmarkdown_ast=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown_ast-72d5dba739666909.rlib' --extern 'flatmarkdown_ast2html=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown_ast2html-545be4aec798b083.rlib' --extern 'regex_lite=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libregex_lite-cea38742ee5c0922.rlib' --extern 'serde=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libserde-996a252e27e0a740.rlib' --extern 'serde_json=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libserde_json-25b795a4ef5725f5.rlib' -L 'native=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\build\onig_sys-7228310e0235aa46\out' -L 'native=C:\Users\hidek\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows_x86_64_msvc-0.53.1\lib' -L 'native=C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\atlmfc\lib\x64'`
+     Running `C:\Users\hidek\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe --crate-name html_output --edition=2024 'flatmarkdown-ast2html\tests\html_output.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=line-tables-only --deny=unused_must_use --forbid=unsafe_code '--deny=clippy::unimplemented' '--deny=clippy::todo' '--deny=clippy::dbg_macro' --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=b8d354e868f0b62e -C extra-filename=-185f7c4af2cc6018 --out-dir 'C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' -C linker=rust-lld.exe -C 'incremental=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\incremental' -L 'dependency=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' --extern 'flatmarkdown=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown-f2dc87b9bef51028.rlib' --extern 'flatmarkdown_ast=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown_ast-72d5dba739666909.rlib' --extern 'flatmarkdown_ast2html=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown_ast2html-545be4aec798b083.rlib' --extern 'regex_lite=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libregex_lite-cea38742ee5c0922.rlib' --extern 'serde=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libserde-996a252e27e0a740.rlib' --extern 'serde_json=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libserde_json-25b795a4ef5725f5.rlib' -L 'native=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\build\onig_sys-7228310e0235aa46\out' -L 'native=C:\Users\hidek\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows_x86_64_msvc-0.53.1\lib' -L 'native=C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\atlmfc\lib\x64'`
+     Running `C:\Users\hidek\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\rustc.exe --crate-name href_functions --edition=2024 'flatmarkdown-ast2html\tests\href_functions.rs' --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=line-tables-only --deny=unused_must_use --forbid=unsafe_code '--deny=clippy::unimplemented' '--deny=clippy::todo' '--deny=clippy::dbg_macro' --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=ac77a8a6d07a1fb8 -C extra-filename=-28de32ddc719ffff --out-dir 'C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' -C linker=rust-lld.exe -C 'incremental=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\incremental' -L 'dependency=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps' --extern 'flatmarkdown=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown-f2dc87b9bef51028.rlib' --extern 'flatmarkdown_ast=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown_ast-72d5dba739666909.rlib' --extern 'flatmarkdown_ast2html=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libflatmarkdown_ast2html-545be4aec798b083.rlib' --extern 'regex_lite=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libregex_lite-cea38742ee5c0922.rlib' --extern 'serde=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libserde-996a252e27e0a740.rlib' --extern 'serde_json=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\libserde_json-25b795a4ef5725f5.rlib' -L 'native=C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\build\onig_sys-7228310e0235aa46\out' -L 'native=C:\Users\hidek\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\windows_x86_64_msvc-0.53.1\lib' -L 'native=C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\atlmfc\lib\x64'`
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.34s
+  Executable `C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\flatmarkdown_ast2html-40e1b18d627f349d.exe`
+  Executable `C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\href_functions-28de32ddc719ffff.exe`
+  Executable `C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\hrefs-1450be8b2c177259.exe`
+  Executable `C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\html_conversion-0ce396ccc60cf936.exe`
+  Executable `C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\html_output-185f7c4af2cc6018.exe`
+  Executable `C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\nodes-d1e2b75ba001b061.exe`
+  Executable `C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\options-48b83fa3ca14a493.exe`
+
+*** result: Success
+
+*** C:\\Users\\hidek\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe test --verbose --package=flatmarkdown-ast2html@0.9.0
+       Fresh unicode-ident v1.0.24
+       Fresh windows-link v0.2.1
+       Fresh siphasher v1.0.2
+       Fresh strsim v0.11.1
+       Fresh shlex v1.3.0
+       Fresh find-msvc-tools v0.1.9
+       Fresh pkg-config v0.3.32
+       Fresh ident_case v1.0.1
+       Fresh once_cell_polyfill v1.70.2
+       Fresh utf8parse v0.2.2
+       Fresh proc-macro2 v1.0.106
+       Fresh windows-sys v0.61.2
+       Fresh cc v1.2.56
+       Fresh fastrand v2.3.0
+       Fresh anstyle v1.0.13
+       Fresh anstyle-parse v0.2.7
+       Fresh quote v1.0.44
+       Fresh serde_core v1.0.228
+       Fresh windows_x86_64_msvc v0.53.1
+       Fresh winapi-util v0.1.11
+       Fresh phf_generator v0.13.1
+       Fresh anstyle-wincon v3.0.11
+       Fresh anstyle-query v1.1.5
+       Fresh cfg-if v1.0.4
+       Fresh is_terminal_polyfill v1.70.2
+       Fresh colorchoice v1.0.4
+       Fresh simd-adler32 v0.3.8
+       Fresh tinyvec_macros v0.1.1
+       Fresh syn v2.0.117
+       Fresh windows-targets v0.53.5
+       Fresh adler2 v2.0.1
+       Fresh crc32fast v1.5.0
+       Fresh tinyvec v1.10.0
+       Fresh anstream v0.6.21
+       Fresh libc v0.2.182
+       Fresh zmij v1.0.21
+       Fresh phf_codegen v0.13.1
+       Fresh same-file v1.0.6
+       Fresh rustversion v1.0.22
+       Fresh phf_shared v0.13.1
+       Fresh itoa v1.0.17
+       Fresh bitflags v2.11.0
+       Fresh serde_derive v1.0.228
+       Fresh darling_core v0.23.0
+       Fresh windows-sys v0.60.2
+       Fresh onig_sys v69.9.1
+       Fresh thiserror-impl v2.0.18
+       Fresh miniz_oxide v0.8.9
+       Fresh prettyplease v0.2.37
+       Fresh entities v1.0.1
+       Fresh heck v0.5.0
+       Fresh memchr v2.8.0
+       Fresh clap_lex v1.0.0
+       Fresh once_cell v1.21.3
+       Fresh phf v0.13.1
+       Fresh walkdir v2.5.0
+       Fresh unicode-normalization v0.1.25
+       Fresh regex-syntax v0.8.10
+       Fresh serde v1.0.228
+       Fresh darling_macro v0.23.0
+       Fresh terminal_size v0.4.3
+       Fresh serde_json v1.0.149
+       Fresh onig v6.5.1
+       Fresh flate2 v1.1.9
+       Fresh thiserror v2.0.18
+       Fresh clap_derive v4.5.55
+       Fresh fnv v1.0.7
+       Fresh emojis v0.8.0
+       Fresh caseless v0.2.2
+       Fresh finl_unicode v1.4.0
+       Fresh shell-words v1.1.1
+       Fresh fmt2io v1.0.0
+       Fresh typed-arena v2.0.2
+       Fresh darling v0.23.0
+       Fresh clap_builder v4.5.60
+       Fresh bincode v1.3.3
+       Fresh jetscii v0.5.3
+       Fresh flatmarkdown-ast v0.9.0 (C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\flatmarkdown-ast)
+       Fresh smallvec v1.15.1
+       Fresh rustc-hash v2.1.1
+       Fresh regex-lite v0.1.9
+       Fresh bon-macros v3.9.0
+       Fresh syntect v5.3.0
+       Fresh clap v4.5.60
+warning: unused variable: `template`
+  --> flatmarkdown-ast2html\src\lib.rs:72:18
+   |
+72 | pub fn fill_href(template: &str, name: &str) -> String {
+   |                  ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_template`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `name`
+  --> flatmarkdown-ast2html\src\lib.rs:72:34
+   |
+72 | pub fn fill_href(template: &str, name: &str) -> String {
+   |                                  ^^^^ help: if this is intentional, prefix it with an underscore: `_name`
+
+warning: `flatmarkdown-ast2html` (lib) generated 2 warnings (run `cargo fix --lib -p flatmarkdown-ast2html` to apply 2 suggestions)
+       Fresh bon v3.9.0
+       Fresh comrak v0.51.0
+       Fresh flatmarkdown v0.9.0 (C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\flatmarkdown)
+       Fresh flatmarkdown-ast2html v0.9.0 (C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\flatmarkdown-ast2html)
+warning: `flatmarkdown-ast2html` (lib test) generated 2 warnings (2 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.30s
+     Running `C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\flatmarkdown_ast2html-40e1b18d627f349d.exe`
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running `C:\Users\hidek\AppData\Local\Temp\cargo-mutants-flatmarkdown-apAjjP.tmp\target\debug\deps\href_functions-28de32ddc719ffff.exe`
+
+running 5 tests
+test fill_href_does_not_escape_for_html ... FAILED
+test a_template_from_a_prefix_is_the_encoded_prefix_followed_by_the_place_of_the_name ... FAILED
+test the_whole_url_is_the_name_when_the_fragment_does_not_match ... ok
+test braces_in_a_prefix_do_not_take_the_name ... FAILED
+test a_wikilink_splits_at_the_last_hash_when_the_fragment_matches ... ok
+
+failures:
+
+---- fill_href_does_not_escape_for_html stdout ----
+
+thread 'fill_href_does_not_escape_for_html' (49472) panicked at flatmarkdown-ast2html\tests\href_functions.rs:29:5:
+assertion `left == right` failed
+  left: ""
+ right: "/pages/A&B"
+
+---- a_template_from_a_prefix_is_the_encoded_prefix_followed_by_the_place_of_the_name stdout ----
+
+thread 'a_template_from_a_prefix_is_the_encoded_prefix_followed_by_the_place_of_the_name' (54060) panicked at flatmarkdown-ast2html\tests\href_functions.rs:11:5:
+assertion `left == right` failed
+  left: ""
+ right: "/pages/%E3%82%BF%E3%82%B0/Rust"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- braces_in_a_prefix_do_not_take_the_name stdout ----
+
+thread 'braces_in_a_prefix_do_not_take_the_name' (48476) panicked at flatmarkdown-ast2html\tests\href_functions.rs:20:5:
+assertion `left == right` failed
+  left: ""
+ right: "/pages/%7B%7D/Rust"
+
+
+failures:
+    a_template_from_a_prefix_is_the_encoded_prefix_followed_by_the_place_of_the_name
+    braces_in_a_prefix_do_not_take_the_name
+    fill_href_does_not_escape_for_html
+
+test result: FAILED. 2 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p flatmarkdown-ast2html --test href_functions`
+
+*** result: Failure(101)

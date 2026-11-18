@@ -1,0 +1,36 @@
+--- flatmarkdown-ast2html/src/lib.rs
++++ replace is_fragment -> bool with false
+@@ -78,32 +78,17 @@
+     /// wikilinks with the same pattern, so it is compiled once. `None` means that the pattern
+     /// is not a regular expression.
+     static FRAGMENT: RefCell<Option<(String, Option<Regex>)>> = const { RefCell::new(None) };
+ }
+ 
+ /// Whether `pattern` matches the whole `text`. An empty pattern, and a pattern that is not a
+ /// regular expression, match nothing.
+ fn is_fragment(pattern: &str, text: &str) -> bool {
+-    if pattern.is_empty() {
+-        return false;
+-    }
+-    FRAGMENT.with(|last| {
+-        let mut last = last.borrow_mut();
+-        if last
+-            .as_ref()
+-            .is_none_or(|(compiled, _)| compiled != pattern)
+-        {
+-            let regex = Regex::new(&format!("^(?:{pattern})$")).ok();
+-            *last = Some((pattern.to_string(), regex));
+-        }
+-        last.as_ref()
+-            .and_then(|(_, regex)| regex.as_ref())
+-            .is_some_and(|regex| regex.is_match(text))
+-    })
++    false /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// The name and the fragment in the URL of a wikilink.
+ ///
+ /// The fragment is the text after the last `#`, when `fragment_pattern` matches the whole of
+ /// it. The name is then the text before that `#`. Otherwise the whole URL is the name, and
+ /// there is no fragment. So `C##20260426035700_QZ998PX` is the page `C#` and the fragment
+ /// `20260426035700_QZ998PX` when the pattern matches the fragment, and `C#` is always a name.

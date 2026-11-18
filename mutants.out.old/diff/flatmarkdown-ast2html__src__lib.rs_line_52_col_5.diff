@@ -1,0 +1,29 @@
+--- flatmarkdown-ast2html/src/lib.rs
++++ replace encoded -> String with String::new()
+@@ -44,25 +44,17 @@
+ 
+ /// The characters that stay as they are in an encoded name. They are the characters that
+ /// `encodeURI` of JavaScript does not encode, without `?` and `#`. Every other byte of the
+ /// UTF-8 text becomes `%XX`.
+ const KEPT: &[u8] = b"-_.!~*'();/:@&=+$,";
+ 
+ /// `name` with every character outside the letters, the digits and [`KEPT`] percent-encoded.
+ fn encoded(name: &str) -> String {
+-    let mut out = String::with_capacity(name.len());
+-    for &byte in name.as_bytes() {
+-        if byte.is_ascii_alphanumeric() || KEPT.contains(&byte) {
+-            out.push(char::from(byte));
+-        } else {
+-            out.push_str(&format!("%{byte:02X}"));
+-        }
+-    }
+-    out
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// The href template of the URLs that start with `prefix`. The prefix is percent-encoded as a
+ /// name is, so `/pages/` gives `/pages/{}`. Braces in the prefix are encoded too, so they never
+ /// take the name.
+ pub fn href_template_from_prefix(prefix: &str) -> String {
+     format!("{}{NAME}", encoded(prefix))
+ }

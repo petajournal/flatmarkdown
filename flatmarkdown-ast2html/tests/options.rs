@@ -32,7 +32,7 @@ fn the_href_of_a_wikilink_is_the_template_with_the_url_in_place_of_the_braces() 
     };
     assert_eq!(
         ast_to_html_with(&node, &options),
-        "<a href=\"/pages/notes/日記\" data-wikilink=\"true\">日記</a>"
+        "<a href=\"/pages/notes/%E6%97%A5%E8%A8%98\" data-wikilink=\"true\">日記</a>"
     );
 }
 
