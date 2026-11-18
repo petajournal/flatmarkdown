@@ -1,0 +1,21 @@
+--- flatmarkdown-ast2html/src/lib.rs
++++ replace href -> String with String::new()
+@@ -125,17 +125,17 @@
+         href.push('#');
+         href.push_str(&encoded(fragment));
+     }
+     escape_html(&href)
+ }
+ 
+ /// The escaped href that `template` makes for `name`.
+ fn href(template: &str, name: &str) -> String {
+-    escape_html(&fill_href(template, name))
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn escape_html(s: &str) -> String {
+     s.replace('&', "&amp;")
+         .replace('<', "&lt;")
+         .replace('>', "&gt;")
+         .replace('"', "&quot;")
+ }

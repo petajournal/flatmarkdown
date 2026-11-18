@@ -1,0 +1,386 @@
+[
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace split_wikilink -> (&'a str, Option<&'a str>) with (\"\", Some(\"xyzzy\"))\n@@ -105,20 +105,17 @@\n ///\n /// The fragment is the text after the last `#`, when `fragment_pattern` matches the whole of\n /// it. The name is then the text before that `#`. Otherwise the whole URL is the name, and\n /// there is no fragment. So `C##20260426035700_QZ998PX` is the page `C#` and the fragment\n /// `20260426035700_QZ998PX` when the pattern matches the fragment, and `C#` is always a name.\n ///\n /// An empty pattern, or one that is not a regular expression, matches nothing.\n pub fn split_wikilink<'a>(url: &'a str, fragment_pattern: &str) -> (&'a str, Option<&'a str>) {\n-    match url.rsplit_once('#') {\n-        Some((name, fragment)) if is_fragment(fragment_pattern, fragment) => (name, Some(fragment)),\n-        _ => (url, None),\n-    }\n+    (\"\", Some(\"xyzzy\")) /* ~ changed by cargo-mutants ~ */\n }\n \n /// The escaped href of a wikilink to `url`. The fragment goes after the filled template, so\n /// that it ends the URL even when the template has text after `{}`.\n fn wikilink_href(o: &HtmlOptions, url: &str) -> String {\n     let (name, fragment) = split_wikilink(url, &o.wikilink_fragment_pattern);\n     let mut href = fill_href(&o.wikilink_href, name);\n     if let Some(fragment) = fragment {\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "split_wikilink",
+      "return_type": "-> (&'a str, Option<&'a str>)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 117
+        },
+        "start": {
+          "column": 1,
+          "line": 104
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:113:5: replace split_wikilink -> (&'a str, Option<&'a str>) with (\"\", Some(\"xyzzy\"))",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "(\"\", Some(\"xyzzy\"))",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 116
+      },
+      "start": {
+        "column": 5,
+        "line": 113
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace split_wikilink -> (&'a str, Option<&'a str>) with (\"xyzzy\", None)\n@@ -105,20 +105,17 @@\n ///\n /// The fragment is the text after the last `#`, when `fragment_pattern` matches the whole of\n /// it. The name is then the text before that `#`. Otherwise the whole URL is the name, and\n /// there is no fragment. So `C##20260426035700_QZ998PX` is the page `C#` and the fragment\n /// `20260426035700_QZ998PX` when the pattern matches the fragment, and `C#` is always a name.\n ///\n /// An empty pattern, or one that is not a regular expression, matches nothing.\n pub fn split_wikilink<'a>(url: &'a str, fragment_pattern: &str) -> (&'a str, Option<&'a str>) {\n-    match url.rsplit_once('#') {\n-        Some((name, fragment)) if is_fragment(fragment_pattern, fragment) => (name, Some(fragment)),\n-        _ => (url, None),\n-    }\n+    (\"xyzzy\", None) /* ~ changed by cargo-mutants ~ */\n }\n \n /// The escaped href of a wikilink to `url`. The fragment goes after the filled template, so\n /// that it ends the URL even when the template has text after `{}`.\n fn wikilink_href(o: &HtmlOptions, url: &str) -> String {\n     let (name, fragment) = split_wikilink(url, &o.wikilink_fragment_pattern);\n     let mut href = fill_href(&o.wikilink_href, name);\n     if let Some(fragment) = fragment {\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "split_wikilink",
+      "return_type": "-> (&'a str, Option<&'a str>)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 117
+        },
+        "start": {
+          "column": 1,
+          "line": 104
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:113:5: replace split_wikilink -> (&'a str, Option<&'a str>) with (\"xyzzy\", None)",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "(\"xyzzy\", None)",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 116
+      },
+      "start": {
+        "column": 5,
+        "line": 113
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace split_wikilink -> (&'a str, Option<&'a str>) with (\"xyzzy\", Some(\"\"))\n@@ -105,20 +105,17 @@\n ///\n /// The fragment is the text after the last `#`, when `fragment_pattern` matches the whole of\n /// it. The name is then the text before that `#`. Otherwise the whole URL is the name, and\n /// there is no fragment. So `C##20260426035700_QZ998PX` is the page `C#` and the fragment\n /// `20260426035700_QZ998PX` when the pattern matches the fragment, and `C#` is always a name.\n ///\n /// An empty pattern, or one that is not a regular expression, matches nothing.\n pub fn split_wikilink<'a>(url: &'a str, fragment_pattern: &str) -> (&'a str, Option<&'a str>) {\n-    match url.rsplit_once('#') {\n-        Some((name, fragment)) if is_fragment(fragment_pattern, fragment) => (name, Some(fragment)),\n-        _ => (url, None),\n-    }\n+    (\"xyzzy\", Some(\"\")) /* ~ changed by cargo-mutants ~ */\n }\n \n /// The escaped href of a wikilink to `url`. The fragment goes after the filled template, so\n /// that it ends the URL even when the template has text after `{}`.\n fn wikilink_href(o: &HtmlOptions, url: &str) -> String {\n     let (name, fragment) = split_wikilink(url, &o.wikilink_fragment_pattern);\n     let mut href = fill_href(&o.wikilink_href, name);\n     if let Some(fragment) = fragment {\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "split_wikilink",
+      "return_type": "-> (&'a str, Option<&'a str>)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 117
+        },
+        "start": {
+          "column": 1,
+          "line": 104
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:113:5: replace split_wikilink -> (&'a str, Option<&'a str>) with (\"xyzzy\", Some(\"\"))",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "(\"xyzzy\", Some(\"\"))",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 116
+      },
+      "start": {
+        "column": 5,
+        "line": 113
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace split_wikilink -> (&'a str, Option<&'a str>) with (\"xyzzy\", Some(\"xyzzy\"))\n@@ -105,20 +105,17 @@\n ///\n /// The fragment is the text after the last `#`, when `fragment_pattern` matches the whole of\n /// it. The name is then the text before that `#`. Otherwise the whole URL is the name, and\n /// there is no fragment. So `C##20260426035700_QZ998PX` is the page `C#` and the fragment\n /// `20260426035700_QZ998PX` when the pattern matches the fragment, and `C#` is always a name.\n ///\n /// An empty pattern, or one that is not a regular expression, matches nothing.\n pub fn split_wikilink<'a>(url: &'a str, fragment_pattern: &str) -> (&'a str, Option<&'a str>) {\n-    match url.rsplit_once('#') {\n-        Some((name, fragment)) if is_fragment(fragment_pattern, fragment) => (name, Some(fragment)),\n-        _ => (url, None),\n-    }\n+    (\"xyzzy\", Some(\"xyzzy\")) /* ~ changed by cargo-mutants ~ */\n }\n \n /// The escaped href of a wikilink to `url`. The fragment goes after the filled template, so\n /// that it ends the URL even when the template has text after `{}`.\n fn wikilink_href(o: &HtmlOptions, url: &str) -> String {\n     let (name, fragment) = split_wikilink(url, &o.wikilink_fragment_pattern);\n     let mut href = fill_href(&o.wikilink_href, name);\n     if let Some(fragment) = fragment {\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "split_wikilink",
+      "return_type": "-> (&'a str, Option<&'a str>)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 117
+        },
+        "start": {
+          "column": 1,
+          "line": 104
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:113:5: replace split_wikilink -> (&'a str, Option<&'a str>) with (\"xyzzy\", Some(\"xyzzy\"))",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "(\"xyzzy\", Some(\"xyzzy\"))",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 116
+      },
+      "start": {
+        "column": 5,
+        "line": 113
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace match guard is_fragment(fragment_pattern, fragment) with true in split_wikilink\n@@ -106,17 +106,17 @@\n /// The fragment is the text after the last `#`, when `fragment_pattern` matches the whole of\n /// it. The name is then the text before that `#`. Otherwise the whole URL is the name, and\n /// there is no fragment. So `C##20260426035700_QZ998PX` is the page `C#` and the fragment\n /// `20260426035700_QZ998PX` when the pattern matches the fragment, and `C#` is always a name.\n ///\n /// An empty pattern, or one that is not a regular expression, matches nothing.\n pub fn split_wikilink<'a>(url: &'a str, fragment_pattern: &str) -> (&'a str, Option<&'a str>) {\n     match url.rsplit_once('#') {\n-        Some((name, fragment)) if is_fragment(fragment_pattern, fragment) => (name, Some(fragment)),\n+        Some((name, fragment)) if true /* ~ changed by cargo-mutants ~ */ => (name, Some(fragment)),\n         _ => (url, None),\n     }\n }\n \n /// The escaped href of a wikilink to `url`. The fragment goes after the filled template, so\n /// that it ends the URL even when the template has text after `{}`.\n fn wikilink_href(o: &HtmlOptions, url: &str) -> String {\n     let (name, fragment) = split_wikilink(url, &o.wikilink_fragment_pattern);\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "split_wikilink",
+      "return_type": "-> (&'a str, Option<&'a str>)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 117
+        },
+        "start": {
+          "column": 1,
+          "line": 104
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "flatmarkdown-ast2html/src/lib.rs:114:35: replace match guard is_fragment(fragment_pattern, fragment) with true in split_wikilink",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 74,
+        "line": 114
+      },
+      "start": {
+        "column": 35,
+        "line": 114
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace match guard is_fragment(fragment_pattern, fragment) with false in split_wikilink\n@@ -106,17 +106,17 @@\n /// The fragment is the text after the last `#`, when `fragment_pattern` matches the whole of\n /// it. The name is then the text before that `#`. Otherwise the whole URL is the name, and\n /// there is no fragment. So `C##20260426035700_QZ998PX` is the page `C#` and the fragment\n /// `20260426035700_QZ998PX` when the pattern matches the fragment, and `C#` is always a name.\n ///\n /// An empty pattern, or one that is not a regular expression, matches nothing.\n pub fn split_wikilink<'a>(url: &'a str, fragment_pattern: &str) -> (&'a str, Option<&'a str>) {\n     match url.rsplit_once('#') {\n-        Some((name, fragment)) if is_fragment(fragment_pattern, fragment) => (name, Some(fragment)),\n+        Some((name, fragment)) if false /* ~ changed by cargo-mutants ~ */ => (name, Some(fragment)),\n         _ => (url, None),\n     }\n }\n \n /// The escaped href of a wikilink to `url`. The fragment goes after the filled template, so\n /// that it ends the URL even when the template has text after `{}`.\n fn wikilink_href(o: &HtmlOptions, url: &str) -> String {\n     let (name, fragment) = split_wikilink(url, &o.wikilink_fragment_pattern);\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "split_wikilink",
+      "return_type": "-> (&'a str, Option<&'a str>)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 117
+        },
+        "start": {
+          "column": 1,
+          "line": 104
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "flatmarkdown-ast2html/src/lib.rs:114:35: replace match guard is_fragment(fragment_pattern, fragment) with false in split_wikilink",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 74,
+        "line": 114
+      },
+      "start": {
+        "column": 35,
+        "line": 114
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace wikilink_href -> String with String::new()\n@@ -114,23 +114,17 @@\n         Some((name, fragment)) if is_fragment(fragment_pattern, fragment) => (name, Some(fragment)),\n         _ => (url, None),\n     }\n }\n \n /// The escaped href of a wikilink to `url`. The fragment goes after the filled template, so\n /// that it ends the URL even when the template has text after `{}`.\n fn wikilink_href(o: &HtmlOptions, url: &str) -> String {\n-    let (name, fragment) = split_wikilink(url, &o.wikilink_fragment_pattern);\n-    let mut href = fill_href(&o.wikilink_href, name);\n-    if let Some(fragment) = fragment {\n-        href.push('#');\n-        href.push_str(&encoded(fragment));\n-    }\n-    escape_html(&href)\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n /// The escaped href that `template` makes for `name`.\n fn href(template: &str, name: &str) -> String {\n     escape_html(&fill_href(template, name))\n }\n \n fn escape_html(s: &str) -> String {\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "wikilink_href",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 129
+        },
+        "start": {
+          "column": 1,
+          "line": 119
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:122:5: replace wikilink_href -> String with String::new()",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 128
+      },
+      "start": {
+        "column": 5,
+        "line": 122
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace wikilink_href -> String with \"xyzzy\".into()\n@@ -114,23 +114,17 @@\n         Some((name, fragment)) if is_fragment(fragment_pattern, fragment) => (name, Some(fragment)),\n         _ => (url, None),\n     }\n }\n \n /// The escaped href of a wikilink to `url`. The fragment goes after the filled template, so\n /// that it ends the URL even when the template has text after `{}`.\n fn wikilink_href(o: &HtmlOptions, url: &str) -> String {\n-    let (name, fragment) = split_wikilink(url, &o.wikilink_fragment_pattern);\n-    let mut href = fill_href(&o.wikilink_href, name);\n-    if let Some(fragment) = fragment {\n-        href.push('#');\n-        href.push_str(&encoded(fragment));\n-    }\n-    escape_html(&href)\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n /// The escaped href that `template` makes for `name`.\n fn href(template: &str, name: &str) -> String {\n     escape_html(&fill_href(template, name))\n }\n \n fn escape_html(s: &str) -> String {\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "wikilink_href",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 129
+        },
+        "start": {
+          "column": 1,
+          "line": 119
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:122:5: replace wikilink_href -> String with \"xyzzy\".into()",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 128
+      },
+      "start": {
+        "column": 5,
+        "line": 122
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace href -> String with String::new()\n@@ -125,17 +125,17 @@\n         href.push('#');\n         href.push_str(&encoded(fragment));\n     }\n     escape_html(&href)\n }\n \n /// The escaped href that `template` makes for `name`.\n fn href(template: &str, name: &str) -> String {\n-    escape_html(&fill_href(template, name))\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n fn escape_html(s: &str) -> String {\n     s.replace('&', \"&amp;\")\n         .replace('<', \"&lt;\")\n         .replace('>', \"&gt;\")\n         .replace('\"', \"&quot;\")\n }\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "href",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 134
+        },
+        "start": {
+          "column": 1,
+          "line": 131
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:133:5: replace href -> String with String::new()",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 133
+      },
+      "start": {
+        "column": 5,
+        "line": 133
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace href -> String with \"xyzzy\".into()\n@@ -125,17 +125,17 @@\n         href.push('#');\n         href.push_str(&encoded(fragment));\n     }\n     escape_html(&href)\n }\n \n /// The escaped href that `template` makes for `name`.\n fn href(template: &str, name: &str) -> String {\n-    escape_html(&fill_href(template, name))\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n fn escape_html(s: &str) -> String {\n     s.replace('&', \"&amp;\")\n         .replace('<', \"&lt;\")\n         .replace('>', \"&gt;\")\n         .replace('\"', \"&quot;\")\n }\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "href",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 134
+        },
+        "start": {
+          "column": 1,
+          "line": 131
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:133:5: replace href -> String with \"xyzzy\".into()",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 133
+      },
+      "start": {
+        "column": 5,
+        "line": 133
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace ast_to_html_with -> String with String::new()\n@@ -307,165 +307,15 @@\n /// The node is normally the `Node::Document` of an item body, but any node can be given.\n /// It gives the same HTML as [`ast_to_html_with`] with the default [`HtmlOptions`].\n pub fn ast_to_html(node: &Node) -> String {\n     ast_to_html_with(node, &HtmlOptions::default())\n }\n \n /// Renders a node of the AST and its descendants as an HTML string, with `o`.\n pub fn ast_to_html_with(node: &Node, o: &HtmlOptions) -> String {\n-    match node {\n-        Node::Document { children } => render_all(children, o),\n-\n-        Node::Paragraph { children } => format!(\"<p>{}</p>\\n\", render_all(children, o)),\n-\n-        Node::Heading { level, children } => {\n-            format!(\"<h{level}>{}</h{level}>\\n\", render_all(children, o))\n-        }\n-\n-        Node::CodeBlock { info, literal, .. } => {\n-            let class = if info.is_empty() || info == \"text\" {\n-                String::new()\n-            } else {\n-                format!(\" class=\\\"language-{}\\\"\", escape_html(info))\n-            };\n-            format!(\"<pre><code{class}>{}</code></pre>\\n\", escape_html(literal))\n-        }\n-\n-        Node::BlockQuote { children } | Node::MultilineBlockQuote { children } => {\n-            format!(\"<blockquote>\\n{}</blockquote>\\n\", render_all(children, o))\n-        }\n-\n-        Node::List {\n-            list_type,\n-            start,\n-            tight,\n-            children,\n-            ..\n-        } => list_to_html(*list_type, *start, *tight, children, o),\n-\n-        // Fallback — normally rendered inside the list handler\n-        Node::Item { children, .. } => format!(\"<li>{}</li>\\n\", render_all(children, o)),\n-        Node::TaskItem { symbol, children } => {\n-            format!(\"<li>{}{}</li>\\n\", checkbox(symbol), render_all(children, o))\n-        }\n-\n-        Node::Table {\n-            alignments,\n-            children,\n-            ..\n-        } => table_to_html(alignments, children, o),\n-\n-        // Fallback — normally rendered inside the table handler\n-        Node::TableRow { children, .. } | Node::TableCell { children } => render_all(children, o),\n-\n-        Node::ThematicBreak => \"<hr />\\n\".to_string(),\n-\n-        Node::HtmlBlock { literal, .. } => literal.clone(),\n-\n-        Node::FootnoteDefinition { name, children } => {\n-            footnote_definition_to_html(name, children, o)\n-        }\n-\n-        Node::Alert {\n-            alert_type,\n-            title,\n-            children,\n-        } => alert_to_html(*alert_type, title, children, o),\n-\n-        // The same HTML as comrak writes for `-# text`.\n-        Node::Subtext { children } => format!(\"<p><sub>{}</sub></p>\\n\", render_all(children, o)),\n-\n-        Node::Text { value } => escape_html(value),\n-\n-        Node::Softbreak => \"\\n\".to_string(),\n-        Node::Linebreak => \"<br />\\n\".to_string(),\n-\n-        Node::Emph { children } => format!(\"<em>{}</em>\", render_all(children, o)),\n-        Node::Strong { children } => format!(\"<strong>{}</strong>\", render_all(children, o)),\n-        Node::Strikethrough { children } => format!(\"<del>{}</del>\", render_all(children, o)),\n-        Node::Underline { children } => format!(\"<u>{}</u>\", render_all(children, o)),\n-        Node::Highlight { children } => format!(\"<mark>{}</mark>\", render_all(children, o)),\n-        Node::Superscript { children } => format!(\"<sup>{}</sup>\", render_all(children, o)),\n-        Node::Subscript { children } => format!(\"<sub>{}</sub>\", render_all(children, o)),\n-        Node::SpoileredText { children } => {\n-            format!(\"<span class=\\\"spoiler\\\">{}</span>\", render_all(children, o))\n-        }\n-\n-        Node::Code { literal } => format!(\"<code>{}</code>\", escape_html(literal)),\n-\n-        Node::Link {\n-            url,\n-            title,\n-            children,\n-        } => {\n-            if title.is_empty() {\n-                format!(\n-                    \"<a href=\\\"{}\\\">{}</a>\",\n-                    escape_html(url),\n-                    render_all(children, o)\n-                )\n-            } else {\n-                format!(\n-                    \"<a href=\\\"{}\\\" title=\\\"{}\\\">{}</a>\",\n-                    escape_html(url),\n-                    escape_html(title),\n-                    render_all(children, o)\n-                )\n-            }\n-        }\n-\n-        // `props` are not written. How a renderer uses them differs from app to app.\n-        Node::Embed { url, title, .. } => {\n-            let title = if title.is_empty() {\n-                String::new()\n-            } else {\n-                format!(\" title=\\\"{}\\\"\", escape_html(title))\n-            };\n-            format!(\n-                \"<img src=\\\"{}\\\" alt=\\\"{}\\\"{title} />\",\n-                escape_html(url),\n-                escape_html(&plain_text(node))\n-            )\n-        }\n-\n-        Node::Wikilink { url, children } => format!(\n-            \"<a href=\\\"{}\\\" data-wikilink=\\\"true\\\">{}</a>\",\n-            wikilink_href(o, url),\n-            render_all(children, o)\n-        ),\n-\n-        Node::Hashtag { value } => format!(\n-            \"<a href=\\\"{}\\\" class=\\\"hashtag\\\">#{}</a>\",\n-            href(&o.hashtag_href, value),\n-            escape_html(value)\n-        ),\n-\n-        // The label is shown instead of comrak's index: a body is parsed alone, so the\n-        // index would restart at 1 in every item.\n-        Node::FootnoteReference { name, ref_num, .. } => {\n-            let shown = footnote_label(name);\n-            let name = escape_html(name);\n-            // An `id` must be unique. The second reference to the same footnote carries its\n-            // number; the first does not, so that the label of the definition links to it.\n-            let id = match ref_num {\n-                1 => format!(\"fnref-{name}\"),\n-                n => format!(\"fnref-{name}-{n}\"),\n-            };\n-            format!(\n-                \"<sup id=\\\"{id}\\\" class=\\\"footnote-ref\\\"><a href=\\\"#fn-{name}\\\">[{shown}]</a></sup>\"\n-            )\n-        }\n-\n-        Node::Shortcode { emoji, .. } => emoji.clone(),\n-\n-        Node::Math { literal } => format!(\"<span class=\\\"math\\\">{}</span>\", escape_html(literal)),\n-\n-        Node::HtmlInline { value } => value.clone(),\n-\n-        Node::Unknown { children, .. } => render_all(children, o),\n-    }\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n // Run the code example in the README as a doctest, so that it keeps working\n #[cfg(doctest)]\n #[doc = include_str!(\"../README.md\")]\n struct ReadmeDoctests;\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "ast_to_html_with",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 466
+        },
+        "start": {
+          "column": 1,
+          "line": 313
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:315:5: replace ast_to_html_with -> String with String::new()",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 465
+      },
+      "start": {
+        "column": 5,
+        "line": 315
+      }
+    }
+  },
+  {
+    "diff": "--- flatmarkdown-ast2html/src/lib.rs\n+++ replace ast_to_html_with -> String with \"xyzzy\".into()\n@@ -307,165 +307,15 @@\n /// The node is normally the `Node::Document` of an item body, but any node can be given.\n /// It gives the same HTML as [`ast_to_html_with`] with the default [`HtmlOptions`].\n pub fn ast_to_html(node: &Node) -> String {\n     ast_to_html_with(node, &HtmlOptions::default())\n }\n \n /// Renders a node of the AST and its descendants as an HTML string, with `o`.\n pub fn ast_to_html_with(node: &Node, o: &HtmlOptions) -> String {\n-    match node {\n-        Node::Document { children } => render_all(children, o),\n-\n-        Node::Paragraph { children } => format!(\"<p>{}</p>\\n\", render_all(children, o)),\n-\n-        Node::Heading { level, children } => {\n-            format!(\"<h{level}>{}</h{level}>\\n\", render_all(children, o))\n-        }\n-\n-        Node::CodeBlock { info, literal, .. } => {\n-            let class = if info.is_empty() || info == \"text\" {\n-                String::new()\n-            } else {\n-                format!(\" class=\\\"language-{}\\\"\", escape_html(info))\n-            };\n-            format!(\"<pre><code{class}>{}</code></pre>\\n\", escape_html(literal))\n-        }\n-\n-        Node::BlockQuote { children } | Node::MultilineBlockQuote { children } => {\n-            format!(\"<blockquote>\\n{}</blockquote>\\n\", render_all(children, o))\n-        }\n-\n-        Node::List {\n-            list_type,\n-            start,\n-            tight,\n-            children,\n-            ..\n-        } => list_to_html(*list_type, *start, *tight, children, o),\n-\n-        // Fallback — normally rendered inside the list handler\n-        Node::Item { children, .. } => format!(\"<li>{}</li>\\n\", render_all(children, o)),\n-        Node::TaskItem { symbol, children } => {\n-            format!(\"<li>{}{}</li>\\n\", checkbox(symbol), render_all(children, o))\n-        }\n-\n-        Node::Table {\n-            alignments,\n-            children,\n-            ..\n-        } => table_to_html(alignments, children, o),\n-\n-        // Fallback — normally rendered inside the table handler\n-        Node::TableRow { children, .. } | Node::TableCell { children } => render_all(children, o),\n-\n-        Node::ThematicBreak => \"<hr />\\n\".to_string(),\n-\n-        Node::HtmlBlock { literal, .. } => literal.clone(),\n-\n-        Node::FootnoteDefinition { name, children } => {\n-            footnote_definition_to_html(name, children, o)\n-        }\n-\n-        Node::Alert {\n-            alert_type,\n-            title,\n-            children,\n-        } => alert_to_html(*alert_type, title, children, o),\n-\n-        // The same HTML as comrak writes for `-# text`.\n-        Node::Subtext { children } => format!(\"<p><sub>{}</sub></p>\\n\", render_all(children, o)),\n-\n-        Node::Text { value } => escape_html(value),\n-\n-        Node::Softbreak => \"\\n\".to_string(),\n-        Node::Linebreak => \"<br />\\n\".to_string(),\n-\n-        Node::Emph { children } => format!(\"<em>{}</em>\", render_all(children, o)),\n-        Node::Strong { children } => format!(\"<strong>{}</strong>\", render_all(children, o)),\n-        Node::Strikethrough { children } => format!(\"<del>{}</del>\", render_all(children, o)),\n-        Node::Underline { children } => format!(\"<u>{}</u>\", render_all(children, o)),\n-        Node::Highlight { children } => format!(\"<mark>{}</mark>\", render_all(children, o)),\n-        Node::Superscript { children } => format!(\"<sup>{}</sup>\", render_all(children, o)),\n-        Node::Subscript { children } => format!(\"<sub>{}</sub>\", render_all(children, o)),\n-        Node::SpoileredText { children } => {\n-            format!(\"<span class=\\\"spoiler\\\">{}</span>\", render_all(children, o))\n-        }\n-\n-        Node::Code { literal } => format!(\"<code>{}</code>\", escape_html(literal)),\n-\n-        Node::Link {\n-            url,\n-            title,\n-            children,\n-        } => {\n-            if title.is_empty() {\n-                format!(\n-                    \"<a href=\\\"{}\\\">{}</a>\",\n-                    escape_html(url),\n-                    render_all(children, o)\n-                )\n-            } else {\n-                format!(\n-                    \"<a href=\\\"{}\\\" title=\\\"{}\\\">{}</a>\",\n-                    escape_html(url),\n-                    escape_html(title),\n-                    render_all(children, o)\n-                )\n-            }\n-        }\n-\n-        // `props` are not written. How a renderer uses them differs from app to app.\n-        Node::Embed { url, title, .. } => {\n-            let title = if title.is_empty() {\n-                String::new()\n-            } else {\n-                format!(\" title=\\\"{}\\\"\", escape_html(title))\n-            };\n-            format!(\n-                \"<img src=\\\"{}\\\" alt=\\\"{}\\\"{title} />\",\n-                escape_html(url),\n-                escape_html(&plain_text(node))\n-            )\n-        }\n-\n-        Node::Wikilink { url, children } => format!(\n-            \"<a href=\\\"{}\\\" data-wikilink=\\\"true\\\">{}</a>\",\n-            wikilink_href(o, url),\n-            render_all(children, o)\n-        ),\n-\n-        Node::Hashtag { value } => format!(\n-            \"<a href=\\\"{}\\\" class=\\\"hashtag\\\">#{}</a>\",\n-            href(&o.hashtag_href, value),\n-            escape_html(value)\n-        ),\n-\n-        // The label is shown instead of comrak's index: a body is parsed alone, so the\n-        // index would restart at 1 in every item.\n-        Node::FootnoteReference { name, ref_num, .. } => {\n-            let shown = footnote_label(name);\n-            let name = escape_html(name);\n-            // An `id` must be unique. The second reference to the same footnote carries its\n-            // number; the first does not, so that the label of the definition links to it.\n-            let id = match ref_num {\n-                1 => format!(\"fnref-{name}\"),\n-                n => format!(\"fnref-{name}-{n}\"),\n-            };\n-            format!(\n-                \"<sup id=\\\"{id}\\\" class=\\\"footnote-ref\\\"><a href=\\\"#fn-{name}\\\">[{shown}]</a></sup>\"\n-            )\n-        }\n-\n-        Node::Shortcode { emoji, .. } => emoji.clone(),\n-\n-        Node::Math { literal } => format!(\"<span class=\\\"math\\\">{}</span>\", escape_html(literal)),\n-\n-        Node::HtmlInline { value } => value.clone(),\n-\n-        Node::Unknown { children, .. } => render_all(children, o),\n-    }\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n // Run the code example in the README as a doctest, so that it keeps working\n #[cfg(doctest)]\n #[doc = include_str!(\"../README.md\")]\n struct ReadmeDoctests;\n",
+    "file": "flatmarkdown-ast2html/src/lib.rs",
+    "function": {
+      "function_name": "ast_to_html_with",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 466
+        },
+        "start": {
+          "column": 1,
+          "line": 313
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "flatmarkdown-ast2html/src/lib.rs:315:5: replace ast_to_html_with -> String with \"xyzzy\".into()",
+    "package": "flatmarkdown-ast2html",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 465
+      },
+      "start": {
+        "column": 5,
+        "line": 315
+      }
+    }
+  }
+]

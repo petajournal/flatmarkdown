@@ -20,17 +20,6 @@
   - [x] PRの前に、カバレッジとミューテーションテストを回す
   - [x] 3つのクレートを0.9.0に上げて、PRにする
   - [ ] 新しい版を出す（ユーザー）
-- [ ] hrefに入れる名前を符号化し、テンプレートの関数を公開する（2026-11-18にユーザーが決めた。peta-journalのADR 051の「名前の符号化」「名前に`#`を含むページ」と、ADR 061）。0.9.0に入れる
-  - [ ] 名前を`encodeURI`の規則と`?`と`#`でパーセント符号化してから、テンプレートに入れる
-  - [ ] `href_template_from_prefix`：前置きを符号化し、後ろに`{}`を付けたテンプレートを返す
-  - [ ] `fill_href`：テンプレートに符号化した名前を入れる。HTMLのエスケープはかけない
-  - [ ] `HtmlOptions`の`wikilink_fragment_pattern`：最後の`#`の後ろの全体が一致すれば、フラグメントとして分け、符号化して後ろに付ける
-  - [ ] `split_wikilink`：wikilinkの`url`を名前とフラグメントに分ける
-  - [ ] 読めない正規表現は、何にも一致しない
-  - [ ] 名前、テンプレート、設定、結果の表（JSON）を置き、Rustのテストが読む。`flatmarkdown-ast2react`が写す
-  - [ ] wasm版の`renderToHtml`が、2つ目の引数で`wikilinkHref`、`hashtagHref`、`wikilinkFragmentPattern`を受ける
-  - [ ] READMEと`docs/workspace.svg`を直す
-  - [ ] PRの前に、カバレッジとミューテーションテストを回す
 - [ ] 0.9.0が出たあと、ほかのリポジトリで使う
   - [ ] sosuisen.netの`fm2html`：`ast_to_html_with`でhashtagを`/tags/{}`にし、`link_hashtags_to_tag_pages`を消す
-  - [ ] peta-journalのWebのシェル：peta-journalの`docs/plans.md`の「ADR 051」にある
+  - [ ] peta-journal：peta-journalの`docs/plans.md`の「PetaJournalのURLとリンクの生成」にある

@@ -1,0 +1,169 @@
+--- flatmarkdown-ast2html/src/lib.rs
++++ replace ast_to_html_with -> String with String::new()
+@@ -307,165 +307,15 @@
+ /// The node is normally the `Node::Document` of an item body, but any node can be given.
+ /// It gives the same HTML as [`ast_to_html_with`] with the default [`HtmlOptions`].
+ pub fn ast_to_html(node: &Node) -> String {
+     ast_to_html_with(node, &HtmlOptions::default())
+ }
+ 
+ /// Renders a node of the AST and its descendants as an HTML string, with `o`.
+ pub fn ast_to_html_with(node: &Node, o: &HtmlOptions) -> String {
+-    match node {
+-        Node::Document { children } => render_all(children, o),
+-
+-        Node::Paragraph { children } => format!("<p>{}</p>\n", render_all(children, o)),
+-
+-        Node::Heading { level, children } => {
+-            format!("<h{level}>{}</h{level}>\n", render_all(children, o))
+-        }
+-
+-        Node::CodeBlock { info, literal, .. } => {
+-            let class = if info.is_empty() || info == "text" {
+-                String::new()
+-            } else {
+-                format!(" class=\"language-{}\"", escape_html(info))
+-            };
+-            format!("<pre><code{class}>{}</code></pre>\n", escape_html(literal))
+-        }
+-
+-        Node::BlockQuote { children } | Node::MultilineBlockQuote { children } => {
+-            format!("<blockquote>\n{}</blockquote>\n", render_all(children, o))
+-        }
+-
+-        Node::List {
+-            list_type,
+-            start,
+-            tight,
+-            children,
+-            ..
+-        } => list_to_html(*list_type, *start, *tight, children, o),
+-
+-        // Fallback — normally rendered inside the list handler
+-        Node::Item { children, .. } => format!("<li>{}</li>\n", render_all(children, o)),
+-        Node::TaskItem { symbol, children } => {
+-            format!("<li>{}{}</li>\n", checkbox(symbol), render_all(children, o))
+-        }
+-
+-        Node::Table {
+-            alignments,
+-            children,
+-            ..
+-        } => table_to_html(alignments, children, o),
+-
+-        // Fallback — normally rendered inside the table handler
+-        Node::TableRow { children, .. } | Node::TableCell { children } => render_all(children, o),
+-
+-        Node::ThematicBreak => "<hr />\n".to_string(),
+-
+-        Node::HtmlBlock { literal, .. } => literal.clone(),
+-
+-        Node::FootnoteDefinition { name, children } => {
+-            footnote_definition_to_html(name, children, o)
+-        }
+-
+-        Node::Alert {
+-            alert_type,
+-            title,
+-            children,
+-        } => alert_to_html(*alert_type, title, children, o),
+-
+-        // The same HTML as comrak writes for `-# text`.
+-        Node::Subtext { children } => format!("<p><sub>{}</sub></p>\n", render_all(children, o)),
+-
+-        Node::Text { value } => escape_html(value),
+-
+-        Node::Softbreak => "\n".to_string(),
+-        Node::Linebreak => "<br />\n".to_string(),
+-
+-        Node::Emph { children } => format!("<em>{}</em>", render_all(children, o)),
+-        Node::Strong { children } => format!("<strong>{}</strong>", render_all(children, o)),
+-        Node::Strikethrough { children } => format!("<del>{}</del>", render_all(children, o)),
+-        Node::Underline { children } => format!("<u>{}</u>", render_all(children, o)),
+-        Node::Highlight { children } => format!("<mark>{}</mark>", render_all(children, o)),
+-        Node::Superscript { children } => format!("<sup>{}</sup>", render_all(children, o)),
+-        Node::Subscript { children } => format!("<sub>{}</sub>", render_all(children, o)),
+-        Node::SpoileredText { children } => {
+-            format!("<span class=\"spoiler\">{}</span>", render_all(children, o))
+-        }
+-
+-        Node::Code { literal } => format!("<code>{}</code>", escape_html(literal)),
+-
+-        Node::Link {
+-            url,
+-            title,
+-            children,
+-        } => {
+-            if title.is_empty() {
+-                format!(
+-                    "<a href=\"{}\">{}</a>",
+-                    escape_html(url),
+-                    render_all(children, o)
+-                )
+-            } else {
+-                format!(
+-                    "<a href=\"{}\" title=\"{}\">{}</a>",
+-                    escape_html(url),
+-                    escape_html(title),
+-                    render_all(children, o)
+-                )
+-            }
+-        }
+-
+-        // `props` are not written. How a renderer uses them differs from app to app.
+-        Node::Embed { url, title, .. } => {
+-            let title = if title.is_empty() {
+-                String::new()
+-            } else {
+-                format!(" title=\"{}\"", escape_html(title))
+-            };
+-            format!(
+-                "<img src=\"{}\" alt=\"{}\"{title} />",
+-                escape_html(url),
+-                escape_html(&plain_text(node))
+-            )
+-        }
+-
+-        Node::Wikilink { url, children } => format!(
+-            "<a href=\"{}\" data-wikilink=\"true\">{}</a>",
+-            wikilink_href(o, url),
+-            render_all(children, o)
+-        ),
+-
+-        Node::Hashtag { value } => format!(
+-            "<a href=\"{}\" class=\"hashtag\">#{}</a>",
+-            href(&o.hashtag_href, value),
+-            escape_html(value)
+-        ),
+-
+-        // The label is shown instead of comrak's index: a body is parsed alone, so the
+-        // index would restart at 1 in every item.
+-        Node::FootnoteReference { name, ref_num, .. } => {
+-            let shown = footnote_label(name);
+-            let name = escape_html(name);
+-            // An `id` must be unique. The second reference to the same footnote carries its
+-            // number; the first does not, so that the label of the definition links to it.
+-            let id = match ref_num {
+-                1 => format!("fnref-{name}"),
+-                n => format!("fnref-{name}-{n}"),
+-            };
+-            format!(
+-                "<sup id=\"{id}\" class=\"footnote-ref\"><a href=\"#fn-{name}\">[{shown}]</a></sup>"
+-            )
+-        }
+-
+-        Node::Shortcode { emoji, .. } => emoji.clone(),
+-
+-        Node::Math { literal } => format!("<span class=\"math\">{}</span>", escape_html(literal)),
+-
+-        Node::HtmlInline { value } => value.clone(),
+-
+-        Node::Unknown { children, .. } => render_all(children, o),
+-    }
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // Run the code example in the README as a doctest, so that it keeps working
+ #[cfg(doctest)]
+ #[doc = include_str!("../README.md")]
+ struct ReadmeDoctests;

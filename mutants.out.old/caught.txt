@@ -1,0 +1,12 @@
+flatmarkdown-ast2html/src/lib.rs:52:5: replace encoded -> String with String::new()
+flatmarkdown-ast2html/src/lib.rs:52:5: replace encoded -> String with "xyzzy".into()
+flatmarkdown-ast2html/src/lib.rs:54:41: replace || with && in encoded
+flatmarkdown-ast2html/src/lib.rs:67:5: replace href_template_from_prefix -> String with String::new()
+flatmarkdown-ast2html/src/lib.rs:67:5: replace href_template_from_prefix -> String with "xyzzy".into()
+flatmarkdown-ast2html/src/lib.rs:73:5: replace fill_href -> String with String::new()
+flatmarkdown-ast2html/src/lib.rs:73:5: replace fill_href -> String with "xyzzy".into()
+flatmarkdown-ast2html/src/lib.rs:86:5: replace is_fragment -> bool with true
+flatmarkdown-ast2html/src/lib.rs:86:5: replace is_fragment -> bool with false
+flatmarkdown-ast2html/src/lib.rs:93:50: replace != with == in is_fragment
+flatmarkdown-ast2html/src/lib.rs:113:5: replace split_wikilink -> (&'a str, Option<&'a str>) with ("", None)
+flatmarkdown-ast2html/src/lib.rs:113:5: replace split_wikilink -> (&'a str, Option<&'a str>) with ("", Some(""))

@@ -1,0 +1,27 @@
+--- flatmarkdown-ast2html/src/lib.rs
++++ replace wikilink_href -> String with "xyzzy".into()
+@@ -114,23 +114,17 @@
+         Some((name, fragment)) if is_fragment(fragment_pattern, fragment) => (name, Some(fragment)),
+         _ => (url, None),
+     }
+ }
+ 
+ /// The escaped href of a wikilink to `url`. The fragment goes after the filled template, so
+ /// that it ends the URL even when the template has text after `{}`.
+ fn wikilink_href(o: &HtmlOptions, url: &str) -> String {
+-    let (name, fragment) = split_wikilink(url, &o.wikilink_fragment_pattern);
+-    let mut href = fill_href(&o.wikilink_href, name);
+-    if let Some(fragment) = fragment {
+-        href.push('#');
+-        href.push_str(&encoded(fragment));
+-    }
+-    escape_html(&href)
++    "xyzzy".into() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// The escaped href that `template` makes for `name`.
+ fn href(template: &str, name: &str) -> String {
+     escape_html(&fill_href(template, name))
+ }
+ 
+ fn escape_html(s: &str) -> String {
