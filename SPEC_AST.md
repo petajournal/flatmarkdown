@@ -308,7 +308,7 @@ A wikilink. Children are the label (inline nodes); when no label is given, the c
 |-----------|--------|-----------------|
 | `url`     | string | Link destination. May contain a `#id` fragment for block links. |
 
-A wikilink without a page name is not a wikilink. `[[]]` and `[[|label]]` stay text, so a `wikilink` node never has an empty `url`. The whitespace around the page name is dropped. This holds for every kind of whitespace, also the full-width space (U+3000) and the no-break space (U+00A0). Whitespace alone is no name: `[[ ]]` becomes the text `[[]]`. A `#` without a page name and without an ID is no name either: `[[#]]` and `[[#|label]]` stay text. An escaped `\#` is a `#` here too, so `[[\#]]` becomes the text `[[#]]`. `[[#id]]` is a wikilink, with the `url` `#id`. A `#` at the end without an ID is dropped: `[[a#]]` is the same as `[[a]]`.
+A wikilink without a page name is not a wikilink. `[[]]` and `[[|label]]` stay text, so a `wikilink` node never has an empty `url`. The whitespace around the page name is dropped. This holds for every kind of whitespace, also the full-width space (U+3000) and the no-break space (U+00A0). Whitespace alone is no name: `[[ ]]` becomes the text `[[]]`. A `#` without a page name and without an ID is no name either: `[[#]]` and `[[#|label]]` stay text. An escaped `\#` is a `#` here too, so `[[\#]]` becomes the text `[[#]]`. `[[#id]]` is a wikilink, with the `url` `#id`. A `#` at the end is a part of the page name: `[[C#]]` has the `url` `C#`. A name of only `#` is no name, so `[[##]]` stays text.
 
 #### `footnote_reference`
 

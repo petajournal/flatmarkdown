@@ -282,7 +282,7 @@ Conversion rule: `Tag <---> Markdown link`
   - The whitespace around the page name is dropped. This holds for every kind of whitespace, also the full-width space.
   - A Wikilink without a page name is not a Wikilink. `[[]]`, `[[ ]]`, and `[[|label]]` stay plain text.
   - A `#` without a page name and without an ID is no name either. `[[#]]` and `[[#|label]]` stay plain text.
-  - A `#` at the end without an ID is dropped. `[[a#]]` is the same as `[[a]]`.
+  - A `#` at the end is a part of the page name. `[[C#]]` links to the page `C#`. `[[##]]` stays plain text, because a name of only `#` is no name.
 - Labels
   - An empty label is no label. `[[page|]]` is the same as `[[page]]`.
 
