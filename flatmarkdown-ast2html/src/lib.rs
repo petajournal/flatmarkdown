@@ -32,9 +32,33 @@ impl Default for HtmlOptions {
     }
 }
 
+/// The characters that stay as they are in an encoded name. They are the characters that
+/// `encodeURI` of JavaScript does not encode, without `?` and `#`. Every other byte of the
+/// UTF-8 text becomes `%XX`.
+const KEPT: &[u8] = b"-_.!~*'();/:@&=+$,";
+
+/// `name` with every character outside the letters, the digits and [`KEPT`] percent-encoded.
+fn encoded(name: &str) -> String {
+    let mut out = String::with_capacity(name.len());
+    for &byte in name.as_bytes() {
+        if byte.is_ascii_alphanumeric() || KEPT.contains(&byte) {
+            out.push(char::from(byte));
+        } else {
+            out.push_str(&format!("%{byte:02X}"));
+        }
+    }
+    out
+}
+
+/// The URL that `template` makes for `name`: every `{}` in the template is replaced by the
+/// name, percent-encoded. The URL is not escaped for HTML.
+pub fn fill_href(template: &str, name: &str) -> String {
+    template.replace(NAME, &encoded(name))
+}
+
 /// The escaped href that `template` makes for `name`.
 fn href(template: &str, name: &str) -> String {
-    escape_html(&template.replace(NAME, name))
+    escape_html(&fill_href(template, name))
 }
 
 fn escape_html(s: &str) -> String {
