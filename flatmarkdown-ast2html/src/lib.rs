@@ -60,6 +60,13 @@ fn encoded(name: &str) -> String {
     out
 }
 
+/// The href template of the URLs that start with `prefix`. The prefix is percent-encoded as a
+/// name is, so `/pages/` gives `/pages/{}`. Braces in the prefix are encoded too, so they never
+/// take the name.
+pub fn href_template_from_prefix(prefix: &str) -> String {
+    format!("{}{NAME}", encoded(prefix))
+}
+
 /// The URL that `template` makes for `name`: every `{}` in the template is replaced by the
 /// name, percent-encoded. The URL is not escaped for HTML.
 pub fn fill_href(template: &str, name: &str) -> String {
