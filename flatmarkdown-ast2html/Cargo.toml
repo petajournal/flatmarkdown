@@ -20,3 +20,5 @@ flatmarkdown-ast.workspace = true
 # of the published crate, so the renderer never depends on the parser (ADR 020 of peta-journal).
 [dev-dependencies]
 flatmarkdown = { path = "../flatmarkdown" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

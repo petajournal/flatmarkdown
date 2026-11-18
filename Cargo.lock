@@ -463,6 +463,8 @@ version = "0.9.0"
 dependencies = [
  "flatmarkdown",
  "flatmarkdown-ast",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
