@@ -54,8 +54,14 @@ var bytes = new Uint8Array(text.length);
 for (var i = 0; i < text.length; i++) bytes[i] = text.charCodeAt(i);
 wasm_bindgen.initSync({ module: bytes });
 return {
-    renderToHtml: function (ast) {
-        return wasm_bindgen.renderToHtml(typeof ast === 'string' ? ast : JSON.stringify(ast));
+    renderToHtml: function (ast, options) {
+        var o = options || {};
+        return wasm_bindgen.renderToHtml(
+            typeof ast === 'string' ? ast : JSON.stringify(ast),
+            o.wikilinkHref,
+            o.hashtagHref,
+            o.wikilinkFragmentPattern,
+        );
     },
 };
 })();
