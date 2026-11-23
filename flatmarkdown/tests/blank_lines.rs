@@ -17,6 +17,16 @@ fn a_backslash_line_is_read_as_a_blank_line() {
 
 const FENCE: &str = "```";
 
+// 1文字以上の`\`だけの行は、書くと`\`が1つ増え、読むと1つ減る。空行の`\`と区別するためである。
+#[test]
+fn a_line_of_backslashes_gets_one_more_when_written_and_one_less_when_read() {
+    let body = "\\\na\n\\\\";
+    let file = "\\\\\na\n\\\\\\";
+
+    assert_eq!(body_to_file(body), file);
+    assert_eq!(body_from_file(file), body);
+}
+
 // 空白やタブだけの行も空行として`\`だけの行になり、中の空白は残らない。
 #[test]
 fn a_line_of_spaces_is_written_as_a_backslash_line() {
