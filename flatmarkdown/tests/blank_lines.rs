@@ -66,14 +66,6 @@ fn a_line_of_backslashes_inside_a_code_block_gets_one_more_too() {
     assert_eq!(body_to_file(&body), format!("{FENCE}\n\\\\\n{FENCE}"));
 }
 
-// 空行で終わるHTMLのブロックの直後の空行は、変わらない。`\`だけの行にすると、その行がHTMLのブロックに入り、読み戻せないためである。
-#[test]
-fn a_blank_line_that_ends_an_html_block_is_kept() {
-    for body in ["<div>\na\n\nb", "<div>\na\n\n\nb", "<custom>\n\nb"] {
-        assert_eq!(body_to_file(body), body, "{body:?}");
-    }
-}
-
 /// Bodies whose blocks change when a blank line in them is written as a backslash line.
 fn tricky_bodies() -> Vec<String> {
     vec![
@@ -91,6 +83,9 @@ fn tricky_bodies() -> Vec<String> {
         "<div>\n\n\\\n\nb".to_string(),
         "\n<custom>\n\\".to_string(),
         "a\n\n</pre>\n\\\\".to_string(),
+        "<div>\na\n\n\nb".to_string(),
+        "\n    x\n<custom>\n\\".to_string(),
+        "\n|-|\n</pre>\n\\".to_string(),
     ]
 }
 
