@@ -1,7 +1,7 @@
 //! A blank line in an item body would end the item in a page. In the file, such a line is
 //! written as a line of one backslash, and read back as a blank line (ADR 070 of PetaJournal).
 
-use flatmarkdown::{body_from_file, body_to_file};
+use flatmarkdown::{body_from_file, body_to_file, parse_page};
 
 // 段落の途中の空行は、ファイルでは`\`だけの行になる。
 #[test]
@@ -78,6 +78,42 @@ fn a_blank_line_that_ends_an_html_block_is_kept() {
     for body in ["<div>\na\n\nb", "<div>\na\n\n\nb", "<custom>\n\nb"] {
         assert_eq!(body_to_file(body), body, "{body:?}");
     }
+}
+
+/// Bodies whose blocks change when a blank line in them is written as a backslash line.
+fn tricky_bodies() -> Vec<String> {
+    vec![
+        "a\n\n    code".to_string(),
+        "a\n\n---".to_string(),
+        "a\n\n===".to_string(),
+        "- a\n\nb".to_string(),
+        "> a\n\nb".to_string(),
+        "|a|\n|-|\n|1|\n\nb".to_string(),
+        "[x]: /url\n\nb".to_string(),
+        "\n<div>\na".to_string(),
+        format!("a\n\n{FENCE}\n\\\n\n{FENCE}\n\n\\\\"),
+        "    code\n\n\\".to_string(),
+        "\\\n\n\\\\\n \n".to_string(),
+        "<div>\n\n\\\n\nb".to_string(),
+    ]
+}
+
+// どの本文も、ファイルに書いて読むと元に戻る。
+#[test]
+fn a_body_written_and_read_again_is_the_same() {
+    for body in tricky_bodies() {
+        assert_eq!(body_from_file(&body_to_file(&body)), body, "{body:?}");
+    }
+}
+
+// 段落の中に空行がある本文は、ページに書いて読み戻しても、1つの項目のままである。
+#[test]
+fn a_paragraph_with_blank_lines_stays_one_item_in_a_page() {
+    let body = "\na\n\nb\n\n\nc";
+    let page = parse_page(&format!("<!-- @ -->\n{}\n", body_to_file(body)));
+
+    assert_eq!(page.items.len(), 1);
+    assert_eq!(body_from_file(&page.items[0].body), body);
 }
 
 // 後ろにブロックのない空行は変わらない。参照の定義はブロックを作らず、前のブロックに付くためである。
