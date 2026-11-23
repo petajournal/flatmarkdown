@@ -65,6 +65,15 @@ fn line_kinds(body: &str) -> Vec<LineKind> {
     let arena = Arena::new();
     let root = parse_document(&arena, &format!("{body}\n"), &options(false));
     let blocks: Vec<RangeInclusive<usize>> = root.children().map(line_range).collect();
+    // A blank line ends these blocks, and a line of one backslash would not
+    let ended_by_blank: Vec<RangeInclusive<usize>> = root
+        .children()
+        .filter(|node| {
+            matches!(&node.data.borrow().value,
+                NodeValue::HtmlBlock(html) if matches!(html.block_type, 6 | 7))
+        })
+        .map(line_range)
+        .collect();
     let literals: Vec<RangeInclusive<usize>> = root
         .descendants()
         .filter(|node| {
@@ -80,9 +89,12 @@ fn line_kinds(body: &str) -> Vec<LineKind> {
             let blank = lines[index].trim().is_empty();
             let in_block = blocks.iter().any(|block| block.contains(&index));
             let block_after = blocks.iter().any(|block| *block.start() > index);
+            let block_before = blocks.iter().rev().find(|block| *block.end() < index);
+            let after_html_ended_by_blank =
+                block_before.is_some_and(|block| ended_by_blank.contains(block));
             if literals.iter().any(|literal| literal.contains(&index)) {
                 LineKind::Literal
-            } else if blank && !in_block && block_after {
+            } else if blank && !in_block && block_after && !after_html_ended_by_blank {
                 LineKind::Boundary
             } else {
                 LineKind::Text
