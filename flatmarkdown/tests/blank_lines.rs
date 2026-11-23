@@ -72,6 +72,14 @@ fn a_line_of_backslashes_inside_a_code_block_or_an_html_block_is_kept() {
     }
 }
 
+// 空行で終わるHTMLのブロックの直後の空行は、変わらない。`\`だけの行にすると、その行がHTMLのブロックに入り、読み戻せないためである。
+#[test]
+fn a_blank_line_that_ends_an_html_block_is_kept() {
+    for body in ["<div>\na\n\nb", "<div>\na\n\n\nb", "<custom>\n\nb"] {
+        assert_eq!(body_to_file(body), body, "{body:?}");
+    }
+}
+
 // 後ろにブロックのない空行は変わらない。参照の定義はブロックを作らず、前のブロックに付くためである。
 #[test]
 fn a_blank_line_with_no_block_after_it_is_kept() {
