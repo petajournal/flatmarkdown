@@ -49,6 +49,8 @@ When `Off`, these links remain as `link` nodes and `#tag` text remains as plain 
 | `has_unclosed_block(body)` | Whether an item body ends inside a block that is not closed |
 | `close_blocks(body)` | The body with the closing lines of the blocks it ends inside |
 | `split_body(body, at)` | Split a body in two before a character, as Enter does. Both parts are closed |
+| `body_to_file(body)` | The body as it is written into a page: its blank lines between blocks are lines of one backslash |
+| `body_from_file(body)` | The body as it is read from a page: its lines of one backslash are blank lines again |
 
 ### Unclosed blocks
 
@@ -58,6 +60,18 @@ A program that writes an item body into a page should check it with `has_unclose
 
 `close_blocks` adds the closing lines after the body. A code block is closed with a fence of the same character and length.
 `split_body` closes the part before the place. It copies the opening lines of the open blocks to the part after it.
+
+### Blank lines in a body
+
+A blank line between two blocks ends an item in a page.
+So an editor that lets a user type a blank line inside an item body writes the body with `body_to_file`.
+Each blank line before the first block or between two blocks becomes a line of one backslash.
+Such a line does not end a paragraph, so the item keeps it.
+Blank lines inside a block, such as a list or a code block, are kept. So are blank lines at the end.
+Every line made only of backslashes gets one more backslash, also inside a code block.
+
+`body_from_file` takes one backslash away from every line made only of backslashes. It does not look at the blocks.
+So `body_from_file(&body_to_file(body))` is always `body`, except that a blank line of spaces comes back empty.
 
 ### JSON and HTML
 
