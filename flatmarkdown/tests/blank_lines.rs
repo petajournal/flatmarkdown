@@ -2,6 +2,7 @@
 //! written as a line of one backslash, and read back as a blank line (ADR 070 of PetaJournal).
 
 use flatmarkdown::{body_from_file, body_to_file, parse_page};
+use proptest::prelude::*;
 
 // 段落の途中の空行は、ファイルでは`\`だけの行になる。
 #[test]
@@ -112,4 +113,46 @@ fn a_paragraph_with_blank_lines_stays_one_item_in_a_page() {
 fn a_blank_line_with_no_block_after_it_is_kept() {
     let body = "[a]\n\n[a]: /url";
     assert_eq!(body_to_file(body), body);
+}
+
+/// Lines that start or end blocks, and lines of any of the marks of Markdown.
+fn any_line() -> impl Strategy<Value = String> {
+    let marked = prop::sample::select(vec![
+        "", "\\", "\\\\", FENCE, "~~~", "    x", "<div>", "</div>", "<pre>", "</pre>", "<custom>",
+        "<!--", "-->", "- a", "  - b", "1. a", "> a", ">>>", "---", "===", "# h", "|a|", "|-|",
+        "[x]: /u", "$$", "- [ ] t",
+    ])
+    .prop_map(str::to_string);
+    prop_oneof![marked, "[a-z \\\\`<>|#*=:/\\[\\]-]{1,6}"]
+        // A line of spaces comes back as a blank line, as ADR 070 says
+        .prop_map(|line| {
+            if line.trim().is_empty() {
+                String::new()
+            } else {
+                line
+            }
+        })
+}
+
+proptest! {
+    // どの本文も、ファイルに書いて読むと元に戻る。行は、ブロックを始めたり終えたりする行と、Markdownの記号を混ぜた行である。
+    #[test]
+    fn any_body_written_and_read_again_is_the_same(lines in prop::collection::vec(any_line(), 0..12)) {
+        let body = lines.join("\n");
+        prop_assert_eq!(body_from_file(&body_to_file(&body)), body);
+    }
+
+    // 段落の行と空行でできた本文は、ページに書いて読み戻しても、1つの項目のままである。
+    #[test]
+    fn a_paragraph_with_any_blank_lines_stays_one_item_in_a_page(
+        lines in prop::collection::vec(prop_oneof!["", "[a-z]{1,5}"], 0..12),
+        last in "[a-z]{1,5}",
+    ) {
+        // The last line has text: a page drops the blank lines at the end of a body
+        let body = format!("{}{last}", lines.iter().map(|line| format!("{line}\n")).collect::<String>());
+        let page = parse_page(&format!("<!-- @ -->\n{}\n", body_to_file(&body)));
+
+        prop_assert_eq!(page.items.len(), 1);
+        prop_assert_eq!(body_from_file(&page.items[0].body), body);
+    }
 }
