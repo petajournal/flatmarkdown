@@ -9,25 +9,39 @@ use comrak::{Arena, parse_document};
 const BLANK: &str = "\\";
 
 /// `body` as it is written into a page: each blank line between its blocks, or before its
-/// first block, is a line of one backslash.
+/// first block, is a line of one backslash. A line of backslashes gets one more, so that it is
+/// not read as a blank line.
 pub fn body_to_file(body: &str) -> String {
     let kinds = line_kinds(body);
     body.split('\n')
         .zip(kinds)
         .map(|(line, kind)| match kind {
-            LineKind::Boundary => BLANK,
-            LineKind::Other => line,
+            LineKind::Boundary => BLANK.to_string(),
+            LineKind::Other if is_backslashes(line) => format!("{line}{BLANK}"),
+            LineKind::Other => line.to_string(),
         })
         .collect::<Vec<_>>()
         .join("\n")
 }
 
-/// `body` as it is read from a page: each line of one backslash is a blank line again.
+/// `body` as it is read from a page: each line of backslashes loses one, so that a line of one
+/// backslash is a blank line again.
 pub fn body_from_file(body: &str) -> String {
     body.split('\n')
-        .map(|line| if line == BLANK { "" } else { line })
+        .map(|line| {
+            if is_backslashes(line) {
+                &line[BLANK.len()..]
+            } else {
+                line
+            }
+        })
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+/// Whether `line` is one backslash or more, and nothing else.
+fn is_backslashes(line: &str) -> bool {
+    !line.is_empty() && line.chars().all(|c| c == '\\')
 }
 
 /// What a line of a body is to the blocks of the body.
