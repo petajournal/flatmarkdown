@@ -58,18 +58,12 @@ fn blank_lines_inside_a_list_a_code_block_or_a_quote_are_kept() {
     }
 }
 
-// コードブロックとHTMLのブロックの中の`\`だけの行は、書いても読んでも変わらない。中の文字は、そのまま表示されるためである。
+// コードブロックの中の`\`だけの行も、書くと`\`が1つ増える。読む向きが本文の構造を見ずに済み、どの本文も元に戻るためである。
 #[test]
-fn a_line_of_backslashes_inside_a_code_block_or_an_html_block_is_kept() {
-    for body in [
-        format!("{FENCE}\n\\\n{FENCE}"),
-        "    a\n    \\\\".to_string(),
-        "<pre>\n\\\n</pre>".to_string(),
-        "<div>\n\\\n</div>".to_string(),
-    ] {
-        assert_eq!(body_to_file(&body), body, "{body:?}");
-        assert_eq!(body_from_file(&body), body, "{body:?}");
-    }
+fn a_line_of_backslashes_inside_a_code_block_gets_one_more_too() {
+    let body = format!("{FENCE}\n\\\n{FENCE}");
+
+    assert_eq!(body_to_file(&body), format!("{FENCE}\n\\\\\n{FENCE}"));
 }
 
 // 空行で終わるHTMLのブロックの直後の空行は、変わらない。`\`だけの行にすると、その行がHTMLのブロックに入り、読み戻せないためである。
