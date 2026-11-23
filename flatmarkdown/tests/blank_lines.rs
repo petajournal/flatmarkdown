@@ -14,3 +14,43 @@ fn a_blank_line_inside_a_paragraph_is_written_as_a_backslash_line() {
 fn a_backslash_line_is_read_as_a_blank_line() {
     assert_eq!(body_from_file("a\n\\\nb"), "a\n\nb");
 }
+
+const FENCE: &str = "```";
+
+// 空白やタブだけの行も空行として`\`だけの行になり、中の空白は残らない。
+#[test]
+fn a_line_of_spaces_is_written_as_a_backslash_line() {
+    assert_eq!(body_to_file("a\n \t \nb"), "a\n\\\nb");
+}
+
+// 本文の先頭の空行は`\`だけの行になり、末尾の空行は変わらない。
+#[test]
+fn blank_lines_at_the_start_are_written_and_those_at_the_end_are_kept() {
+    assert_eq!(body_to_file("\n\na\n\n"), "\\\n\\\na\n\n");
+}
+
+// 見出しと段落のように、最上位のブロックの間の空行も`\`だけの行になる。
+#[test]
+fn a_blank_line_between_a_heading_and_a_paragraph_is_written_as_a_backslash_line() {
+    assert_eq!(body_to_file("# H1\n\nPara"), "# H1\n\\\nPara");
+}
+
+// リスト、コードブロック、`>>>`の引用の中の空行は、項目を分けないので変わらない。
+#[test]
+fn blank_lines_inside_a_list_a_code_block_or_a_quote_are_kept() {
+    for body in [
+        "- a\n\n- b".to_string(),
+        format!("{FENCE}\na\n\nb\n{FENCE}"),
+        "    a\n\n    b".to_string(),
+        ">>>\na\n\nb\n>>>".to_string(),
+    ] {
+        assert_eq!(body_to_file(&body), body, "{body:?}");
+    }
+}
+
+// 後ろにブロックのない空行は変わらない。参照の定義はブロックを作らず、前のブロックに付くためである。
+#[test]
+fn a_blank_line_with_no_block_after_it_is_kept() {
+    let body = "[a]\n\n[a]: /url";
+    assert_eq!(body_to_file(body), body);
+}
