@@ -22,6 +22,14 @@ pub fn body_to_file(body: &str) -> String {
         .join("\n")
 }
 
+/// `body` as it is read from a page: each line of one backslash is a blank line again.
+pub fn body_from_file(body: &str) -> String {
+    body.split('\n')
+        .map(|line| if line == BLANK { "" } else { line })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 /// What a line of a body is to the blocks of the body.
 #[derive(Clone, Copy, PartialEq)]
 enum LineKind {
