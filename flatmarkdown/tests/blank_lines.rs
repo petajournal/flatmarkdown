@@ -95,6 +95,8 @@ fn tricky_bodies() -> Vec<String> {
         "    code\n\n\\".to_string(),
         "\\\n\n\\\\\n \n".to_string(),
         "<div>\n\n\\\n\nb".to_string(),
+        "\n<custom>\n\\".to_string(),
+        "a\n\n</pre>\n\\\\".to_string(),
     ]
 }
 
