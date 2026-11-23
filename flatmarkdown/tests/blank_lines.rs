@@ -58,6 +58,20 @@ fn blank_lines_inside_a_list_a_code_block_or_a_quote_are_kept() {
     }
 }
 
+// コードブロックとHTMLのブロックの中の`\`だけの行は、書いても読んでも変わらない。中の文字は、そのまま表示されるためである。
+#[test]
+fn a_line_of_backslashes_inside_a_code_block_or_an_html_block_is_kept() {
+    for body in [
+        format!("{FENCE}\n\\\n{FENCE}"),
+        "    a\n    \\\\".to_string(),
+        "<pre>\n\\\n</pre>".to_string(),
+        "<div>\n\\\n</div>".to_string(),
+    ] {
+        assert_eq!(body_to_file(&body), body, "{body:?}");
+        assert_eq!(body_from_file(&body), body, "{body:?}");
+    }
+}
+
 // 後ろにブロックのない空行は変わらない。参照の定義はブロックを作らず、前のブロックに付くためである。
 #[test]
 fn a_blank_line_with_no_block_after_it_is_kept() {
