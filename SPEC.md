@@ -207,6 +207,13 @@ Paragraph 1
 
 - For items starting with a GFM task list `- [ ]`, PetaJournal treats the entire item as a task and replaces the bullet with a checkbox.
 
+## Blank Lines in a Body
+
+- A blank line at the start of a body, or between two blocks, is written as a line of one backslash (ADR 070 of PetaJournal). Such a line does not end a paragraph, so the item does not split.
+- A line of spaces is a blank line too, and its spaces are not kept. Blank lines inside a list or a code block, and blank lines at the end of a body, are written as they are.
+- A line made only of backslashes gets one more backslash when it is written, and loses one when it is read. This is also so inside a code block.
+- `body_to_file` and `body_from_file` do this.
+
 ## Embedding
 
 Embedding format for media, including images:
