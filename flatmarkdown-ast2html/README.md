@@ -6,7 +6,7 @@ The AST is the `Node` of the [flatmarkdown-ast](https://crates.io/crates/flatmar
 This crate has no Markdown parser, so a program that already has the AST stays small.
 The [flatmarkdown](https://crates.io/crates/flatmarkdown) crate makes the AST from Markdown.
 
-The AST is defined in [SPEC_AST.md](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md).
+The AST is defined in [SPEC_AST.md](https://github.com/sosuisen/flatmarkdown/blob/main/SPEC_AST.md).
 
 ## Usage
 

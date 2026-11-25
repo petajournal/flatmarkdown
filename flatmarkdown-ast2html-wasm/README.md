@@ -1,12 +1,12 @@
 # flatmarkdown-ast2html
 
-Renders the [Flat Markdown](https://github.com/petajournal/flatmarkdown) AST to HTML in a web page.
+Renders the [Flat Markdown](https://github.com/sosuisen/flatmarkdown) AST to HTML in a web page.
 
 This npm package is the Rust crate [flatmarkdown-ast2html](https://crates.io/crates/flatmarkdown-ast2html), built as WebAssembly.
 So the package and the crate give the same HTML.
 The version of the package is the version of the crate.
 
-The HTML is described in the [README of the crate](https://github.com/petajournal/flatmarkdown/tree/main/flatmarkdown-ast2html#readme).
+The HTML is described in the [README of the crate](https://github.com/sosuisen/flatmarkdown/tree/main/flatmarkdown-ast2html#readme).
 
 ## Use
 
@@ -38,7 +38,7 @@ The function returns the HTML as a string. It does not return a promise.
 - `wikilinkFragmentPattern`: the pattern of the fragment of a wikilink. The default is empty.
 
 They are the settings of `HtmlOptions` of the crate, and give the same HTML.
-See "Where links lead" in the [README of the crate](https://github.com/petajournal/flatmarkdown/tree/main/flatmarkdown-ast2html#readme).
+See "Where links lead" in the [README of the crate](https://github.com/sosuisen/flatmarkdown/tree/main/flatmarkdown-ast2html#readme).
 
 ```js
 FmAst2Html.renderToHtml(ast, { wikilinkHref: '/pages/{}', hashtagHref: '/pages/tags/{}' });
