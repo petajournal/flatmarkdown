@@ -45,7 +45,7 @@ const { version } = JSON.parse(readFileSync(join(here, 'package.json'), 'utf8'))
 // script from the document, to fetch the wasm file later. Here the wasm is in the script, so
 // the URL is not needed. And reading it throws in a document that has no URL (about:blank),
 // which is what WebView2 makes from a string.
-const bundle = `/*! flatmarkdown-ast2html ${version} | MIT License | https://github.com/petajournal/flatmarkdown */
+const bundle = `/*! flatmarkdown-ast2html ${version} | MIT License | https://github.com/sosuisen/flatmarkdown */
 var FmAst2Html = (function () {
 var document;
 ${glue}

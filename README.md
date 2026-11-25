@@ -26,7 +26,7 @@ let html = flatmarkdown_ast2html::ast_to_html(&flatmarkdown::parse_body("Hello *
 ``
 
 The AST is defined in [SPEC_AST.md](SPEC_AST.md) ([日本語](SPEC_AST_ja.md)).
-The same AST as TypeScript types is the npm package [flatmarkdown-ast](https://www.npmjs.com/package/flatmarkdown-ast). Its source is the [flatmarkdown-ast-ts](https://github.com/petajournal/flatmarkdown-ast-ts) repository.
+The same AST as TypeScript types is the npm package [flatmarkdown-ast](https://www.npmjs.com/package/flatmarkdown-ast). Its source is the [flatmarkdown-ast-ts](https://github.com/sosuisen/flatmarkdown-ast-ts) repository.
 
 ## Versions
 

@@ -17,7 +17,7 @@ edition = "2024"
 # `time` and `darling` ask for 1.88 too. The `msrv` job of the CI builds with this version.
 rust-version = "1.88"
 license = "MIT"
-repository = "https://github.com/petajournal/flatmarkdown"
+repository = "https://github.com/sosuisen/flatmarkdown"
 
 # Less debug info makes linking faster. A panic still shows the file name and the line number.
 # flatmarkdown builds its AST with the types of flatmarkdown-ast (ADR 014 of peta-journal).

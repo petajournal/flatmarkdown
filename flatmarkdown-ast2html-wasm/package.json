@@ -9,13 +9,13 @@
     ],
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/petajournal/flatmarkdown.git",
+        "url": "git+https://github.com/sosuisen/flatmarkdown.git",
         "directory": "flatmarkdown-ast2html-wasm"
     },
     "bugs": {
-        "url": "https://github.com/petajournal/flatmarkdown/issues"
+        "url": "https://github.com/sosuisen/flatmarkdown/issues"
     },
-    "homepage": "https://github.com/petajournal/flatmarkdown/tree/main/flatmarkdown-ast2html-wasm#readme",
+    "homepage": "https://github.com/sosuisen/flatmarkdown/tree/main/flatmarkdown-ast2html-wasm#readme",
     "scripts": {
         "build": "node build.mjs",
         "test": "node --test",

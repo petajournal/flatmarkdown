@@ -2,7 +2,7 @@
 
 Flat Markdown parser — outline format with block-delimited items.
 
-Based on the Flat Markdown specification v0.2: https://github.com/petajournal/flatmarkdown/blob/main/SPEC.md
+Based on the Flat Markdown specification v0.2: https://github.com/sosuisen/flatmarkdown/blob/main/SPEC.md
 
 ## API
 
@@ -42,9 +42,9 @@ When `Off`, these links remain as `link` nodes and `#tag` text remains as plain 
 
 | Function | Description |
 |---|---|
-| `parse_page(input)` | Split a page into items with metadata, as a `Page` ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
+| `parse_page(input)` | Split a page into items with metadata, as a `Page` ([spec](https://github.com/sosuisen/flatmarkdown/blob/main/SPEC_AST.md)) |
 | `parse_page_with(input, opts)` | Same, with explicit `BodyOptions` |
-| `parse_body(input)` | Parse an item body to the AST, as a `Node` ([spec](https://github.com/petajournal/flatmarkdown/blob/main/SPEC_AST.md)) |
+| `parse_body(input)` | Parse an item body to the AST, as a `Node` ([spec](https://github.com/sosuisen/flatmarkdown/blob/main/SPEC_AST.md)) |
 | `parse_body_with(input, opts)` | Same, with explicit `BodyOptions` |
 | `has_unclosed_block(body)` | Whether an item body ends inside a block that is not closed |
 | `close_blocks(body)` | The body with the closing lines of the blocks it ends inside |
